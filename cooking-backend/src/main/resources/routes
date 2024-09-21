@@ -1,1 +1,15 @@
-GET         /                                http.healthcheck.HealthCheckController.check()
+GET         /                                      http.healthcheck.HealthCheckController.check()
+GET         /health                                http.healthcheck.HealthCheckController.check()
+
+POST        /signup                                http.healthcheck.HealthCheckController.check()
+POST        /login                                 http.healthcheck.HealthCheckController.check()
+POST        /logout                                http.healthcheck.HealthCheckController.check()
+
+GET         /user/:id                              http.users.UsersController.get(id: java.util.UUID)
+PUT         /user/:id                              http.users.UsersController.put(id: java.util.UUID)
+
+GET         /recipes                               http.recipes.RecipesController.get()
+POST        /recipes                               http.recipes.RecipesController.post()
+
+GET         /recipes/:id                           http.recipes.RecipesController.get(id: java.util.UUID)
+PUT         /recipes/:id                           http.recipes.RecipesController.put(id: java.util.UUID)

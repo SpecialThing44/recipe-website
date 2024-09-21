@@ -7,6 +7,9 @@ object Libraries {
     val PlayVersion = "3.0.5"
     val guiceVersion = "6.0.0"
     val GoogleHttpClientVersion = "1.45.0"
+    val ZioVersion = "2.1.9"
+    val ZioCatsVersion = "23.1.0.3"
+    val circeVersion = "0.14.10"
 
   }
   import Versions.*
@@ -26,5 +29,10 @@ object Libraries {
     "com.google.http-client" % "google-http-client" % GoogleHttpClientVersion
   val GoogleHttpClientGson =
     "com.google.http-client" % "google-http-client-gson" % GoogleHttpClientVersion
+  val zio = "dev.zio" %% "zio" % ZioVersion
+  val zioCats = "dev.zio" %% "zio-interop-cats" % ZioCatsVersion
 
+  val circeCore = "io.circe" %% "circe-core" % circeVersion
+  val circeGeneric = "io.circe" %% "circe-generic" % circeVersion
+  val circeParser = "io.circe" %% "circe-parser" % circeVersion
 }

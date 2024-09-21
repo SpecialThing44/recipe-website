@@ -18,6 +18,11 @@ lazy val domain =
     scalacOptions --= Seq("-Werror"),
     scalacOptions --= Seq("-Xfatal-warnings"),
     libraryDependencies ++= Seq(
+      zio,
+      zioCats,
+      circeCore,
+      circeGeneric,
+      circeParser
     )
   )
 
@@ -28,6 +33,9 @@ lazy val backend =
       scalacOptions --= Seq("-Werror"),
       scalacOptions --= Seq("-Xfatal-warnings"),
       libraryDependencies ++= Seq(
+        circeCore,
+        circeGeneric,
+        circeParser,
         PekkoHttp,
         PekkoActor,
         PekkoStream,
@@ -38,5 +46,7 @@ lazy val backend =
         guiceGoogle,
         GoogleHttpClient,
         GoogleHttpClientGson,
+        zio,
+        zioCats,
       )
     )
