@@ -13,3 +13,10 @@ POST        /recipes                               http.recipes.RecipesControlle
 
 GET         /recipes/:id                           http.recipes.RecipesController.get(id: java.util.UUID)
 PUT         /recipes/:id                           http.recipes.RecipesController.put(id: java.util.UUID)
+
+
+GET         /ingredients                               http.ingredients.IngredientsController.get()
+POST        /ingredients                               http.ingredients.IngredientsController.post()
+
+GET         /ingredients/:id                           http.ingredients.IngredientsController.get(id: java.util.UUID)
+PUT         /ingredients/:id                           http.ingredients.IngredientsController.put(id: java.util.UUID)

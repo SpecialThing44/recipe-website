@@ -1,3 +1,3 @@
 package persistence.recipes
 
-trait Recipes
+trait Ingredients

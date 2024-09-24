@@ -1,34 +1,35 @@
-package http.recipes
+package http.ingredients
+
 import com.google.inject.{Inject, Singleton}
 import context.CookingApi
-import domain.food.recipes.Recipe
+import domain.food.ingredients.Ingredient
 import http.Requests
 import io.circe.Decoder
 import play.api.libs.json._
 import play.api.mvc._
 
 @Singleton
-class RecipesController @Inject() (
+class IngredientsController @Inject() (
     cc: ControllerComponents,
     cookingApi: CookingApi
 ) extends AbstractController(cc) {
 
   def get(): Action[JsValue] = Action(parse.json) { request =>
-    Requests.get[Recipe](request, cookingApi, cookingApi.recipes)
+    Requests.get[Ingredient](request, cookingApi, cookingApi.ingredients)
   }
 
   def post(): Action[JsValue] = Action(parse.json) { request =>
-    implicit val recipeDecoder: Decoder[Recipe] = Recipe.decoder
-    Requests.post[Recipe](request, cookingApi, cookingApi.recipes)
+    implicit val recipeDecoder: Decoder[Ingredient] = Ingredient.decoder
+    Requests.post[Ingredient](request, cookingApi, cookingApi.ingredients)
   }
 
   def get(id: java.util.UUID): Action[JsValue] = Action(parse.json) { request =>
-    Requests.getById[Recipe](id, request, cookingApi, cookingApi.recipes)
+    Requests
+      .getById[Ingredient](id, request, cookingApi, cookingApi.ingredients)
   }
 
   def put(id: java.util.UUID): Action[JsValue] = Action(parse.json) { request =>
-    implicit val recipeDecoder: Decoder[Recipe] = Recipe.decoder
-    Requests.put[Recipe](id, request, cookingApi, cookingApi.recipes)
-
+    implicit val ingredientDecoder: Decoder[Ingredient] = Ingredient.decoder
+    Requests.put[Ingredient](id, request, cookingApi, cookingApi.ingredients)
   }
 }

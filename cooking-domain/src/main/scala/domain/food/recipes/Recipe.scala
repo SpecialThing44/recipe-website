@@ -34,6 +34,6 @@ case class Recipe( // Maybe want a double reference back to user, at least in DB
 ) extends Identified
 
 object Recipe {
-  implicit val recipeEncoder: Encoder[Recipe] = deriveEncoder[Recipe]
-  implicit val recipeDecoder: Decoder[Recipe] = deriveDecoder[Recipe]
+  implicit val encoder: Encoder[Recipe] = deriveEncoder[Recipe]
+  implicit val decoder: Decoder[Recipe] = deriveDecoder[Recipe]
 }

@@ -1,11 +1,11 @@
 package http.authentication
 
-import context.{ApiContext, ApplicationContext, CookingApi}
+import context.{ApiContext, CookingApi}
 import domain.people.users.User
-import domain.types.ZIORuntime
+import http.ApiRunner
 import org.apache.pekko.http.scaladsl.model.headers.OAuth2BearerToken
 import play.api.mvc.Request
-import zio.{ZEnvironment, ZIO}
+import zio.ZIO
 
 object UserAuthentication {
   def getMaybeUser(
@@ -19,12 +19,10 @@ object UserAuthentication {
       bearerToken = OAuth2BearerToken(auth)
       maybeUser <- cookingApi.users.authenticate(bearerToken)
     } yield maybeUser
-    ZIORuntime.unsafeRun(
-      maybeUserZio.provideEnvironment(
-        ZEnvironment(
-          ApiContext.apply(cookingApi, ApplicationContext.apply(None))
-        )
-      )
+    ApiRunner.runResponse[ApiContext, Throwable, Option[User]](
+      maybeUserZio,
+      cookingApi,
+      None
     )
   }
 }

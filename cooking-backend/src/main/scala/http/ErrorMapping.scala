@@ -8,11 +8,9 @@ case class NotFoundError(message: String) extends Throwable(message)
 object ErrorMapping {
 
   def mapCustomErrorsToHttp(error: Throwable): Result = {
-    (error) match {
+    error match {
       case NotFoundError(message) => Forbidden(message)
       case _                      => InternalServerError(error.getMessage)
     }
-
   }
-
 }

@@ -22,7 +22,8 @@ class RecipeFacade @Inject() (
       originalEntity: Recipe
   ): ZIO[ApiContext, Throwable, Recipe] = ???
 
-  override def list(query: JsValue): ZIO[ApiContext, Throwable, Seq[Recipe]] = ???
+  override def list(query: JsValue): ZIO[ApiContext, Throwable, Seq[Recipe]] =
+    ???
 
   override def find(query: JsValue): ZIO[ApiContext, Throwable, Recipe] = ???
 

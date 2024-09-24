@@ -1,3 +1,3 @@
 package persistence.recipes
 
-trait Users {}
+trait Users

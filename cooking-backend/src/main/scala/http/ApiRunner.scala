@@ -3,21 +3,20 @@ package http
 import context.{ApiContext, ApplicationContext, CookingApi}
 import domain.people.users.User
 import domain.types.ZIORuntime
-import play.api.mvc.Result
-import zio.{URIO, ZEnvironment}
-
+import zio.{ZEnvironment, ZIO}
 object ApiRunner {
-  def runResponse(
-      response: URIO[ApiContext, Result],
+
+  def runResponse[R, E, ResponseType](
+      response: ZIO[R, E, ResponseType],
       cookingApi: CookingApi,
       maybeUser: Option[User]
-  ): Result =
+  )(implicit ev: R <:< ApiContext): ResponseType = {
     ZIORuntime.unsafeRun(
       response.provideEnvironment(
         ZEnvironment(
           ApiContext.apply(cookingApi, ApplicationContext.apply(maybeUser))
-        )
+        ).asInstanceOf[ZEnvironment[R]]
       )
     )
-
+  }
 }

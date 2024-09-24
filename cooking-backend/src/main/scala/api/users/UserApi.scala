@@ -2,7 +2,6 @@ package api.users
 
 import api.Querying
 import context.ApiContext
-import domain.food.recipes.Recipe
 import domain.people.users.User
 import org.apache.pekko.http.scaladsl.model.headers.OAuth2BearerToken
 import persistence.Persisting

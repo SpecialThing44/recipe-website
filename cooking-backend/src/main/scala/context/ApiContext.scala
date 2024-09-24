@@ -5,4 +5,4 @@ final case class ApiContext(
     applicationContext: ApplicationContext
 )
 
-object ApiContext {}
+object ApiContext
