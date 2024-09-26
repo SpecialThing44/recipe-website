@@ -13,11 +13,11 @@ class UsersController @Inject() (
     cc: ControllerComponents,
     cookingApi: CookingApi
 ) extends AbstractController(cc) {
+  implicit val recipeDecoder: Decoder[User] = User.decoder
   def get(id: java.util.UUID): Action[JsValue] = Action(parse.json) { request =>
-    Requests.getById[User](id, request, cookingApi, cookingApi.users)
+    Requests.get[User](id, request, cookingApi, cookingApi.users)
   }
   def put(id: java.util.UUID): Action[JsValue] = Action(parse.json) { request =>
-    implicit val recipeDecoder: Decoder[User] = User.decoder
     Requests.put[User](id, request, cookingApi, cookingApi.users)
   }
 }

@@ -13,23 +13,22 @@ class IngredientsController @Inject() (
     cc: ControllerComponents,
     cookingApi: CookingApi
 ) extends AbstractController(cc) {
+  implicit val ingredientDecoder: Decoder[Ingredient] = Ingredient.decoder
 
-  def get(): Action[JsValue] = Action(parse.json) { request =>
-    Requests.get[Ingredient](request, cookingApi, cookingApi.ingredients)
+  def list(): Action[JsValue] = Action(parse.json) { request =>
+    Requests.list[Ingredient](request, cookingApi, cookingApi.ingredients)
   }
 
   def post(): Action[JsValue] = Action(parse.json) { request =>
-    implicit val recipeDecoder: Decoder[Ingredient] = Ingredient.decoder
     Requests.post[Ingredient](request, cookingApi, cookingApi.ingredients)
   }
 
   def get(id: java.util.UUID): Action[JsValue] = Action(parse.json) { request =>
     Requests
-      .getById[Ingredient](id, request, cookingApi, cookingApi.ingredients)
+      .get[Ingredient](id, request, cookingApi, cookingApi.ingredients)
   }
 
   def put(id: java.util.UUID): Action[JsValue] = Action(parse.json) { request =>
-    implicit val ingredientDecoder: Decoder[Ingredient] = Ingredient.decoder
     Requests.put[Ingredient](id, request, cookingApi, cookingApi.ingredients)
   }
 }

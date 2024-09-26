@@ -9,7 +9,7 @@ import zio.ZIO
 
 object UserAuthentication {
   def getMaybeUser(
-      request: Request[_],
+      request: Request[?],
       cookingApi: CookingApi
   ): Option[User] = {
     val maybeUserZio = for {

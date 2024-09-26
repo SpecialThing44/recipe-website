@@ -8,14 +8,14 @@ POST        /logout                                http.healthcheck.HealthCheckC
 GET         /user/:id                              http.users.UsersController.get(id: java.util.UUID)
 PUT         /user/:id                              http.users.UsersController.put(id: java.util.UUID)
 
-GET         /recipes                               http.recipes.RecipesController.get()
+GET         /recipes                               http.recipes.RecipesController.list()
 POST        /recipes                               http.recipes.RecipesController.post()
 
 GET         /recipes/:id                           http.recipes.RecipesController.get(id: java.util.UUID)
 PUT         /recipes/:id                           http.recipes.RecipesController.put(id: java.util.UUID)
 
 
-GET         /ingredients                               http.ingredients.IngredientsController.get()
+GET         /ingredients                               http.ingredients.IngredientsController.list()
 POST        /ingredients                               http.ingredients.IngredientsController.post()
 
 GET         /ingredients/:id                           http.ingredients.IngredientsController.get(id: java.util.UUID)

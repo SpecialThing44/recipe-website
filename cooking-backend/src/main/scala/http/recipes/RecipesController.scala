@@ -1,6 +1,7 @@
 package http.recipes
 import com.google.inject.{Inject, Singleton}
 import context.CookingApi
+import domain.food.ingredients.Ingredient
 import domain.food.recipes.Recipe
 import http.Requests
 import io.circe.Decoder
@@ -12,23 +13,22 @@ class RecipesController @Inject() (
     cc: ControllerComponents,
     cookingApi: CookingApi
 ) extends AbstractController(cc) {
+  implicit val recipeDecoder: Decoder[Recipe] = Recipe.decoder
+  implicit val ingredientDecoder: Decoder[Ingredient] = Ingredient.decoder
 
-  def get(): Action[JsValue] = Action(parse.json) { request =>
-    Requests.get[Recipe](request, cookingApi, cookingApi.recipes)
+  def list(): Action[JsValue] = Action(parse.json) { request =>
+    Requests.list[Recipe](request, cookingApi, cookingApi.recipes)
   }
 
   def post(): Action[JsValue] = Action(parse.json) { request =>
-    implicit val recipeDecoder: Decoder[Recipe] = Recipe.decoder
     Requests.post[Recipe](request, cookingApi, cookingApi.recipes)
   }
 
   def get(id: java.util.UUID): Action[JsValue] = Action(parse.json) { request =>
-    Requests.getById[Recipe](id, request, cookingApi, cookingApi.recipes)
+    Requests.get[Recipe](id, request, cookingApi, cookingApi.recipes)
   }
 
   def put(id: java.util.UUID): Action[JsValue] = Action(parse.json) { request =>
-    implicit val recipeDecoder: Decoder[Recipe] = Recipe.decoder
     Requests.put[Recipe](id, request, cookingApi, cookingApi.recipes)
-
   }
 }

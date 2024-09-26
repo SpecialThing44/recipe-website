@@ -1,6 +1,5 @@
 import ProjectExtensions.ProjectOps
-
-import Libraries.*
+import Libraries.{anorm, *}
 
 lazy val root = project
   .in(file("."))
@@ -42,6 +41,8 @@ lazy val backend =
         play,
         playJson,
         playStreams,
+        postgresql,
+        anorm,
         guice,
         guiceGoogle,
         GoogleHttpClient,

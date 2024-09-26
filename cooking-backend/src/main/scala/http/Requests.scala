@@ -14,15 +14,14 @@ import zio.ZIO
 import java.util.UUID
 
 object Requests {
-  def get[Entity](
+  def list[Entity](
       request: Request[JsValue],
       cookingApi: CookingApi,
       entityApi: Querying[Entity]
   ): Result = {
     val maybeUser = UserAuthentication.getMaybeUser(request, cookingApi)
-    val jsonBody: JsValue = request.body
-    val entities = for {
-      entities <- entityApi.list(jsonBody)
+    val entities: ZIO[ApiContext, Throwable, Seq[Entity]] = for {
+      entities <- entityApi.list(request.body)
     } yield entities
     val response = entities.fold(
       error => ErrorMapping.mapCustomErrorsToHttp(error),
@@ -35,14 +34,14 @@ object Requests {
     )
   }
 
-  def getById[Entity](
+  def get[Entity](
       id: UUID,
       request: Request[JsValue],
       cookingApi: CookingApi,
       entityApi: Querying[Entity]
   ): Result = {
     val maybeUser = UserAuthentication.getMaybeUser(request, cookingApi)
-    val maybeEntity = for {
+    val maybeEntity: ZIO[ApiContext, Throwable, Entity] = for {
       entity <- entityApi.get(id)
     } yield entity
     val response = maybeEntity.fold(
@@ -62,10 +61,9 @@ object Requests {
       entityApi: Persisting[Entity]
   ): Result = {
     val maybeUser = UserAuthentication.getMaybeUser(request, cookingApi)
-    val jsonBody: JsValue = request.body
-    val createdEntity = for {
+    val createdEntity: ZIO[ApiContext, Throwable, Entity] = for {
       newEntity <- ZIO.fromEither(
-        decode[Entity](jsonBody.toString)
+        decode[Entity](request.body.toString)
       )
       createdEntity <- entityApi.create(newEntity)
     } yield createdEntity
@@ -87,9 +85,8 @@ object Requests {
       entityApi: Persisting[Entity] with Querying[Entity]
   ): Result = {
     val maybeUser = UserAuthentication.getMaybeUser(request, cookingApi)
-    val jsonBody: JsValue = request.body
-    val maybeUpdatedEntity = for {
-      newEntity <- ZIO.fromEither(decode[Entity](jsonBody.toString))
+    val maybeUpdatedEntity: ZIO[ApiContext, Throwable, Entity] = for {
+      newEntity <- ZIO.fromEither(decode[Entity](request.body.toString))
       originalEntity <- entityApi.get(id)
       updatedEntity <- entityApi.update(originalEntity, newEntity)
     } yield updatedEntity
