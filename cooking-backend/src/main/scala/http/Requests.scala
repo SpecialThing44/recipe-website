@@ -1,11 +1,10 @@
 package http
 
-import api.Querying
+import api.{Persisting, Querying}
 import context.{ApiContext, CookingApi}
 import http.authentication.UserAuthentication
 import io.circe.Decoder
 import io.circe.jawn.decode
-import persistence.Persisting
 import play.api.libs.json.JsValue
 import play.api.mvc.Results.Ok
 import play.api.mvc.{Request, Result, Results}
@@ -42,7 +41,7 @@ object Requests {
   ): Result = {
     val maybeUser = UserAuthentication.getMaybeUser(request, cookingApi)
     val maybeEntity: ZIO[ApiContext, Throwable, Entity] = for {
-      entity <- entityApi.get(id)
+      entity <- entityApi.getById(id)
     } yield entity
     val response = maybeEntity.fold(
       error => ErrorMapping.mapCustomErrorsToHttp(error),
@@ -82,12 +81,12 @@ object Requests {
       id: java.util.UUID,
       request: Request[JsValue],
       cookingApi: CookingApi,
-      entityApi: Persisting[Entity] with Querying[Entity]
+      entityApi: Persisting[Entity] & Querying[Entity]
   ): Result = {
     val maybeUser = UserAuthentication.getMaybeUser(request, cookingApi)
     val maybeUpdatedEntity: ZIO[ApiContext, Throwable, Entity] = for {
       newEntity <- ZIO.fromEither(decode[Entity](request.body.toString))
-      originalEntity <- entityApi.get(id)
+      originalEntity <- entityApi.getById(id)
       updatedEntity <- entityApi.update(originalEntity, newEntity)
     } yield updatedEntity
     val response = maybeUpdatedEntity.fold(

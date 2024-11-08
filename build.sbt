@@ -1,5 +1,5 @@
 import ProjectExtensions.ProjectOps
-import Libraries.{anorm, *}
+import Libraries.*
 
 lazy val root = project
   .in(file("."))
@@ -32,6 +32,7 @@ lazy val backend =
       scalacOptions --= Seq("-Werror"),
       scalacOptions --= Seq("-Xfatal-warnings"),
       libraryDependencies ++= Seq(
+        jdbc,
         circeCore,
         circeGeneric,
         circeParser,
@@ -41,13 +42,12 @@ lazy val backend =
         play,
         playJson,
         playStreams,
-        postgresql,
-        anorm,
         guice,
         guiceGoogle,
         GoogleHttpClient,
         GoogleHttpClientGson,
         zio,
         zioCats,
+        neo4jDriver,
       )
     )

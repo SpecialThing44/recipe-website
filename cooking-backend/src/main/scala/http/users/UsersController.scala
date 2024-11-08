@@ -6,7 +6,7 @@ import domain.people.users.User
 import http.Requests
 import io.circe.Decoder
 import play.api.libs.json.JsValue
-import play.api.mvc._
+import play.api.mvc.*
 
 @Singleton
 class UsersController @Inject() (

@@ -5,8 +5,8 @@ import domain.food.ingredients.Ingredient
 import domain.food.recipes.Recipe
 import http.Requests
 import io.circe.Decoder
-import play.api.libs.json._
-import play.api.mvc._
+import play.api.libs.json.*
+import play.api.mvc.*
 
 @Singleton
 class RecipesController @Inject() (

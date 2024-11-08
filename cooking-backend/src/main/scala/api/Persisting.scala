@@ -1,7 +1,9 @@
-package persistence
+package api
 
 import context.ApiContext
 import zio.ZIO
+
+import java.util.UUID
 
 trait Persisting[Entity] {
   def create(entity: Entity): ZIO[ApiContext, Throwable, Entity]
@@ -9,4 +11,5 @@ trait Persisting[Entity] {
       entity: Entity,
       originalEntity: Entity
   ): ZIO[ApiContext, Throwable, Entity]
+  def delete(id: UUID): ZIO[ApiContext, Throwable, Entity]
 }

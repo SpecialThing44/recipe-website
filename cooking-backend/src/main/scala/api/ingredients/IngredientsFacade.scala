@@ -3,7 +3,7 @@ package api.ingredients
 import com.google.inject.Inject
 import context.ApiContext
 import domain.food.ingredients.Ingredient
-import persistence.recipes.Ingredients
+import persistence.ingredients.Ingredients
 import play.api.libs.json.JsValue
 import zio.ZIO
 
@@ -22,6 +22,8 @@ class IngredientsFacade @Inject() (
       originalEntity: Ingredient
   ): ZIO[ApiContext, Throwable, Ingredient] = ???
 
+  override def delete(id: UUID): ZIO[ApiContext, Throwable, Ingredient] = ???
+
   override def list(
       query: JsValue
   ): ZIO[ApiContext, Throwable, Seq[Ingredient]] = ???
@@ -29,5 +31,5 @@ class IngredientsFacade @Inject() (
   override def find(query: JsValue): ZIO[ApiContext, Throwable, Ingredient] =
     ???
 
-  override def get(id: UUID): ZIO[ApiContext, Throwable, Ingredient] = ???
+  override def getById(id: UUID): ZIO[ApiContext, Throwable, Ingredient] = ???
 }
