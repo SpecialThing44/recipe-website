@@ -7,7 +7,7 @@ import domain.food.recipes.Recipe
 import domain.people.users.User
 import io.circe.jawn.decode
 import io.circe.syntax.EncoderOps
-import org.neo4j.driver.v1.{AuthTokens, Driver, GraphDatabase, Session}
+import org.neo4j.driver.{AuthTokens, Driver, GraphDatabase, Session}
 import play.api.Configuration
 import play.api.libs.json.JsValue
 import zio.ZIO

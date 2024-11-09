@@ -24,7 +24,7 @@ class RecipesController @Inject() (
     Requests.post[Recipe](request, cookingApi, cookingApi.recipes)
   }
 
-  def get(id: java.util.UUID): Action[JsValue] = Action(parse.json) { request =>
+  def get(id: java.util.UUID): Action[AnyContent] = Action { request =>
     Requests.get[Recipe](id, request, cookingApi, cookingApi.recipes)
   }
 

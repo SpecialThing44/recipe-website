@@ -13,13 +13,16 @@ object UserAuthentication {
       cookingApi: CookingApi
   ): Option[User] = {
     val maybeUserZio = for {
-      auth <- ZIO
-        .fromOption(request.headers.get("Authorization"))
-        .orElseFail(new Throwable("Authorization header missing"))
-      bearerToken = OAuth2BearerToken(auth)
-      maybeUser <- cookingApi.users.authenticate(bearerToken)
+      authHeader <- ZIO.succeed(request.headers.get("Authorization"))
+      maybeUser <- authHeader match {
+        case Some(auth) =>
+          val bearerToken = OAuth2BearerToken(auth)
+          cookingApi.users.authenticate(bearerToken)
+        case None => ZIO.succeed(None)
+      }
     } yield maybeUser
-    ApiRunner.runResponse[ApiContext, Throwable, Option[User]](
+
+    ApiRunner.runResponse[ApiContext, Serializable, Option[User]](
       maybeUserZio,
       cookingApi,
       None

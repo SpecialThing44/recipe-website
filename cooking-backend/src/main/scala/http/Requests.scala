@@ -7,7 +7,7 @@ import io.circe.Decoder
 import io.circe.jawn.decode
 import play.api.libs.json.JsValue
 import play.api.mvc.Results.Ok
-import play.api.mvc.{Request, Result, Results}
+import play.api.mvc.{AnyContent, Request, Result, Results}
 import zio.ZIO
 
 import java.util.UUID
@@ -35,7 +35,7 @@ object Requests {
 
   def get[Entity](
       id: UUID,
-      request: Request[JsValue],
+      request: Request[AnyContent],
       cookingApi: CookingApi,
       entityApi: Querying[Entity]
   ): Result = {

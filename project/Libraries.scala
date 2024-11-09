@@ -10,7 +10,7 @@ object Libraries {
     val ZioVersion = "2.1.9"
     val ZioCatsVersion = "23.1.0.3"
     val circeVersion = "0.14.10"
-    val neo4jDriverVersion = "1.7.5"
+    val neo4jDriverVersion = "5.26.1"
 
   }
   import Versions.*
