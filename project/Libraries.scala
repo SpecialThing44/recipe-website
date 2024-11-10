@@ -11,6 +11,7 @@ object Libraries {
     val ZioCatsVersion = "23.1.0.3"
     val circeVersion = "0.14.10"
     val neo4jDriverVersion = "5.26.1"
+    val jwtVersion = "10.0.1"
 
   }
   import Versions.*
@@ -39,5 +40,7 @@ object Libraries {
 
   val neo4jDriver =
     "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
+
+  val jwtScala = "com.github.jwt-scala" %% "jwt-circe" % jwtVersion
 
 }

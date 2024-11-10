@@ -1,27 +1,30 @@
 package api.users
 
 import com.google.inject.Inject
-import context.ApiContext
-import domain.people.users.User
-import org.apache.pekko.http.scaladsl.model.headers.OAuth2BearerToken
+import context.{ApiContext, CookingApi}
+import domain.people.users.{User, UserInput}
 import persistence.users.Users
 import play.api.libs.json.JsValue
+import play.api.mvc.Request
 import zio.ZIO
 
 import java.util.UUID
 
 class UserFacade @Inject() (
-    val persistence: Users
+    persistence: Users,
+    authenticationInteractor: AuthenticationInteractor,
 ) extends UserApi {
 
   override def create(
-      entity: User
-  ): ZIO[ApiContext, Throwable, User] = ???
+      entity: UserInput
+  ): ZIO[ApiContext, Throwable, User] =
+    persistence.create(UserAdapter.adapt(entity))
 
   override def update(
-      entity: User,
+      entity: UserInput,
       originalEntity: User
-  ): ZIO[ApiContext, Throwable, User] = ???
+  ): ZIO[ApiContext, Throwable, User] =
+    persistence.update(UserAdapter.adapt(entity), originalEntity)
 
   override def delete(id: UUID): ZIO[ApiContext, Throwable, User] = ???
 
@@ -35,7 +38,24 @@ class UserFacade @Inject() (
   override def getById(id: UUID): ZIO[ApiContext, Throwable, User] = ???
 
   override def authenticate(
-      bearerToken: OAuth2BearerToken
-  ): ZIO[ApiContext, Throwable, Option[User]] = ???
+      bearerToken: Option[String]
+  ): ZIO[ApiContext, Throwable, Option[User]] =
+    authenticationInteractor.getMaybeUser(bearerToken)
 
+  override def logout(
+      request: Request[?]
+  ): ZIO[ApiContext, Throwable, Boolean] =
+    authenticationInteractor.logout(request)
+
+  override def login(
+      email: String,
+      password: String,
+  ): ZIO[ApiContext, Throwable, Option[String]] =
+    authenticationInteractor.login(email, password)
+
+  override def signup(
+      user: UserInput,
+      cookingApi: CookingApi
+  ): ZIO[ApiContext, Throwable, String] =
+    authenticationInteractor.signup(UserAdapter.adapt(user))
 }

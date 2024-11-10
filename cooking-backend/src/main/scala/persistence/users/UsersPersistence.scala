@@ -3,7 +3,6 @@ package persistence.users
 import com.google.inject.Inject
 import context.ApiContext
 import domain.people.users.User
-import io.circe.syntax.EncoderOps
 import org.neo4j.driver.{AuthTokens, Driver, GraphDatabase, Session}
 import play.api.Configuration
 import play.api.libs.json.JsValue
@@ -36,14 +35,10 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
                |  id: '${entity.id}',
                |  name: '${entity.name}',
                |  email: '${entity.email}',
-               |  recipes: '${entity.recipes.map(_.id).asJson.noSpaces}',
-               |  saved_recipes: '${entity.savedRecipes
-                .map(_.id)
-                .asJson
-                .noSpaces}',
+               |  saved_recipes: '${Seq.empty}',
                |  country_of_origin: '${entity.countryOfOrigin.getOrElse("")}',
-               |  created_on: '${entity.createdOn.getOrElse(Instant.now())}',
-               |  updated_on: '${entity.updatedOn.getOrElse(Instant.now())}'
+               |  created_on: '${entity.createdOn}',
+               |  updated_on: '${entity.updatedOn}'
                |})
                |RETURN u
                |""".stripMargin
@@ -68,20 +63,12 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
                |MATCH (u:User {id: '${entity.id}'})
                |SET u.name = '${entity.name}',
                |    u.email = '${entity.email}',
-               |    u.recipes = '${entity.recipes.map(_.id).asJson.noSpaces}',
-               |    u.saved_recipes = '${entity.savedRecipes
-                .map(_.id)
-                .asJson
-                .noSpaces}',
+               |    u.saved_recipes = '${Seq.empty}',
                |    u.country_of_origin = '${entity.countryOfOrigin.getOrElse(
                 ""
               )}',
-               |    u.created_on = '${entity.createdOn.getOrElse(
-                Instant.now()
-              )}',
-               |    u.updated_on = '${entity.updatedOn.getOrElse(
-                Instant.now()
-              )}'
+               |    u.created_on = '${entity.createdOn}',
+               |    u.updated_on = '${entity.updatedOn}'
                |RETURN u
                |""".stripMargin
           session.run(query)
@@ -126,23 +113,14 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
           if (result.hasNext) {
             val record = result.next().get("u").asMap()
             User(
-              id = UUID.fromString(record.get("id").toString),
+              id = Some(UUID.fromString(record.get("id").toString)),
               name = record.get("name").toString,
               email = record.get("email").toString,
-//              recipes = decode[Seq[UUID]](record.get("recipes").toString)
-//                .getOrElse(Seq.empty)
-//                .map(id => Recipe.empty().copy(id = id)),
-//              savedRecipes = decode[Seq[UUID]](
-//                record.get("saved_recipes").toString
-//              ).getOrElse(Seq.empty).map(id => Recipe.empty().copy(id = id)),
-              recipes = Seq.empty,
               savedRecipes = Seq.empty,
               countryOfOrigin =
                 Option(record.get("country_of_origin").toString),
-              createdOn =
-                Option(Instant.parse(record.get("created_on").toString)),
-              updatedOn =
-                Option(Instant.parse(record.get("updated_on").toString))
+              createdOn = Instant.parse(record.get("created_on").toString),
+              updatedOn = Instant.parse(record.get("updated_on").toString)
             )
           } else {
             throw new NoSuchElementException(s"User with id $id not found")
@@ -153,4 +131,8 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
       }
     }
 
+  override def authenticate(
+      email: String,
+      password: String
+  ): ZIO[ApiContext, Throwable, Option[User]] = ???
 }

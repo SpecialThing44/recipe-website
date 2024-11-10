@@ -53,8 +53,8 @@ class RecipePersistence @Inject() (config: Configuration) extends Recipes {
                |  wiki_link: '${entity.wikiLink}',
                |  video_link: '${entity.videoLink}',
                |  instructions: '${entity.instructions}',
-               |  created_on: '${entity.createdOn.getOrElse(Instant.now())}',
-               |  updated_on: '${entity.updatedOn.getOrElse(Instant.now())}'
+               |  created_on: '${entity.createdOn}',
+               |  updated_on: '${entity.updatedOn}'
                |})
                |RETURN r
                |""".stripMargin
@@ -94,12 +94,8 @@ class RecipePersistence @Inject() (config: Configuration) extends Recipes {
                |    r.wiki_link = '${entity.wikiLink}',
                |    r.video_link = '${entity.videoLink}',
                |    r.instructions = '${entity.instructions}',
-               |    r.created_on = '${entity.createdOn.getOrElse(
-                Instant.now()
-              )}',
-               |    r.updated_on = '${entity.updatedOn.getOrElse(
-                Instant.now()
-              )}'
+               |    r.created_on = '${entity.createdOn}',
+               |    r.updated_on = '${entity.updatedOn}'
                |RETURN r
                |""".stripMargin
           session.run(query)
@@ -144,12 +140,12 @@ class RecipePersistence @Inject() (config: Configuration) extends Recipes {
           if (result.hasNext) {
             val record = result.next().get("r").asMap()
             Recipe(
-              id = UUID.fromString(record.get("id").toString),
+              id = Some(UUID.fromString(record.get("id").toString)),
               name = record.get("name").toString,
               user = User
                 .empty()
                 .copy(id =
-                  UUID.fromString(record.get("user_id").toString)
+                  Some(UUID.fromString(record.get("user_id").toString))
                 ), // Assuming you have a way to fetch the user by ID
               aliases = decode[Seq[String]](record.get("aliases").toString)
                 .getOrElse(Seq.empty),
@@ -169,10 +165,8 @@ class RecipePersistence @Inject() (config: Configuration) extends Recipes {
               wikiLink = record.get("wiki_link").toString,
               videoLink = record.get("video_link").toString,
               instructions = record.get("instructions").toString,
-              createdOn =
-                Option(Instant.parse(record.get("created_on").toString)),
-              updatedOn =
-                Option(Instant.parse(record.get("updated_on").toString))
+              createdOn = Instant.parse(record.get("created_on").toString),
+              updatedOn = Instant.parse(record.get("updated_on").toString)
             )
           } else {
             throw new NoSuchElementException(s"Recipe with id $id not found")

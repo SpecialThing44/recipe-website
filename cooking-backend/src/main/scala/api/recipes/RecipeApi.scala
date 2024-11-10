@@ -1,7 +1,7 @@
 package api.recipes
 import api.{Persisting, Querying}
 import com.google.inject.ImplementedBy
-import domain.food.recipes.Recipe
+import domain.food.recipes.{Recipe, RecipeInput}
 
 @ImplementedBy(classOf[RecipeFacade])
-trait RecipeApi extends Persisting[Recipe] with Querying[Recipe]
+trait RecipeApi extends Persisting[Recipe, RecipeInput] with Querying[Recipe]

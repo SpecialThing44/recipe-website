@@ -1,9 +1,8 @@
 package api.recipes
 
-import api.{Persisting, Querying}
 import com.google.inject.Inject
 import context.ApiContext
-import domain.food.recipes.Recipe
+import domain.food.recipes.{Recipe, RecipeInput}
 import persistence.recipes.Recipes
 import play.api.libs.json.JsValue
 import zio.ZIO
@@ -15,13 +14,15 @@ class RecipeFacade @Inject() (
 ) extends RecipeApi {
 
   override def create(
-      entity: Recipe
-  ): ZIO[ApiContext, Throwable, Recipe] = persistence.create(entity)
+      entity: RecipeInput
+  ): ZIO[ApiContext, Throwable, Recipe] =
+    persistence.create(RecipeAdapter.adapt(entity))
 
   override def update(
-      entity: Recipe,
+      entity: RecipeInput,
       originalEntity: Recipe
-  ): ZIO[ApiContext, Throwable, Recipe] = ???
+  ): ZIO[ApiContext, Throwable, Recipe] =
+    persistence.update(RecipeAdapter.adapt(entity), originalEntity)
 
   override def delete(id: UUID): ZIO[ApiContext, Throwable, Recipe] = ???
 

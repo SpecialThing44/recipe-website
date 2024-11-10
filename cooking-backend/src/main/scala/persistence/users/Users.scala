@@ -1,8 +1,16 @@
 package persistence.users
 
-import api.{Persisting, Querying}
+import api.Querying
 import com.google.inject.ImplementedBy
+import context.ApiContext
 import domain.people.users.User
+import persistence.DbPersisting
+import zio.ZIO
 
 @ImplementedBy(classOf[UsersPersistence])
-trait Users extends Persisting[User] with Querying[User]
+trait Users extends DbPersisting[User] with Querying[User] {
+  def authenticate(
+      email: String,
+      password: String
+  ): ZIO[ApiContext, Throwable, Option[User]]
+}

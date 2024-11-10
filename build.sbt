@@ -49,5 +49,6 @@ lazy val backend =
         zio,
         zioCats,
         neo4jDriver,
+        jwtScala
       )
     )

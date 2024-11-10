@@ -1,7 +1,7 @@
 GET         /                                      http.healthcheck.HealthCheckController.check()
 GET         /health                                http.healthcheck.HealthCheckController.check()
 
-POST        /signup                                http.healthcheck.HealthCheckController.check()
+POST        /signup                                http.authentication.AuthenticationController.signup()
 POST        /login                                 http.healthcheck.HealthCheckController.check()
 POST        /logout                                http.healthcheck.HealthCheckController.check()
 

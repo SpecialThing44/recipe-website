@@ -2,7 +2,7 @@ package http
 
 import api.{Persisting, Querying}
 import context.{ApiContext, CookingApi}
-import http.authentication.UserAuthentication
+import domain.people.users.User
 import io.circe.Decoder
 import io.circe.jawn.decode
 import play.api.libs.json.JsValue
@@ -18,7 +18,7 @@ object Requests {
       cookingApi: CookingApi,
       entityApi: Querying[Entity]
   ): Result = {
-    val maybeUser = UserAuthentication.getMaybeUser(request, cookingApi)
+    val maybeUser = extractUser(request, cookingApi)
     val entities: ZIO[ApiContext, Throwable, Seq[Entity]] = for {
       entities <- entityApi.list(request.body)
     } yield entities
@@ -39,7 +39,7 @@ object Requests {
       cookingApi: CookingApi,
       entityApi: Querying[Entity]
   ): Result = {
-    val maybeUser = UserAuthentication.getMaybeUser(request, cookingApi)
+    val maybeUser = extractUser(request, cookingApi)
     val maybeEntity: ZIO[ApiContext, Throwable, Entity] = for {
       entity <- entityApi.getById(id)
     } yield entity
@@ -54,15 +54,15 @@ object Requests {
     )
   }
 
-  def post[Entity: Decoder](
+  def post[Entity: Decoder, EntityInput: Decoder](
       request: Request[JsValue],
       cookingApi: CookingApi,
-      entityApi: Persisting[Entity]
+      entityApi: Persisting[Entity, EntityInput]
   ): Result = {
-    val maybeUser = UserAuthentication.getMaybeUser(request, cookingApi)
+    val maybeUser = extractUser(request, cookingApi)
     val createdEntity: ZIO[ApiContext, Throwable, Entity] = for {
       newEntity <- ZIO.fromEither(
-        decode[Entity](request.body.toString)
+        decode[EntityInput](request.body.toString)
       )
       createdEntity <- entityApi.create(newEntity)
     } yield createdEntity
@@ -77,17 +77,17 @@ object Requests {
     )
   }
 
-  def put[Entity: Decoder](
+  def put[Entity: Decoder, EntityInput: Decoder](
       id: java.util.UUID,
       request: Request[JsValue],
       cookingApi: CookingApi,
-      entityApi: Persisting[Entity] & Querying[Entity]
+      entityApi: Persisting[Entity, EntityInput] & Querying[Entity]
   ): Result = {
-    val maybeUser = UserAuthentication.getMaybeUser(request, cookingApi)
+    val maybeUser = extractUser(request, cookingApi)
     val maybeUpdatedEntity: ZIO[ApiContext, Throwable, Entity] = for {
-      newEntity <- ZIO.fromEither(decode[Entity](request.body.toString))
+      newEntity <- ZIO.fromEither(decode[EntityInput](request.body.toString))
       originalEntity <- entityApi.getById(id)
-      updatedEntity <- entityApi.update(originalEntity, newEntity)
+      updatedEntity <- entityApi.update(newEntity, originalEntity)
     } yield updatedEntity
     val response = maybeUpdatedEntity.fold(
       error => ErrorMapping.mapCustomErrorsToHttp(error),
@@ -97,6 +97,18 @@ object Requests {
       response,
       cookingApi,
       maybeUser
+    )
+  }
+
+  private def extractUser(
+      request: Request[Any],
+      cookingApi: CookingApi
+  ): Option[User] = {
+    val authHeader = request.headers.get("Authorization")
+    ApiRunner.runResponse[ApiContext, Throwable, Option[User]](
+      cookingApi.users.authenticate(authHeader),
+      cookingApi,
+      None
     )
   }
 

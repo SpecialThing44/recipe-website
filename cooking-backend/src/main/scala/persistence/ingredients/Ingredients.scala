@@ -1,8 +1,9 @@
 package persistence.ingredients
 
-import api.{Persisting, Querying}
+import api.Querying
 import com.google.inject.ImplementedBy
 import domain.food.ingredients.Ingredient
+import persistence.DbPersisting
 
 @ImplementedBy(classOf[IngredientsPersistence])
-trait Ingredients extends Persisting[Ingredient] with Querying[Ingredient]
+trait Ingredients extends DbPersisting[Ingredient] with Querying[Ingredient]
