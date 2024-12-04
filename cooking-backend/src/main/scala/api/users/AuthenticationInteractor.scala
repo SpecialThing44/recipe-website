@@ -17,7 +17,7 @@ import scala.util.{Failure, Success, Try}
 class AuthenticationInteractor @Inject() (
     persistence: Users,
 ) {
-  private val secretKey = ""
+  private val secretKey = "secrets"
 
   def getMaybeUser(
       bearerToken: Option[String],
