@@ -4,9 +4,8 @@ import api.{Persisting, Querying}
 import com.google.inject.ImplementedBy
 import context.{ApiContext, CookingApi}
 import domain.people.users.{User, UserInput}
-import org.apache.pekko.http.scaladsl.model.headers.OAuth2BearerToken
 import play.api.mvc.Request
-import zio.{Task, ZIO}
+import zio.ZIO
 
 @ImplementedBy(classOf[UserFacade])
 trait UserApi extends Persisting[User, UserInput] with Querying[User] {

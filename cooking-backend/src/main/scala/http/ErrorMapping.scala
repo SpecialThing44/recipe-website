@@ -1,7 +1,7 @@
 package http
 
 import play.api.mvc.Result
-import play.api.mvc.Results.{Forbidden, InternalServerError, Ok}
+import play.api.mvc.Results.{Forbidden, InternalServerError}
 import domain.types._
 
 object ErrorMapping {

@@ -11,6 +11,5 @@ import zio.ZIO
 trait Users extends DbPersisting[User] with Querying[User] {
   def authenticate(
       email: String,
-      password: String
-  ): ZIO[ApiContext, Throwable, Option[User]]
+  ): ZIO[ApiContext, Throwable, User]
 }

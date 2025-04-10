@@ -12,6 +12,8 @@ object Libraries {
     val circeVersion = "0.14.10"
     val neo4jDriverVersion = "5.26.1"
     val jwtVersion = "10.0.1"
+    val bcryptVersion = "4.3.1"
+    val pbkdf2Version = "0.7.1"
 
   }
   import Versions.*
@@ -42,5 +44,5 @@ object Libraries {
     "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
 
   val jwtScala = "com.github.jwt-scala" %% "jwt-circe" % jwtVersion
-
+  val pbkdf2 = "io.github.nremond" %% "pbkdf2-scala" % "0.7.0"
 }

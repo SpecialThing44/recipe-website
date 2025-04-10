@@ -24,7 +24,17 @@ class UserFacade @Inject() (
       entity: UserInput,
       originalEntity: User
   ): ZIO[ApiContext, Throwable, User] =
-    persistence.update(UserAdapter.adapt(entity), originalEntity)
+    for {
+      context <- ZIO.service[ApiContext]
+      _ <- authenticationInteractor.ensureAuthenticated(
+        context.applicationContext.user,
+        originalEntity.id
+      )
+      updatedUser <- persistence.update(
+        UserAdapter.adaptUpdate(entity, originalEntity),
+        originalEntity
+      )
+    } yield updatedUser
 
   override def delete(id: UUID): ZIO[ApiContext, Throwable, User] = ???
 
@@ -35,7 +45,8 @@ class UserFacade @Inject() (
   override def find(query: JsValue): ZIO[ApiContext, Throwable, User] =
     ???
 
-  override def getById(id: UUID): ZIO[ApiContext, Throwable, User] = ???
+  override def getById(id: UUID): ZIO[ApiContext, Throwable, User] =
+    persistence.getById(id)
 
   override def authenticate(
       bearerToken: Option[String]

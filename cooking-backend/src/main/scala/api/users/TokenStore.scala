@@ -6,7 +6,7 @@ import scala.collection.concurrent.TrieMap
 object TokenStore {
   private val blacklistedTokens = TrieMap[String, Instant]()
 
-  def blacklistToken(token: String, expiration: Instant): Unit = {
+  def blacklistToken(token: String, expiration: Instant): Option[Instant] = {
     blacklistedTokens.put(token, expiration)
   }
 

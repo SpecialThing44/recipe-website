@@ -10,6 +10,7 @@ import java.util.UUID
 case class User(
     name: String,
     email: String,
+    password: String,
     savedRecipes: Seq[UUID] = Seq.empty,
     countryOfOrigin: Option[String] = None,
     createdOn: Instant,
@@ -20,6 +21,7 @@ case class User(
 case class UserInput(
     name: String,
     email: String,
+    password: String,
     countryOfOrigin: Option[String] = None,
 )
 
@@ -31,7 +33,7 @@ object User {
 
   def empty(): User = {
     val now = Instant.now
-    User("", "", Seq.empty, None, now, now, Some(UUID.randomUUID()))
+    User("", "", "", Seq.empty, None, now, now, Some(UUID.randomUUID()))
   }
 }
 
