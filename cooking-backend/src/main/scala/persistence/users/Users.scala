@@ -12,4 +12,6 @@ trait Users extends DbPersisting[User] with Querying[User] {
   def authenticate(
       email: String,
   ): ZIO[ApiContext, Throwable, User]
+
+  def getByIdWithPassword(id: java.util.UUID): ZIO[ApiContext, Throwable, User]
 }

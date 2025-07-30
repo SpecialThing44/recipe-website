@@ -55,17 +55,20 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
         val session: Session = driver.session()
         try {
           val properties = UserConverter
-            .convert(entity)
-            .replace(":", "=")
-          println(properties)
+            .convertForUpdate("u", entity)
           val query =
             s"""
                |MATCH (u:User {id: '${entity.id}'})
                |SET $properties
                |RETURN u
                |""".stripMargin
-          session.run(query)
-          entity
+          val result = session.run(query)
+          if (result.hasNext) {
+            val record = result.next().get("u").asMap()
+            UserConverter.toDomain(record)
+          } else {
+            throw NoSuchEntityError(s"Update for user with id ${entity.id} has failed for some reason")
+          }
         } finally {
           session.close()
         }
@@ -135,6 +138,29 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
             throw NoSuchEntityError(
               s"User with email $email not found"
             )
+          }
+        } finally {
+          session.close()
+        }
+      }
+    }
+
+  override def getByIdWithPassword(id: UUID): ZIO[ApiContext, Throwable, User] =
+    ZIO.fromTry {
+      Try {
+        val session: Session = driver.session()
+        try {
+          val query =
+            s"""
+               |MATCH (u:User {id: '$id'})
+               |RETURN u
+               |""".stripMargin
+          val result = session.run(query)
+          if (result.hasNext) {
+            val record = result.next().get("u").asMap()
+            UserConverter.toAuthDomain(record)
+          } else {
+            throw NoSuchEntityError(s"User with id $id not found")
           }
         } finally {
           session.close()

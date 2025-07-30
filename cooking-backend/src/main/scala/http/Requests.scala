@@ -3,6 +3,7 @@ package http
 import api.{Persisting, Querying}
 import context.{ApiContext, CookingApi}
 import domain.people.users.User
+import persistence.users.Users
 import io.circe.{Decoder, Encoder}
 import io.circe.jawn.decode
 import io.circe.syntax.EncoderOps
@@ -91,7 +92,12 @@ object Requests {
       newEntity <- ZIO.fromEither(
         decode[EntityUpdateInput](request.body.toString)
       )
-      originalEntity <- entityApi.getById(id)
+      originalEntity <- entityApi match {
+        case userApi: persistence.users.Users =>
+          userApi.getByIdWithPassword(id).asInstanceOf[ZIO[ApiContext, Throwable, Entity]]
+        case _ =>
+          entityApi.getById(id)
+      }
       updatedEntity <- entityApi.update(newEntity, originalEntity)
     } yield updatedEntity
     val response = maybeUpdatedEntity.fold(
