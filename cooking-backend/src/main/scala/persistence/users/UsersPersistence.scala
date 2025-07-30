@@ -58,16 +58,19 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
             .convertForUpdate("u", entity)
           val query =
             s"""
-               |MATCH (u:User {id: '${entity.id}'})
+               |MATCH (u:User {id: '${entity.idOrError}'})
                |SET $properties
                |RETURN u
                |""".stripMargin
           val result = session.run(query)
+          println(result.hasNext)
           if (result.hasNext) {
             val record = result.next().get("u").asMap()
             UserConverter.toDomain(record)
           } else {
-            throw NoSuchEntityError(s"Update for user with id ${entity.id} has failed for some reason")
+            throw NoSuchEntityError(
+              s"Update for user with id ${entity.id} has failed for some reason"
+            )
           }
         } finally {
           session.close()

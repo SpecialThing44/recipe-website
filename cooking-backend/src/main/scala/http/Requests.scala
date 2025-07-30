@@ -86,7 +86,7 @@ object Requests {
       entityApi: Persisting[Entity, EntityInput, EntityUpdateInput] & Querying[
         Entity
       ]
-  ): Result = {
+  )(implicit encoder: Encoder[Entity]): Result = {
     val maybeUser = extractUser(request, cookingApi)
     val maybeUpdatedEntity: ZIO[ApiContext, Throwable, Entity] = for {
       newEntity <- ZIO.fromEither(
@@ -94,7 +94,9 @@ object Requests {
       )
       originalEntity <- entityApi match {
         case userApi: persistence.users.Users =>
-          userApi.getByIdWithPassword(id).asInstanceOf[ZIO[ApiContext, Throwable, Entity]]
+          userApi
+            .getByIdWithPassword(id)
+            .asInstanceOf[ZIO[ApiContext, Throwable, Entity]]
         case _ =>
           entityApi.getById(id)
       }
@@ -102,7 +104,10 @@ object Requests {
     } yield updatedEntity
     val response = maybeUpdatedEntity.fold(
       error => ErrorMapping.mapCustomErrorsToHttp(error),
-      result => Results.Created(s"{ \"ID\": $id, \"Body\": $result }")
+      result =>
+        Results.Created(
+          s"{ \"ID\": \"$id\", \"Body\": ${Json.parse(result.asJson.noSpaces)}  }"
+        )
     )
     ApiRunner.runResponseSafely[ApiContext](
       response,
