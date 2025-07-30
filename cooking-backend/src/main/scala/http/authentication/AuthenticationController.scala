@@ -3,7 +3,8 @@ package http.authentication
 import com.google.inject.{Inject, Singleton}
 import context.CookingApi
 import domain.people.users.{LoginInput, UserInput}
-import http.ApiRunner
+import http.ErrorMapping.{errorJson, messageJson}
+import http.{ApiRunner, ErrorMapping}
 import play.api.mvc.{
   AbstractController,
   Action,
@@ -35,16 +36,21 @@ class AuthenticationController @Inject() (
   def login(): Action[JsValue] = Action(parse.json) { request =>
     decode[LoginInput](request.body.toString()) match {
       case Right(loginInput) =>
-        val maybeToken = ApiRunner.runResponse(
-          cookingApi.users.login(loginInput.email, loginInput.password),
-          cookingApi,
-          None
-        )
-        maybeToken match {
-          case Some(token) => Ok(Json.obj("token" -> token))
-          case None        => Unauthorized("Invalid credentials")
+        try {
+          val maybeToken = ApiRunner.runResponse(
+            cookingApi.users.login(loginInput.email, loginInput.password),
+            cookingApi,
+            None
+          )
+          maybeToken match {
+            case Some(token) => Ok(Json.obj("token" -> token))
+            case None        => Unauthorized(errorJson("Invalid credentials"))
+          }
+        } catch {
+          case e: Throwable =>
+            ErrorMapping.mapCustomErrorsToHttp(e)
         }
-      case _ => BadRequest(Json.obj("error" -> "Invalid input"))
+      case _ => BadRequest(errorJson("Invalid input"))
     }
   }
 
@@ -55,7 +61,7 @@ class AuthenticationController @Inject() (
         cookingApi,
         None
       )
-    if (result) Ok("Logged out successfully")
-    else Unauthorized("Invalid token")
+    if (result) Ok(messageJson("Logged out successfully"))
+    else Unauthorized(errorJson("Invalid token"))
   }
 }

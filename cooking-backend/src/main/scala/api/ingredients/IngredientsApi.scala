@@ -6,5 +6,5 @@ import domain.food.ingredients.Ingredient
 
 @ImplementedBy(classOf[IngredientsFacade])
 trait IngredientsApi
-    extends Persisting[Ingredient, Ingredient]
+    extends Persisting[Ingredient, Ingredient, Ingredient]
     with Querying[Ingredient]

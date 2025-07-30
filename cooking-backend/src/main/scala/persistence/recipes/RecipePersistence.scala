@@ -5,6 +5,7 @@ import context.ApiContext
 import domain.food.ingredients.InstructionIngredient
 import domain.food.recipes.Recipe
 import domain.people.users.User
+import domain.types.NoSuchEntityError
 import io.circe.jawn.decode
 import io.circe.syntax.EncoderOps
 import org.neo4j.driver.{AuthTokens, Driver, GraphDatabase, Session}
@@ -169,7 +170,7 @@ class RecipePersistence @Inject() (config: Configuration) extends Recipes {
               updatedOn = Instant.parse(record.get("updated_on").toString)
             )
           } else {
-            throw new NoSuchElementException(s"Recipe with id $id not found")
+            throw NoSuchEntityError(s"Recipe with id $id not found")
           }
         } finally {
           session.close()

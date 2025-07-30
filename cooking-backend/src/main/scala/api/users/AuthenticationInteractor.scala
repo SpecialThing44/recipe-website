@@ -3,7 +3,7 @@ package api.users
 import com.google.inject.Inject
 import context.ApiContext
 import domain.people.users.User
-import domain.types.AuthenticationError
+import domain.types.{AuthenticationError, Fault}
 import io.circe.jawn.decode
 import io.circe.syntax.*
 import io.github.nremond.SecureHash
@@ -29,28 +29,22 @@ class AuthenticationInteractor @Inject() (
       case Some(token) if !TokenStore.isTokenBlacklisted(token) =>
         ZIO
           .fromTry(
-            Try(Jwt.decode(token.trim, secretKey, Seq(JwtAlgorithm.HS256)))
+            Jwt.decode(
+              token.trim.stripPrefix("Bearer "),
+              secretKey,
+              Seq(JwtAlgorithm.HS256)
+            )
           )
           .flatMap {
-            case claim if claim.get.isValid(Clock.systemUTC()) =>
-              decode[User](claim.get.content) match {
+            case claim if claim.isValid(Clock.systemUTC()) =>
+              decode[User](claim.content) match {
                 case Right(user) => ZIO.succeed(Some(user))
                 case Left(error) =>
-                  ZIO.fail(
-                    new IllegalArgumentException(
-                      s"Failed to decode user: ${error.getMessage}"
-                    )
-                  )
+                  ZIO.succeed(None)
               }
             case _ => ZIO.succeed(None) // Token is expired
           }
-          .catchAll(error =>
-            ZIO.fail(
-              new IllegalArgumentException(
-                s"Failed to decode token: ${error.getMessage}"
-              )
-            )
-          )
+          .catchAll(error => ZIO.succeed(None))
       case _ => ZIO.succeed(None)
     }
 
@@ -119,16 +113,37 @@ class AuthenticationInteractor @Inject() (
       originalEntityId: Option[UUID]
   ): ZIO[Any, AuthenticationError, Unit] = {
     for {
-      _ <- ensureIsLoggedIn(maybeUser)
-      _ <- ZIO
-        .fail(AuthenticationError("Cannot update if not logged in"))
-        .when(maybeUser.map(_.id) != originalEntityId)
+      user <- ensureIsLoggedIn(maybeUser)
+      _ <- ensureUUIDMatch(originalEntityId, user.id)
     } yield ()
   }
 
-  def ensureIsLoggedIn(
+  private def ensureUUIDMatch(
+      originalEntityId: Option[UUID],
+      loggedInUserId: Option[UUID]
+  ) = (originalEntityId, loggedInUserId) match {
+    case (Some(originalId), Some(userId)) =>
+      if (originalId == userId) ZIO.succeed(())
+      else
+        ZIO.fail(
+          AuthenticationError(
+            "Cannot update other users or recipes belonging to them"
+          )
+        )
+    case (_, _) =>
+      ZIO.fail(
+        AuthenticationError(
+          "Cannot update other users or recipes belonging to them"
+        )
+      )
+  }
+
+  private def ensureIsLoggedIn(
       maybeUser: Option[User],
-  ): ZIO[Any, AuthenticationError, Option[Nothing]] = ZIO
-    .fail(AuthenticationError("Cannot update if not logged in"))
-    .when(maybeUser.isEmpty)
+  ): ZIO[Any, AuthenticationError, User] =
+    maybeUser match {
+      case Some(user) => ZIO.succeed(user)
+      case None =>
+        ZIO.fail(AuthenticationError("Cannot update if not logged in"))
+    }
 }

@@ -2,7 +2,8 @@ package api.users
 
 import com.google.inject.Inject
 import context.{ApiContext, CookingApi}
-import domain.people.users.{User, UserInput}
+import domain.people.users.{User, UserInput, UserUpdateInput}
+import domain.types.Fault
 import persistence.users.Users
 import play.api.libs.json.JsValue
 import play.api.mvc.Request
@@ -21,7 +22,7 @@ class UserFacade @Inject() (
     persistence.create(UserAdapter.adapt(entity))
 
   override def update(
-      entity: UserInput,
+      entity: UserUpdateInput,
       originalEntity: User
   ): ZIO[ApiContext, Throwable, User] =
     for {
@@ -55,8 +56,10 @@ class UserFacade @Inject() (
 
   override def logout(
       request: Request[?]
-  ): ZIO[ApiContext, Throwable, Boolean] =
+  ): ZIO[ApiContext, Throwable, Boolean] = {
+    println("Logout request")
     authenticationInteractor.logout(request)
+  }
 
   override def login(
       email: String,

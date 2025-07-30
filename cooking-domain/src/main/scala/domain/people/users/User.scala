@@ -1,5 +1,6 @@
 package domain.people.users
 
+import domain.food.recipes.Recipe
 import domain.shared.Identified
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
@@ -11,7 +12,7 @@ case class User(
     name: String,
     email: String,
     password: String,
-    savedRecipes: Seq[UUID] = Seq.empty,
+    savedRecipes: Seq[Recipe] = Seq.empty,
     countryOfOrigin: Option[String] = None,
     createdOn: Instant,
     updatedOn: Instant,
@@ -21,7 +22,13 @@ case class User(
 case class UserInput(
     name: String,
     email: String,
-    password: String,
+    password: String = "",
+    countryOfOrigin: Option[String] = None,
+)
+
+case class UserUpdateInput(
+    name: Option[String] = None,
+    email: Option[String] = None,
     countryOfOrigin: Option[String] = None,
 )
 
@@ -40,6 +47,13 @@ object User {
 object UserInput {
   implicit val encoder: Encoder[UserInput] = deriveEncoder[UserInput]
   implicit val decoder: Decoder[UserInput] = deriveDecoder[UserInput]
+}
+
+object UserUpdateInput {
+  implicit val encoder: Encoder[UserUpdateInput] =
+    deriveEncoder[UserUpdateInput]
+  implicit val decoder: Decoder[UserUpdateInput] =
+    deriveDecoder[UserUpdateInput]
 }
 
 object LoginInput {

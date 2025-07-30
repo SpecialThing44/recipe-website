@@ -1,6 +1,6 @@
 package api.users
 
-import domain.people.users.{User, UserInput}
+import domain.people.users.{User, UserInput, UserUpdateInput}
 
 import java.time.Instant
 
@@ -19,14 +19,15 @@ object UserAdapter {
     )
   }
 
-  def adaptUpdate(user: UserInput, existingUser: User): User = {
+  def adaptUpdate(user: UserUpdateInput, existingUser: User): User = {
     val now = Instant.now
     User(
-      user.name,
-      user.email,
+      user.name.getOrElse(existingUser.name),
+      user.email.getOrElse(existingUser.email),
       existingUser.password,
       Seq.empty,
-      user.countryOfOrigin,
+      if (user.countryOfOrigin.isDefined) user.countryOfOrigin
+      else existingUser.countryOfOrigin,
       existingUser.createdOn,
       now,
       existingUser.id

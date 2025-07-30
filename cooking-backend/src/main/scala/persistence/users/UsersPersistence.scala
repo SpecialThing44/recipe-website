@@ -3,6 +3,7 @@ package persistence.users
 import com.google.inject.Inject
 import context.ApiContext
 import domain.people.users.User
+import domain.types.NoSuchEntityError
 import org.neo4j.driver.{AuthTokens, Driver, GraphDatabase, Session}
 import play.api.Configuration
 import play.api.libs.json.JsValue
@@ -55,6 +56,8 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
         try {
           val properties = UserConverter
             .convert(entity)
+            .replace(":", "=")
+          println(properties)
           val query =
             s"""
                |MATCH (u:User {id: '${entity.id}'})
@@ -104,7 +107,7 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
             val record = result.next().get("u").asMap()
             UserConverter.toDomain(record)
           } else {
-            throw new NoSuchElementException(s"User with id $id not found")
+            throw NoSuchEntityError(s"User with id $id not found")
           }
         } finally {
           session.close()
@@ -127,9 +130,11 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
           val result = session.run(query)
           if (result.hasNext) {
             val record = result.next().get("u").asMap()
-            UserConverter.toDomain(record)
+            UserConverter.toAuthDomain(record)
           } else {
-            throw new NoSuchElementException(s"User with email $email not found")
+            throw NoSuchEntityError(
+              s"User with email $email not found"
+            )
           }
         } finally {
           session.close()

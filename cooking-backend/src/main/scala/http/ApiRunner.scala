@@ -3,7 +3,9 @@ package http
 import context.{ApiContext, ApplicationContext, CookingApi}
 import domain.people.users.User
 import domain.types.ZIORuntime
+import play.api.mvc.Result
 import zio.{ZEnvironment, ZIO}
+
 object ApiRunner {
 
   def runResponse[R, E, ResponseType](
@@ -18,5 +20,18 @@ object ApiRunner {
         ).asInstanceOf[ZEnvironment[R]]
       )
     )
+  }
+
+  def runResponseSafely[R](
+      response: ZIO[R, Throwable, Result],
+      cookingApi: CookingApi,
+      maybeUser: Option[User]
+  )(implicit ev: R <:< ApiContext): Result = {
+    try {
+      runResponse(response, cookingApi, maybeUser)
+    } catch {
+      case e: Throwable =>
+        ErrorMapping.mapCustomErrorsToHttp(e)
+    }
   }
 }

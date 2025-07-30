@@ -3,12 +3,14 @@ package api.users
 import api.{Persisting, Querying}
 import com.google.inject.ImplementedBy
 import context.{ApiContext, CookingApi}
-import domain.people.users.{User, UserInput}
+import domain.people.users.{User, UserInput, UserUpdateInput}
 import play.api.mvc.Request
 import zio.ZIO
 
 @ImplementedBy(classOf[UserFacade])
-trait UserApi extends Persisting[User, UserInput] with Querying[User] {
+trait UserApi
+    extends Persisting[User, UserInput, UserUpdateInput]
+    with Querying[User] {
   def authenticate(
       bearerToken: Option[String]
   ): ZIO[ApiContext, Throwable, Option[User]]
