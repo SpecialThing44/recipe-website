@@ -121,11 +121,15 @@ object Requests {
       cookingApi: CookingApi
   ): Option[User] = {
     val authHeader = request.headers.get("Authorization")
-    ApiRunner.runResponse[ApiContext, Throwable, Option[User]](
-      cookingApi.users.authenticate(authHeader),
-      cookingApi,
-      None
-    )
+    try {
+      ApiRunner.runResponse[ApiContext, Throwable, Option[User]](
+        cookingApi.users.authenticate(authHeader),
+        cookingApi,
+        None
+      )
+    } catch {
+      case _: Throwable => None
+    }
   }
 
 }
