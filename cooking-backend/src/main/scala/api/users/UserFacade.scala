@@ -16,6 +16,7 @@ class UserFacade @Inject() (
     authenticationInteractor: AuthenticationInteractor,
     deleteInteractor: UserDeleteInteractor,
     updateInteractor: UserUpdateInteractor,
+    fetchInteractor: UserFetchInteractor
 ) extends UserApi {
 
   override def create(
@@ -32,10 +33,10 @@ class UserFacade @Inject() (
   override def delete(id: UUID): ZIO[ApiContext, Throwable, User] =
     deleteInteractor.delete(id)
 
-  override def list(query: Filters): ZIO[ApiContext, Throwable, Seq[User]] = ???
+  override def list(query: Filters): ZIO[ApiContext, Throwable, Seq[User]] = fetchInteractor.list(query)
 
   override def find(query: Filters): ZIO[ApiContext, Throwable, User] =
-    ???
+    fetchInteractor.find(query)
 
   override def getById(id: UUID): ZIO[ApiContext, Throwable, User] =
     persistence.getById(id)

@@ -1,0 +1,17 @@
+package api.users
+
+import com.google.inject.Inject
+import context.ApiContext
+import domain.filters.Filters
+import domain.people.users.User
+import persistence.users.Users
+import zio.ZIO
+
+class UserFetchInteractor @Inject() (
+    persistence: Users,
+    authenticationInteractor: AuthenticationInteractor,
+) {
+  def list(query: Filters): ZIO[ApiContext, Throwable, Seq[User]] = persistence.list(query)
+
+  def find(query: Filters): ZIO[ApiContext, Throwable, User] = persistence.find(query)
+}

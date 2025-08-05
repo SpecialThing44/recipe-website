@@ -5,6 +5,7 @@ POST        /signup                                http.authentication.Authentic
 POST        /login                                 http.authentication.AuthenticationController.login()
 POST        /logout                                http.authentication.AuthenticationController.logout()
 
+GET         /user                                  http.users.UsersController.list()
 GET         /user/:id                              http.users.UsersController.get(id: java.util.UUID)
 PUT         /user/:id                              http.users.UsersController.put(id: java.util.UUID)
 DELETE      /user/:id                              http.users.UsersController.delete(id: java.util.UUID)

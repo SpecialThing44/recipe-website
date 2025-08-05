@@ -11,6 +11,7 @@ import play.api.Configuration
 import zio.ZIO
 
 import java.util.UUID
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.util.Try
 
 class UsersPersistence @Inject() (config: Configuration) extends Users {
@@ -22,9 +23,50 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
     GraphDatabase.driver(uri, AuthTokens.basic(username, password))
   private implicit val graph: UserGraph = UserGraph()
 
-  override def find(query: Filters): ZIO[ApiContext, Throwable, User] = ???
+  override def find(query: Filters): ZIO[ApiContext, Throwable, User] =
+    ZIO.fromTry {
+      Try {
+        val session: Session = driver.session()
+        try {
+          val query =
+            s"""
+             |MATCH (${graph.varName}:${graph.nodeName})
+             |${ReturnStatement.apply}
+             |LIMIT 1""".stripMargin
+          val result = session.run(query)
+          if (result.hasNext) {
+            val record = result.next().get(graph.varName).asMap()
+            UserConverter.toDomain(record)
+          } else {
+            throw NoSuchEntityError(s"No ${graph.nodeName}s matching filters")
+          }
+        } finally {
+          session.close()
+        }
+      }
+    }
 
-  override def list(query: Filters): ZIO[ApiContext, Throwable, Seq[User]] = ???
+  override def list(query: Filters): ZIO[ApiContext, Throwable, Seq[User]] =
+    ZIO.fromTry {
+      Try {
+        val session: Session = driver.session()
+        try {
+          val query =
+            s"""
+               |MATCH (${graph.varName}:${graph.nodeName})
+               |${ReturnStatement.apply}
+               |""".stripMargin
+          val result = session.run(query)
+          result.asScala
+            .map(record => record.get(graph.varName).asMap())
+            .map(UserConverter.toDomain)
+            .toSeq
+
+        } finally {
+          session.close()
+        }
+      }
+    }
 
   override def create(entity: User): ZIO[ApiContext, Throwable, User] =
     ZIO.fromTry {
@@ -65,13 +107,12 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
                |${ReturnStatement.apply}
                |""".stripMargin
           val result = session.run(query)
-          println(result.hasNext)
           if (result.hasNext) {
             val record = result.next().get(graph.varName).asMap()
             UserConverter.toDomain(record)
           } else {
             throw NoSuchEntityError(
-              s"Update for user with id ${entity.id} has failed for some reason"
+              s"Update for ${graph.nodeName} with id ${entity.id} has failed for some reason"
             )
           }
         } finally {
@@ -115,7 +156,7 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
             val record = result.next().get(graph.varName).asMap()
             UserConverter.toDomain(record)
           } else {
-            throw NoSuchEntityError(s"User with id $id not found")
+            throw NoSuchEntityError(s"${graph.nodeName} with id $id not found")
           }
         } finally {
           session.close()
@@ -141,7 +182,7 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
             UserConverter.toAuthDomain(record)
           } else {
             throw NoSuchEntityError(
-              s"User with email $email not found"
+              s"${graph.nodeName} with email $email not found"
             )
           }
         } finally {
@@ -165,7 +206,7 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
             val record = result.next().get(graph.varName).asMap()
             UserConverter.toAuthDomain(record)
           } else {
-            throw NoSuchEntityError(s"User with id $id not found")
+            throw NoSuchEntityError(s"${graph.nodeName} with id $id not found")
           }
         } finally {
           session.close()

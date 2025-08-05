@@ -15,10 +15,20 @@ class UsersController @Inject() (
   def get(id: java.util.UUID): Action[AnyContent] = Action { request =>
     Requests.get[User](id, request, cookingApi, cookingApi.users)(User.encoder)
   }
+  def list(): Action[JsValue] = Action(parse.json) { request =>
+    Requests.list[User](request, cookingApi, cookingApi.users)
+  }
   def put(id: java.util.UUID): Action[JsValue] = Action(parse.json) { request =>
-    Requests.put[User, UserInput, UserUpdateInput](id, request, cookingApi, cookingApi.users)
+    Requests.put[User, UserInput, UserUpdateInput](
+      id,
+      request,
+      cookingApi,
+      cookingApi.users
+    )
   }
   def delete(id: java.util.UUID): Action[AnyContent] = Action { request =>
-    Requests.delete[User](id, request, cookingApi, cookingApi.users)(User.encoder)
+    Requests.delete[User](id, request, cookingApi, cookingApi.users)(
+      User.encoder
+    )
   }
 }
