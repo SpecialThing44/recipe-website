@@ -2,6 +2,7 @@ package persistence.recipes
 
 import com.google.inject.Inject
 import context.ApiContext
+import domain.filters.Filters
 import domain.food.ingredients.InstructionIngredient
 import domain.food.recipes.Recipe
 import domain.people.users.User
@@ -25,10 +26,10 @@ class RecipePersistence @Inject() (config: Configuration) extends Recipes {
   private val driver: Driver =
     GraphDatabase.driver(uri, AuthTokens.basic(username, password))
 
-  override def list(query: JsValue): ZIO[ApiContext, Throwable, Seq[Recipe]] =
+  override def list(query: Filters): ZIO[ApiContext, Throwable, Seq[Recipe]] =
     ???
 
-  override def find(query: JsValue): ZIO[ApiContext, Throwable, Recipe] = ???
+  override def find(query: Filters): ZIO[ApiContext, Throwable, Recipe] = ???
 
   override def create(entity: Recipe): ZIO[ApiContext, Throwable, Recipe] =
     ZIO.fromTry {

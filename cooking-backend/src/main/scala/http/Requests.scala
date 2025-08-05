@@ -2,8 +2,8 @@ package http
 
 import api.{Persisting, Querying}
 import context.{ApiContext, CookingApi}
+import domain.filters.Filters
 import domain.people.users.User
-import persistence.users.Users
 import io.circe.{Decoder, Encoder}
 import io.circe.jawn.decode
 import io.circe.syntax.EncoderOps
@@ -22,7 +22,8 @@ object Requests {
   ): Result = {
     val maybeUser = extractUser(request, cookingApi)
     val entities: ZIO[ApiContext, Throwable, Seq[Entity]] = for {
-      entities <- entityApi.list(request.body)
+      filters <- ZIO.fromEither(decode[Filters](request.body.toString))
+      entities <- entityApi.list(filters)
     } yield entities
     val response = entities.fold(
       error => ErrorMapping.mapCustomErrorsToHttp(error),
@@ -93,7 +94,7 @@ object Requests {
         decode[EntityUpdateInput](request.body.toString)
       )
       originalEntity <- entityApi match {
-        case userApi: persistence.users.Users =>
+        case userApi: api.users.UserFacade =>
           userApi
             .getByIdWithPassword(id)
             .asInstanceOf[ZIO[ApiContext, Throwable, Entity]]

@@ -2,6 +2,7 @@ package api.recipes
 
 import com.google.inject.Inject
 import context.ApiContext
+import domain.filters.Filters
 import domain.food.recipes.{Recipe, RecipeInput}
 import persistence.recipes.Recipes
 import play.api.libs.json.JsValue
@@ -26,10 +27,10 @@ class RecipeFacade @Inject() (
 
   override def delete(id: UUID): ZIO[ApiContext, Throwable, Recipe] = ???
 
-  override def list(query: JsValue): ZIO[ApiContext, Throwable, Seq[Recipe]] =
+  override def list(query: Filters): ZIO[ApiContext, Throwable, Seq[Recipe]] =
     ???
 
-  override def find(query: JsValue): ZIO[ApiContext, Throwable, Recipe] = ???
+  override def find(query: Filters): ZIO[ApiContext, Throwable, Recipe] = ???
 
   override def getById(id: UUID): ZIO[ApiContext, Throwable, Recipe] = ???
 }

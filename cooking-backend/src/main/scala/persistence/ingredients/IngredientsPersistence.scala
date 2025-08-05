@@ -2,6 +2,7 @@ package persistence.ingredients
 
 import com.google.inject.Inject
 import context.ApiContext
+import domain.filters.Filters
 import domain.food.ingredients.Ingredient
 import org.neo4j.driver.{AuthTokens, Driver, GraphDatabase}
 import play.api.Configuration
@@ -19,11 +20,9 @@ class IngredientsPersistence @Inject() (config: Configuration)
   private val driver: Driver =
     GraphDatabase.driver(uri, AuthTokens.basic(username, password))
 
-  override def list(
-      query: JsValue
-  ): ZIO[ApiContext, Throwable, Seq[Ingredient]] = ???
+  override def list(query: Filters): ZIO[ApiContext, Throwable, Seq[Ingredient]] = ???
 
-  override def find(query: JsValue): ZIO[ApiContext, Throwable, Ingredient] =
+  override def find(query: Filters): ZIO[ApiContext, Throwable, Ingredient] =
     ???
 
   override def create(

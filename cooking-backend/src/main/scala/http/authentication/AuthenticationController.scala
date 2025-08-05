@@ -22,12 +22,17 @@ class AuthenticationController @Inject() (
   def signup(): Action[JsValue] = Action(parse.json) { request =>
     decode[UserInput](request.body.toString()) match {
       case Right(user) =>
-        val token = ApiRunner.runResponse(
-          cookingApi.users.signup(user, cookingApi),
-          cookingApi,
-          None
-        )
-        Ok(Json.obj("token" -> token))
+        try {
+          val token = ApiRunner.runResponse(
+            cookingApi.users.signup(user, cookingApi),
+            cookingApi,
+            None
+          )
+          Ok(Json.obj("token" -> token))
+        } catch {
+          case e: Throwable =>
+            ErrorMapping.mapCustomErrorsToHttp(e)
+        }
       case Left(error) =>
         BadRequest(Json.obj("error" -> error.getMessage))
     }

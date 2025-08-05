@@ -2,6 +2,7 @@ package persistence.users
 
 import com.google.inject.Inject
 import context.ApiContext
+import domain.filters.Filters
 import domain.people.users.User
 import domain.types.NoSuchEntityError
 import org.neo4j.driver.{AuthTokens, Driver, GraphDatabase, Session}
@@ -20,9 +21,9 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
   private val driver: Driver =
     GraphDatabase.driver(uri, AuthTokens.basic(username, password))
 
-  override def find(query: JsValue): ZIO[ApiContext, Throwable, User] = ???
+  override def find(query: Filters): ZIO[ApiContext, Throwable, User] = ???
 
-  override def list(query: JsValue): ZIO[ApiContext, Throwable, Seq[User]] = ???
+  override def list(query: Filters): ZIO[ApiContext, Throwable, Seq[User]] = ???
 
   override def create(entity: User): ZIO[ApiContext, Throwable, User] =
     ZIO.fromTry {
