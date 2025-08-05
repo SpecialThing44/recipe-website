@@ -10,7 +10,7 @@ import java.util.UUID
 object UserConverter extends Converter[User] {
   override def toGraph(user: User): Map[String, Object] =
     Map(
-      "id" -> user.idOrGenerate.toString,
+      "id" -> user.id,
       "name" -> user.name,
       "email" -> user.email,
       "password" -> user.password,
@@ -20,7 +20,7 @@ object UserConverter extends Converter[User] {
     )
 
   override def toDomain(record: util.Map[String, AnyRef]): User = User(
-    id = Some(UUID.fromString(record.get("id").toString)),
+    id = UUID.fromString(record.get("id").toString),
     name = record.get("name").toString,
     email = record.get("email").toString,
     password = "",
@@ -31,7 +31,7 @@ object UserConverter extends Converter[User] {
   )
 
   def toAuthDomain(record: util.Map[String, AnyRef]): User = User(
-    id = Some(UUID.fromString(record.get("id").toString)),
+    id = UUID.fromString(record.get("id").toString),
     name = record.get("name").toString,
     email = record.get("email").toString,
     password = record.get("password").toString,

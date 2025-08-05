@@ -16,7 +16,7 @@ case class User(
     countryOfOrigin: Option[String] = None,
     createdOn: Instant,
     updatedOn: Instant,
-    id: Option[UUID]
+    id: UUID
 ) extends Identified {}
 
 case class UserInput(

@@ -110,7 +110,7 @@ class AuthenticationInteractor @Inject() (
 
   def ensureAuthenticatedAndMatchingUser(
       maybeUser: Option[User],
-      originalUserId: Option[UUID]
+      originalUserId: UUID
   ): ZIO[Any, AuthenticationError, Unit] = {
     for {
       user <- ensureIsLoggedIn(maybeUser)
@@ -119,24 +119,16 @@ class AuthenticationInteractor @Inject() (
   }
 
   private def ensureUUIDMatch(
-      originalUserId: Option[UUID],
-      loggedInUserId: Option[UUID]
-  ) = (originalUserId, loggedInUserId) match {
-    case (Some(originalId), Some(userId)) =>
-      if (originalId == userId) ZIO.succeed(())
-      else
-        ZIO.fail(
-          AuthenticationError(
-            "Cannot update other users or recipes belonging to them"
-          )
-        )
-    case (_, _) =>
+      originalUserId: UUID,
+      loggedInUserId: UUID
+  ) =
+    if (originalUserId == loggedInUserId) ZIO.succeed(())
+    else
       ZIO.fail(
         AuthenticationError(
           "Cannot update other users or recipes belonging to them"
         )
       )
-  }
 
   private def ensureIsLoggedIn(
       maybeUser: Option[User],

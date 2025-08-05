@@ -3,6 +3,7 @@ package api.users
 import domain.people.users.{User, UserInput, UserUpdateInput}
 
 import java.time.Instant
+import java.util.UUID
 
 object UserAdapter {
   def adapt(user: UserInput): User = {
@@ -15,7 +16,7 @@ object UserAdapter {
       user.countryOfOrigin,
       now,
       now,
-      None
+      UUID.randomUUID()
     )
   }
 

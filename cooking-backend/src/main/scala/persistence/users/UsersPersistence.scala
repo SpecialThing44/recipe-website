@@ -6,8 +6,8 @@ import domain.filters.Filters
 import domain.people.users.User
 import domain.types.NoSuchEntityError
 import org.neo4j.driver.{AuthTokens, Driver, GraphDatabase, Session}
+import persistence.cypher.ReturnStatement
 import play.api.Configuration
-import play.api.libs.json.JsValue
 import zio.ZIO
 
 import java.util.UUID
@@ -20,6 +20,8 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
   private val password = config.get[String]("neo4j.password")
   private val driver: Driver =
     GraphDatabase.driver(uri, AuthTokens.basic(username, password))
+  private implicit val graph: UserGraph = UserGraph()
+
 
   override def find(query: Filters): ZIO[ApiContext, Throwable, User] = ???
 
@@ -37,7 +39,7 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
                |CREATE (u:User {
                |$properties
                |})
-               |RETURN u
+               |${ReturnStatement.apply}
                |""".stripMargin
           session.run(query)
           entity
@@ -59,9 +61,9 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
             .convertForUpdate("u", entity)
           val query =
             s"""
-               |MATCH (u:User {id: '${entity.idOrError}'})
+               |MATCH (u:User {id: '${entity.id}'})
                |SET $properties
-               |RETURN u
+               |${ReturnStatement.apply}
                |""".stripMargin
           val result = session.run(query)
           println(result.hasNext)
@@ -107,7 +109,7 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
           val query =
             s"""
                |MATCH (u:User {id: '$id'})
-               |RETURN u
+               |${ReturnStatement.apply}
                |""".stripMargin
           val result = session.run(query)
           if (result.hasNext) {
@@ -132,7 +134,7 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
           val query =
             s"""
                |MATCH (u:User {email: '$email'})
-               |RETURN u
+               |${ReturnStatement.apply}
                |""".stripMargin
           val result = session.run(query)
           if (result.hasNext) {
@@ -157,7 +159,7 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
           val query =
             s"""
                |MATCH (u:User {id: '$id'})
-               |RETURN u
+               |${ReturnStatement.apply}
                |""".stripMargin
           val result = session.run(query)
           if (result.hasNext) {
