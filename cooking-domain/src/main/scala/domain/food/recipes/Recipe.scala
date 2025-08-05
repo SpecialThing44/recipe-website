@@ -28,7 +28,7 @@ case class Recipe( // Maybe want a double reference back to user, at least in DB
     instructions: String, // Rich text, need to find a way to resolve image paths likely
     createdOn: Instant,
     updatedOn: Instant,
-    id: Option[UUID]
+    id: UUID
 ) extends Identified
     with Wikified
 

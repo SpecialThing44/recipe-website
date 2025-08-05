@@ -53,6 +53,7 @@ class AuthenticationController @Inject() (
           }
         } catch {
           case e: Throwable =>
+            println(e)
             ErrorMapping.mapCustomErrorsToHttp(e)
         }
       case _ => BadRequest(errorJson("Invalid input"))

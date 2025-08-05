@@ -142,12 +142,12 @@ class RecipePersistence @Inject() (config: Configuration) extends Recipes {
           if (result.hasNext) {
             val record = result.next().get("r").asMap()
             Recipe(
-              id = Some(UUID.fromString(record.get("id").toString)),
+              id = UUID.fromString(record.get("id").toString),
               name = record.get("name").toString,
               user = User
                 .empty()
                 .copy(id =
-                  Some(UUID.fromString(record.get("user_id").toString))
+                  UUID.fromString(record.get("user_id").toString)
                 ), // Assuming you have a way to fetch the user by ID
               aliases = decode[Seq[String]](record.get("aliases").toString)
                 .getOrElse(Seq.empty),

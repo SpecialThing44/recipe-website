@@ -6,7 +6,7 @@ import domain.filters.Filters
 import domain.people.users.User
 import domain.types.NoSuchEntityError
 import org.neo4j.driver.{AuthTokens, Driver, GraphDatabase, Session}
-import persistence.cypher.ReturnStatement
+import persistence.cypher.{DeleteStatement, MatchByIdStatement, ReturnStatement}
 import play.api.Configuration
 import zio.ZIO
 
@@ -22,7 +22,6 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
     GraphDatabase.driver(uri, AuthTokens.basic(username, password))
   private implicit val graph: UserGraph = UserGraph()
 
-
   override def find(query: Filters): ZIO[ApiContext, Throwable, User] = ???
 
   override def list(query: Filters): ZIO[ApiContext, Throwable, Seq[User]] = ???
@@ -36,7 +35,7 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
             .convert(entity)
           val query =
             s"""
-               |CREATE (u:User {
+               |CREATE (${graph.varName}:${graph.nodeName} {
                |$properties
                |})
                |${ReturnStatement.apply}
@@ -58,17 +57,17 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
         val session: Session = driver.session()
         try {
           val properties = UserConverter
-            .convertForUpdate("u", entity)
+            .convertForUpdate(graph.varName, entity)
           val query =
             s"""
-               |MATCH (u:User {id: '${entity.id}'})
+               |${MatchByIdStatement.apply(entity.id)}
                |SET $properties
                |${ReturnStatement.apply}
                |""".stripMargin
           val result = session.run(query)
           println(result.hasNext)
           if (result.hasNext) {
-            val record = result.next().get("u").asMap()
+            val record = result.next().get(graph.varName).asMap()
             UserConverter.toDomain(record)
           } else {
             throw NoSuchEntityError(
@@ -90,8 +89,8 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
           try {
             val query =
               s"""
-                 |MATCH (u:User {id: '$id'})
-                 |DETACH DELETE u
+                 |${MatchByIdStatement.apply(id)}
+                 |${DeleteStatement.apply}
                  |""".stripMargin
             session.run(query)
           } finally {
@@ -108,12 +107,12 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
         try {
           val query =
             s"""
-               |MATCH (u:User {id: '$id'})
+               |${MatchByIdStatement.apply(id)}
                |${ReturnStatement.apply}
                |""".stripMargin
           val result = session.run(query)
           if (result.hasNext) {
-            val record = result.next().get("u").asMap()
+            val record = result.next().get(graph.varName).asMap()
             UserConverter.toDomain(record)
           } else {
             throw NoSuchEntityError(s"User with id $id not found")
@@ -133,12 +132,12 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
         try {
           val query =
             s"""
-               |MATCH (u:User {email: '$email'})
+               |MATCH (${graph.varName}:${graph.nodeName} {email: '$email'})
                |${ReturnStatement.apply}
                |""".stripMargin
           val result = session.run(query)
           if (result.hasNext) {
-            val record = result.next().get("u").asMap()
+            val record = result.next().get(graph.varName).asMap()
             UserConverter.toAuthDomain(record)
           } else {
             throw NoSuchEntityError(
@@ -158,12 +157,12 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
         try {
           val query =
             s"""
-               |MATCH (u:User {id: '$id'})
+               |${MatchByIdStatement.apply(id)}
                |${ReturnStatement.apply}
                |""".stripMargin
           val result = session.run(query)
           if (result.hasNext) {
-            val record = result.next().get("u").asMap()
+            val record = result.next().get(graph.varName).asMap()
             UserConverter.toAuthDomain(record)
           } else {
             throw NoSuchEntityError(s"User with id $id not found")

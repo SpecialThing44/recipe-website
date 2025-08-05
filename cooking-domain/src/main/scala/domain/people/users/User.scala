@@ -40,7 +40,7 @@ object User {
 
   def empty(): User = {
     val now = Instant.now
-    User("", "", "", Seq.empty, None, now, now, Some(UUID.randomUUID()))
+    User("", "", "", Seq.empty, None, now, now, UUID.randomUUID())
   }
 }
 

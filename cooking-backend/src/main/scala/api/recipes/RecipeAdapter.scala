@@ -3,12 +3,13 @@ package api.recipes
 import domain.food.recipes.{Recipe, RecipeInput}
 
 import java.time.Instant
+import java.util.UUID
 
 object RecipeAdapter {
   def adapt(recipe: RecipeInput): Recipe = {
     val now = Instant.now
     Recipe(
-      id = None, // Assuming a new UUID is generated for each new recipe
+      id = UUID.randomUUID(), // Assuming a new UUID is generated for each new recipe
       name = recipe.name,
       user = recipe.user,
       aliases = recipe.aliases,
