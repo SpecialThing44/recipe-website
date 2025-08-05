@@ -18,4 +18,7 @@ class UsersController @Inject() (
   def put(id: java.util.UUID): Action[JsValue] = Action(parse.json) { request =>
     Requests.put[User, UserInput, UserUpdateInput](id, request, cookingApi, cookingApi.users)
   }
+  def delete(id: java.util.UUID): Action[AnyContent] = Action { request =>
+    Requests.delete[User](id, request, cookingApi, cookingApi.users)(User.encoder)
+  }
 }

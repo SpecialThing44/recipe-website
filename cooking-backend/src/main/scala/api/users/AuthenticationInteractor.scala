@@ -108,20 +108,20 @@ class AuthenticationInteractor @Inject() (
       }
     } yield result
 
-  def ensureAuthenticated(
+  def ensureAuthenticatedAndMatchingUser(
       maybeUser: Option[User],
-      originalEntityId: Option[UUID]
+      originalUserId: Option[UUID]
   ): ZIO[Any, AuthenticationError, Unit] = {
     for {
       user <- ensureIsLoggedIn(maybeUser)
-      _ <- ensureUUIDMatch(originalEntityId, user.id)
+      _ <- ensureUUIDMatch(originalUserId, user.id)
     } yield ()
   }
 
   private def ensureUUIDMatch(
-      originalEntityId: Option[UUID],
+      originalUserId: Option[UUID],
       loggedInUserId: Option[UUID]
-  ) = (originalEntityId, loggedInUserId) match {
+  ) = (originalUserId, loggedInUserId) match {
     case (Some(originalId), Some(userId)) =>
       if (originalId == userId) ZIO.succeed(())
       else

@@ -7,6 +7,8 @@ POST        /logout                                http.authentication.Authentic
 
 GET         /user/:id                              http.users.UsersController.get(id: java.util.UUID)
 PUT         /user/:id                              http.users.UsersController.put(id: java.util.UUID)
+DELETE      /user/:id                              http.users.UsersController.delete(id: java.util.UUID)
+
 
 GET         /recipes                               http.recipes.RecipesController.list()
 POST        /recipes                               http.recipes.RecipesController.post()
@@ -15,8 +17,8 @@ GET         /recipes/:id                           http.recipes.RecipesControlle
 PUT         /recipes/:id                           http.recipes.RecipesController.put(id: java.util.UUID)
 
 
-GET         /ingredients                               http.ingredients.IngredientsController.list()
-POST        /ingredients                               http.ingredients.IngredientsController.post()
+GET         /ingredients                           http.ingredients.IngredientsController.list()
+POST        /ingredients                           http.ingredients.IngredientsController.post()
 
-GET         /ingredients/:id                           http.ingredients.IngredientsController.get(id: java.util.UUID)
-PUT         /ingredients/:id                           http.ingredients.IngredientsController.put(id: java.util.UUID)
+GET         /ingredients/:id                       http.ingredients.IngredientsController.get(id: java.util.UUID)
+PUT         /ingredients/:id                       http.ingredients.IngredientsController.put(id: java.util.UUID)

@@ -116,6 +116,30 @@ object Requests {
     )
   }
 
+  def delete[Entity](
+      id: java.util.UUID,
+      request: Request[AnyContent],
+      cookingApi: CookingApi,
+      entityApi: Persisting[Entity, ?, ?] & Querying[Entity]
+  )(implicit encoder: Encoder[Entity]): Result = {
+    val maybeUser = extractUser(request, cookingApi)
+    val maybeDeletedEntity: ZIO[ApiContext, Throwable, Entity] = for {
+      deletedEntity <- entityApi.delete(id)
+    } yield deletedEntity
+    val response = maybeDeletedEntity.fold(
+      error => ErrorMapping.mapCustomErrorsToHttp(error),
+      result =>
+        Results.Ok(
+          s"{ \"ID\": \"$id\", \"Body\": ${Json.parse(result.asJson.noSpaces)}  }"
+        )
+    )
+    ApiRunner.runResponseSafely[ApiContext](
+      response,
+      cookingApi,
+      maybeUser
+    )
+  }
+
   private def extractUser(
       request: Request[Any],
       cookingApi: CookingApi

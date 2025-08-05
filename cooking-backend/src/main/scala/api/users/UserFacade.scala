@@ -13,6 +13,7 @@ import java.util.UUID
 class UserFacade @Inject() (
     persistence: Users,
     authenticationInteractor: AuthenticationInteractor,
+    deleteInteractor: DeleteInteractor[User]
 ) extends UserApi {
 
   override def create(
@@ -26,7 +27,7 @@ class UserFacade @Inject() (
   ): ZIO[ApiContext, Throwable, User] =
     for {
       context <- ZIO.service[ApiContext]
-      _ <- authenticationInteractor.ensureAuthenticated(
+      _ <- authenticationInteractor.ensureAuthenticatedAndMatchingUser(
         context.applicationContext.user,
         originalEntity.id
       )
@@ -36,7 +37,16 @@ class UserFacade @Inject() (
       )
     } yield updatedUser
 
-  override def delete(id: UUID): ZIO[ApiContext, Throwable, User] = ???
+  override def delete(id: UUID): ZIO[ApiContext, Throwable, User] = 
+    for {
+      context <- ZIO.service[ApiContext]
+      user <- persistence.getById(id)
+      _ <- authenticationInteractor.ensureAuthenticatedAndMatchingUser(
+        context.applicationContext.user,
+        user.id
+      )
+      deletedUser <- persistence.delete(id)
+    } yield deletedUser
 
   override def list(
       query: JsValue
