@@ -5,14 +5,14 @@ import context.CookingApi
 import domain.users.{LoginInput, UserInput}
 import http.ErrorMapping.{errorJson, messageJson}
 import http.{ApiRunner, ErrorMapping}
+import io.circe.parser.decode
+import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{
   AbstractController,
   Action,
   AnyContent,
   ControllerComponents
 }
-import play.api.libs.json.{JsValue, Json}
-import io.circe.parser.decode
 
 @Singleton
 class AuthenticationController @Inject() (

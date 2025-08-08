@@ -3,7 +3,7 @@ package domain.recipes
 import domain.ingredients.InstructionIngredient
 import domain.shared.{Identified, Wikified}
 import domain.users.User
-import io.circe._
+import io.circe.*
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 
 import java.time.Instant

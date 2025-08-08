@@ -2,7 +2,7 @@ package api.users
 
 import com.google.inject.Inject
 import context.ApiContext
-import domain.types.{AuthenticationError, Fault}
+import domain.types.AuthenticationError
 import domain.users.User
 import io.circe.jawn.decode
 import io.circe.syntax.*
@@ -15,7 +15,7 @@ import zio.ZIO
 
 import java.time.{Clock, Instant}
 import java.util.UUID
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 class AuthenticationInteractor @Inject() (
     persistence: Users,
@@ -97,7 +97,7 @@ class AuthenticationInteractor @Inject() (
             case Success(claim) =>
               val expiration: Long =
                 claim.expiration.getOrElse(Instant.now.getEpochSecond)
-              TokenStore.blacklistToken(
+              val _ = TokenStore.blacklistToken(
                 token,
                 Instant.ofEpochSecond(expiration)
               )

@@ -1,11 +1,11 @@
 package domain.filters
 
-import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.{Decoder, Encoder}
 
 case class NumberFilter(
-                         greaterOrEqual: Option[Int],
-                         lessOrEqual: Option[Int]
+    greaterOrEqual: Option[Int],
+    lessOrEqual: Option[Int]
 )
 
 object NumberFilter {

@@ -2,7 +2,6 @@ package api
 
 import context.ApiContext
 import domain.filters.Filters
-import play.api.libs.json.JsValue
 import zio.ZIO
 
 import java.util.UUID

@@ -1,9 +1,9 @@
 package http
 
-import play.api.mvc.Result
-import play.api.mvc.Results.{Forbidden, InternalServerError, NotFound}
 import domain.types.*
 import play.api.libs.json.{JsObject, Json}
+import play.api.mvc.Result
+import play.api.mvc.Results.{Forbidden, InternalServerError, NotFound}
 
 object ErrorMapping {
 

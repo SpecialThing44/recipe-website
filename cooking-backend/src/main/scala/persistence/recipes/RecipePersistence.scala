@@ -11,7 +11,6 @@ import io.circe.jawn.decode
 import io.circe.syntax.EncoderOps
 import org.neo4j.driver.{AuthTokens, Driver, GraphDatabase, Session}
 import play.api.Configuration
-import play.api.libs.json.JsValue
 import zio.ZIO
 
 import java.time.Instant

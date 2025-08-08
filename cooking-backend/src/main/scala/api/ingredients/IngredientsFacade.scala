@@ -5,7 +5,6 @@ import context.ApiContext
 import domain.filters.Filters
 import domain.ingredients.Ingredient
 import persistence.ingredients.Ingredients
-import play.api.libs.json.JsValue
 import zio.ZIO
 
 import java.util.UUID
@@ -25,7 +24,9 @@ class IngredientsFacade @Inject() (
 
   override def delete(id: UUID): ZIO[ApiContext, Throwable, Ingredient] = ???
 
-  override def list(query: Filters): ZIO[ApiContext, Throwable, Seq[Ingredient]] = ???
+  override def list(
+      query: Filters
+  ): ZIO[ApiContext, Throwable, Seq[Ingredient]] = ???
 
   override def getById(id: UUID): ZIO[ApiContext, Throwable, Ingredient] = ???
 }

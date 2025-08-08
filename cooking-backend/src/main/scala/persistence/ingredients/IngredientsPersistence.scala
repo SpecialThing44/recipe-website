@@ -6,7 +6,6 @@ import domain.filters.Filters
 import domain.ingredients.Ingredient
 import org.neo4j.driver.{AuthTokens, Driver, GraphDatabase}
 import play.api.Configuration
-import play.api.libs.json.JsValue
 import zio.ZIO
 
 import java.util.UUID
@@ -20,7 +19,9 @@ class IngredientsPersistence @Inject() (config: Configuration)
   private val driver: Driver =
     GraphDatabase.driver(uri, AuthTokens.basic(username, password))
 
-  override def list(query: Filters): ZIO[ApiContext, Throwable, Seq[Ingredient]] = ???
+  override def list(
+      query: Filters
+  ): ZIO[ApiContext, Throwable, Seq[Ingredient]] = ???
 
   override def create(
       entity: Ingredient

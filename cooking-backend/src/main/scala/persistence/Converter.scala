@@ -3,6 +3,8 @@ package persistence
 import java.util
 
 trait Converter[Domain] {
+  val lowerPrefix = "lower"
+
   def convert(entity: Domain): String =
     toGraph(entity)
       .map { case (key, value) =>
@@ -20,6 +22,4 @@ trait Converter[Domain] {
   def toGraph(entity: Domain): Map[String, Object]
 
   def toDomain(entity: util.Map[String, AnyRef]): Domain
-
-  val lowerPrefix = "lower"
 }

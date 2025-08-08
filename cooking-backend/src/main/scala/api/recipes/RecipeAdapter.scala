@@ -9,7 +9,9 @@ object RecipeAdapter {
   def adapt(recipe: RecipeInput): Recipe = {
     val now = Instant.now
     Recipe(
-      id = UUID.randomUUID(), // Assuming a new UUID is generated for each new recipe
+      id =
+        UUID
+          .randomUUID(), // Assuming a new UUID is generated for each new recipe
       name = recipe.name,
       user = recipe.user,
       aliases = recipe.aliases,

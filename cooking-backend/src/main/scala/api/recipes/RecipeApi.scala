@@ -4,4 +4,6 @@ import com.google.inject.ImplementedBy
 import domain.recipes.{Recipe, RecipeInput}
 
 @ImplementedBy(classOf[RecipeFacade])
-trait RecipeApi extends Persisting[Recipe, RecipeInput, RecipeInput] with Querying[Recipe]
+trait RecipeApi
+    extends Persisting[Recipe, RecipeInput, RecipeInput]
+    with Querying[Recipe]

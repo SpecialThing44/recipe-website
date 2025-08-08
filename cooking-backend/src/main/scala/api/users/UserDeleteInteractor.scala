@@ -8,7 +8,7 @@ import zio.ZIO
 
 import java.util.UUID
 
-class UserDeleteInteractor @Inject()(
+class UserDeleteInteractor @Inject() (
     persistence: Users,
     authenticationInteractor: AuthenticationInteractor,
 ) {

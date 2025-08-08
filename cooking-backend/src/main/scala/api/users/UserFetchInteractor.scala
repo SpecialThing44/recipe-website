@@ -9,7 +9,7 @@ import zio.ZIO
 
 class UserFetchInteractor @Inject() (
     persistence: Users,
-    authenticationInteractor: AuthenticationInteractor,
 ) {
-  def list(query: Filters): ZIO[ApiContext, Throwable, Seq[User]] = persistence.list(query)
+  def list(query: Filters): ZIO[ApiContext, Throwable, Seq[User]] =
+    persistence.list(query)
 }

@@ -5,7 +5,6 @@ import context.{ApiContext, CookingApi}
 import domain.filters.Filters
 import domain.users.{User, UserInput, UserUpdateInput}
 import persistence.users.Users
-import play.api.libs.json.JsValue
 import play.api.mvc.Request
 import zio.ZIO
 

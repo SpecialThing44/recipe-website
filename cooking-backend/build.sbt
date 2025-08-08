@@ -11,13 +11,13 @@ enablePlugins(
 )
 disablePlugins(PlayLayoutPlugin)
 
+// Running
+val runBackend = taskKey[Unit]("Run the backend.")
+
 def runBackend(params: String) =
   Def.taskDyn {
     Def.task((Compile / run).toTask(s" $params").value)
   }
-
-// Running
-val runBackend = taskKey[Unit]("Run the backend.")
 
 runBackend := {
   runBackend("").value

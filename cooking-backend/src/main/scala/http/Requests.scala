@@ -4,9 +4,9 @@ import api.{Persisting, Querying}
 import context.{ApiContext, CookingApi}
 import domain.filters.Filters
 import domain.users.User
-import io.circe.{Decoder, Encoder}
 import io.circe.jawn.decode
 import io.circe.syntax.EncoderOps
+import io.circe.{Decoder, Encoder}
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.Results.Ok
 import play.api.mvc.{AnyContent, Request, Result, Results}
@@ -55,6 +55,22 @@ object Requests {
       cookingApi,
       maybeUser
     )
+  }
+
+  private def extractUser(
+      request: Request[Any],
+      cookingApi: CookingApi
+  ): Option[User] = {
+    val authHeader = request.headers.get("Authorization")
+    try {
+      ApiRunner.runResponse[ApiContext, Throwable, Option[User]](
+        cookingApi.users.authenticate(authHeader),
+        cookingApi,
+        None
+      )
+    } catch {
+      case _: Throwable => None
+    }
   }
 
   def post[Entity: Decoder, EntityInput: Decoder, EntityUpdateInput: Decoder](
@@ -139,22 +155,6 @@ object Requests {
       cookingApi,
       maybeUser
     )
-  }
-
-  private def extractUser(
-      request: Request[Any],
-      cookingApi: CookingApi
-  ): Option[User] = {
-    val authHeader = request.headers.get("Authorization")
-    try {
-      ApiRunner.runResponse[ApiContext, Throwable, Option[User]](
-        cookingApi.users.authenticate(authHeader),
-        cookingApi,
-        None
-      )
-    } catch {
-      case _: Throwable => None
-    }
   }
 
 }

@@ -5,7 +5,6 @@ import context.ApiContext
 import domain.filters.Filters
 import domain.recipes.{Recipe, RecipeInput}
 import persistence.recipes.Recipes
-import play.api.libs.json.JsValue
 import zio.ZIO
 
 import java.util.UUID
