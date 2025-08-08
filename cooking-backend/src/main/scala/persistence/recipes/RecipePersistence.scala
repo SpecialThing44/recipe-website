@@ -29,8 +29,6 @@ class RecipePersistence @Inject() (config: Configuration) extends Recipes {
   override def list(query: Filters): ZIO[ApiContext, Throwable, Seq[Recipe]] =
     ???
 
-  override def find(query: Filters): ZIO[ApiContext, Throwable, Recipe] = ???
-
   override def create(entity: Recipe): ZIO[ApiContext, Throwable, Recipe] =
     ZIO.fromTry {
       Try {

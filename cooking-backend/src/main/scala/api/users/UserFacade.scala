@@ -35,9 +35,6 @@ class UserFacade @Inject() (
 
   override def list(query: Filters): ZIO[ApiContext, Throwable, Seq[User]] = fetchInteractor.list(query)
 
-  override def find(query: Filters): ZIO[ApiContext, Throwable, User] =
-    fetchInteractor.find(query)
-
   override def getById(id: UUID): ZIO[ApiContext, Throwable, User] =
     persistence.getById(id)
 

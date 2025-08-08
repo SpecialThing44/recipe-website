@@ -12,6 +12,4 @@ class UserFetchInteractor @Inject() (
     authenticationInteractor: AuthenticationInteractor,
 ) {
   def list(query: Filters): ZIO[ApiContext, Throwable, Seq[User]] = persistence.list(query)
-
-  def find(query: Filters): ZIO[ApiContext, Throwable, User] = persistence.find(query)
 }

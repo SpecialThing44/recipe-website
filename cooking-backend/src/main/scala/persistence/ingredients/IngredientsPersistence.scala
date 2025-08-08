@@ -22,9 +22,6 @@ class IngredientsPersistence @Inject() (config: Configuration)
 
   override def list(query: Filters): ZIO[ApiContext, Throwable, Seq[Ingredient]] = ???
 
-  override def find(query: Filters): ZIO[ApiContext, Throwable, Ingredient] =
-    ???
-
   override def create(
       entity: Ingredient
   ): ZIO[ApiContext, Throwable, Ingredient] = ???

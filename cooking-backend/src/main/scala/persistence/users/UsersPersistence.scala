@@ -23,29 +23,6 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
     GraphDatabase.driver(uri, AuthTokens.basic(username, password))
   private implicit val graph: UserGraph = UserGraph()
 
-  override def find(query: Filters): ZIO[ApiContext, Throwable, User] =
-    ZIO.fromTry {
-      Try {
-        val session: Session = driver.session()
-        try {
-          val query =
-            s"""
-             |MATCH (${graph.varName}:${graph.nodeName})
-             |${ReturnStatement.apply}
-             |LIMIT 1""".stripMargin
-          val result = session.run(query)
-          if (result.hasNext) {
-            val record = result.next().get(graph.varName).asMap()
-            UserConverter.toDomain(record)
-          } else {
-            throw NoSuchEntityError(s"No ${graph.nodeName}s matching filters")
-          }
-        } finally {
-          session.close()
-        }
-      }
-    }
-
   override def list(query: Filters): ZIO[ApiContext, Throwable, Seq[User]] =
     ZIO.fromTry {
       Try {

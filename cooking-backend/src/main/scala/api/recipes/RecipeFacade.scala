@@ -30,7 +30,5 @@ class RecipeFacade @Inject() (
   override def list(query: Filters): ZIO[ApiContext, Throwable, Seq[Recipe]] =
     ???
 
-  override def find(query: Filters): ZIO[ApiContext, Throwable, Recipe] = ???
-
   override def getById(id: UUID): ZIO[ApiContext, Throwable, Recipe] = ???
 }
