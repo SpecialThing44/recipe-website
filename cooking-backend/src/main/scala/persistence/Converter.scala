@@ -20,4 +20,6 @@ trait Converter[Domain] {
   def toGraph(entity: Domain): Map[String, Object]
 
   def toDomain(entity: util.Map[String, AnyRef]): Domain
+
+  val lowerPrefix = "lower"
 }

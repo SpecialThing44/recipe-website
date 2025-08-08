@@ -12,7 +12,9 @@ object UserConverter extends Converter[User] {
     Map(
       "id" -> user.id,
       "name" -> user.name,
+      s"${lowerPrefix}name" -> user.name.toLowerCase,
       "email" -> user.email,
+      s"${lowerPrefix}email" -> user.email.toLowerCase,
       "password" -> user.password,
       "country_of_origin" -> user.countryOfOrigin.getOrElse(""),
       "created_on" -> user.createdOn.toString,
