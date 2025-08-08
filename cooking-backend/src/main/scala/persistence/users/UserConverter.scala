@@ -26,7 +26,6 @@ object UserConverter extends Converter[User] {
     name = record.get("name").toString,
     email = record.get("email").toString,
     password = "",
-    savedRecipes = Seq.empty,
     countryOfOrigin = Option(record.get("country_of_origin").toString),
     createdOn = Instant.parse(record.get("created_on").toString),
     updatedOn = Instant.parse(record.get("updated_on").toString)
@@ -37,7 +36,6 @@ object UserConverter extends Converter[User] {
     name = record.get("name").toString,
     email = record.get("email").toString,
     password = record.get("password").toString,
-    savedRecipes = Seq.empty,
     countryOfOrigin = Option(record.get("country_of_origin").toString),
     createdOn = Instant.parse(record.get("created_on").toString),
     updatedOn = Instant.parse(record.get("updated_on").toString)

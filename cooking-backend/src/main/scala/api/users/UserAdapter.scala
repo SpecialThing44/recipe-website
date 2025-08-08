@@ -12,7 +12,6 @@ object UserAdapter {
       user.name,
       user.email,
       user.password,
-      Seq.empty,
       user.countryOfOrigin,
       now,
       now,
@@ -26,7 +25,6 @@ object UserAdapter {
       user.name.getOrElse(existingUser.name),
       user.email.getOrElse(existingUser.email),
       existingUser.password,
-      Seq.empty,
       if (user.countryOfOrigin.isDefined) user.countryOfOrigin
       else existingUser.countryOfOrigin,
       existingUser.createdOn,

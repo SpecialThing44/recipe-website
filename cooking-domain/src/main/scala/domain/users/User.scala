@@ -1,6 +1,5 @@
 package domain.users
 
-import domain.recipes.Recipe
 import domain.shared.Identified
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
@@ -12,7 +11,6 @@ case class User(
     name: String,
     email: String,
     password: String,
-    savedRecipes: Seq[Recipe] = Seq.empty,
     countryOfOrigin: Option[String] = None,
     createdOn: Instant,
     updatedOn: Instant,
@@ -40,7 +38,7 @@ object User {
 
   def empty(): User = {
     val now = Instant.now
-    User("", "", "", Seq.empty, None, now, now, UUID.randomUUID())
+    User("", "", "", None, now, now, UUID.randomUUID())
   }
 }
 

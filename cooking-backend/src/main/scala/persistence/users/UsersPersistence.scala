@@ -7,6 +7,7 @@ import domain.types.NoSuchEntityError
 import domain.users.User
 import org.neo4j.driver.{AuthTokens, Driver, GraphDatabase, Session}
 import persistence.cypher.{DeleteStatement, MatchByIdStatement, ReturnStatement}
+import persistence.filters.FiltersConverter
 import play.api.Configuration
 import zio.ZIO
 
@@ -23,7 +24,7 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
     GraphDatabase.driver(uri, AuthTokens.basic(username, password))
   private implicit val graph: UserGraph = UserGraph()
 
-  override def list(query: Filters): ZIO[ApiContext, Throwable, Seq[User]] =
+  override def list(filters: Filters): ZIO[ApiContext, Throwable, Seq[User]] =
     ZIO.fromTry {
       Try {
         val session: Session = driver.session()
@@ -31,6 +32,7 @@ class UsersPersistence @Inject() (config: Configuration) extends Users {
           val query =
             s"""
                |MATCH (${graph.varName}:${graph.nodeName})
+               |${FiltersConverter.toCypher(filters, graph.nodeName)}
                |${ReturnStatement.apply}
                |""".stripMargin
           val result = session.run(query)

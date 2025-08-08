@@ -25,7 +25,7 @@ case class Recipe( // Maybe want a double reference back to user, at least in DB
     public: Boolean,
     wikiLink: String, // May want to strongly type this
     videoLink: String, // May want to strongly type this
-    instructions: String, // Rich text, need to find a way to resolve image paths likely
+    instructions: String, // Rich text?
     createdOn: Instant,
     updatedOn: Instant,
     id: UUID
