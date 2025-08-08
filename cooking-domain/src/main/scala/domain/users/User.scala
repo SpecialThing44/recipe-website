@@ -1,6 +1,6 @@
-package domain.people.users
+package domain.users
 
-import domain.food.recipes.Recipe
+import domain.recipes.Recipe
 import domain.shared.Identified
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}

@@ -1,6 +1,6 @@
 package context
 
-import domain.people.users.User
+import domain.users.User
 
 case class ApplicationContext(
     user: Option[User],

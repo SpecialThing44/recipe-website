@@ -2,7 +2,7 @@ package http.ingredients
 
 import com.google.inject.{Inject, Singleton}
 import context.CookingApi
-import domain.food.ingredients.Ingredient
+import domain.ingredients.Ingredient
 import http.Requests
 import io.circe.Decoder
 import play.api.libs.json.*

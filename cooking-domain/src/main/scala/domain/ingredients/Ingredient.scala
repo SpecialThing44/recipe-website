@@ -1,4 +1,4 @@
-package domain.food.ingredients
+package domain.ingredients
 
 import domain.shared.Wikified
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}

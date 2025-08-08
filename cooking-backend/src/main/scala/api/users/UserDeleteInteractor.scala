@@ -2,7 +2,7 @@ package api.users
 
 import com.google.inject.Inject
 import context.ApiContext
-import domain.people.users.User
+import domain.users.User
 import persistence.users.Users
 import zio.ZIO
 

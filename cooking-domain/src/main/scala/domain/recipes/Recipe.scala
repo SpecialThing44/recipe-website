@@ -1,8 +1,8 @@
-package domain.food.recipes
+package domain.recipes
 
-import domain.food.ingredients.InstructionIngredient
-import domain.people.users.User
+import domain.ingredients.InstructionIngredient
 import domain.shared.{Identified, Wikified}
+import domain.users.User
 import io.circe._
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 

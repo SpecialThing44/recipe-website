@@ -3,7 +3,7 @@ package api.users
 import api.{Persisting, Querying}
 import com.google.inject.ImplementedBy
 import context.{ApiContext, CookingApi}
-import domain.people.users.{User, UserInput, UserUpdateInput}
+import domain.users.{User, UserInput, UserUpdateInput}
 import play.api.mvc.Request
 import zio.ZIO
 

@@ -3,7 +3,7 @@ package api.users
 import com.google.inject.Inject
 import context.{ApiContext, CookingApi}
 import domain.filters.Filters
-import domain.people.users.{User, UserInput, UserUpdateInput}
+import domain.users.{User, UserInput, UserUpdateInput}
 import persistence.users.Users
 import play.api.libs.json.JsValue
 import play.api.mvc.Request

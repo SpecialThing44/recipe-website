@@ -3,7 +3,7 @@ package http
 import api.{Persisting, Querying}
 import context.{ApiContext, CookingApi}
 import domain.filters.Filters
-import domain.people.users.User
+import domain.users.User
 import io.circe.{Decoder, Encoder}
 import io.circe.jawn.decode
 import io.circe.syntax.EncoderOps

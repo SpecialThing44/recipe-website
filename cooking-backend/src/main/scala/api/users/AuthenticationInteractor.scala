@@ -2,8 +2,8 @@ package api.users
 
 import com.google.inject.Inject
 import context.ApiContext
-import domain.people.users.User
 import domain.types.{AuthenticationError, Fault}
+import domain.users.User
 import io.circe.jawn.decode
 import io.circe.syntax.*
 import io.github.nremond.SecureHash

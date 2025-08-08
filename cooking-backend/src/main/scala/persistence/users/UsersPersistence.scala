@@ -3,8 +3,8 @@ package persistence.users
 import com.google.inject.Inject
 import context.ApiContext
 import domain.filters.Filters
-import domain.people.users.User
 import domain.types.NoSuchEntityError
+import domain.users.User
 import org.neo4j.driver.{AuthTokens, Driver, GraphDatabase, Session}
 import persistence.cypher.{DeleteStatement, MatchByIdStatement, ReturnStatement}
 import play.api.Configuration

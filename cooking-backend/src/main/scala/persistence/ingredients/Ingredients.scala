@@ -2,7 +2,7 @@ package persistence.ingredients
 
 import api.Querying
 import com.google.inject.ImplementedBy
-import domain.food.ingredients.Ingredient
+import domain.ingredients.Ingredient
 import persistence.DbPersisting
 
 @ImplementedBy(classOf[IngredientsPersistence])

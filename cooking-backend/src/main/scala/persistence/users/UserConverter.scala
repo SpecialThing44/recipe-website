@@ -1,6 +1,6 @@
 package persistence.users
 
-import domain.people.users.User
+import domain.users.User
 import persistence.Converter
 
 import java.time.Instant

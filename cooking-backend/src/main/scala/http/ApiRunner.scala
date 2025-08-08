@@ -1,8 +1,8 @@
 package http
 
 import context.{ApiContext, ApplicationContext, CookingApi}
-import domain.people.users.User
 import domain.types.ZIORuntime
+import domain.users.User
 import play.api.mvc.Result
 import zio.{ZEnvironment, ZIO}
 

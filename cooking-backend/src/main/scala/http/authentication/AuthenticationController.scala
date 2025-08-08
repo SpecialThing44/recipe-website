@@ -2,7 +2,7 @@ package http.authentication
 
 import com.google.inject.{Inject, Singleton}
 import context.CookingApi
-import domain.people.users.{LoginInput, UserInput}
+import domain.users.{LoginInput, UserInput}
 import http.ErrorMapping.{errorJson, messageJson}
 import http.{ApiRunner, ErrorMapping}
 import play.api.mvc.{

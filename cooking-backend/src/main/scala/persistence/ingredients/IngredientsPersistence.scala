@@ -3,7 +3,7 @@ package persistence.ingredients
 import com.google.inject.Inject
 import context.ApiContext
 import domain.filters.Filters
-import domain.food.ingredients.Ingredient
+import domain.ingredients.Ingredient
 import org.neo4j.driver.{AuthTokens, Driver, GraphDatabase}
 import play.api.Configuration
 import play.api.libs.json.JsValue

@@ -1,6 +1,6 @@
 package api.recipes
 
-import domain.food.recipes.{Recipe, RecipeInput}
+import domain.recipes.{Recipe, RecipeInput}
 
 import java.time.Instant
 import java.util.UUID

@@ -1,6 +1,6 @@
 package api.users
 
-import domain.people.users.{User, UserInput, UserUpdateInput}
+import domain.users.{User, UserInput, UserUpdateInput}
 
 import java.time.Instant
 import java.util.UUID

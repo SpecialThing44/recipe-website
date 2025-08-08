@@ -3,7 +3,7 @@ package api.ingredients
 import com.google.inject.Inject
 import context.ApiContext
 import domain.filters.Filters
-import domain.food.ingredients.Ingredient
+import domain.ingredients.Ingredient
 import persistence.ingredients.Ingredients
 import play.api.libs.json.JsValue
 import zio.ZIO

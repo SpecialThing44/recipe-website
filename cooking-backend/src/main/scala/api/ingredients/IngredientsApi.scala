@@ -2,7 +2,7 @@ package api.ingredients
 
 import api.{Persisting, Querying}
 import com.google.inject.ImplementedBy
-import domain.food.ingredients.Ingredient
+import domain.ingredients.Ingredient
 
 @ImplementedBy(classOf[IngredientsFacade])
 trait IngredientsApi

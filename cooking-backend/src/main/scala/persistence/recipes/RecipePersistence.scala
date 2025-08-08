@@ -3,10 +3,10 @@ package persistence.recipes
 import com.google.inject.Inject
 import context.ApiContext
 import domain.filters.Filters
-import domain.food.ingredients.InstructionIngredient
-import domain.food.recipes.Recipe
-import domain.people.users.User
+import domain.ingredients.InstructionIngredient
+import domain.recipes.Recipe
 import domain.types.NoSuchEntityError
+import domain.users.User
 import io.circe.jawn.decode
 import io.circe.syntax.EncoderOps
 import org.neo4j.driver.{AuthTokens, Driver, GraphDatabase, Session}

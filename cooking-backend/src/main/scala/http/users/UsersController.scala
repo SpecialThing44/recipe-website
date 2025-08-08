@@ -2,7 +2,7 @@ package http.users
 
 import com.google.inject.{Inject, Singleton}
 import context.CookingApi
-import domain.people.users.{User, UserInput, UserUpdateInput}
+import domain.users.{User, UserInput, UserUpdateInput}
 import http.Requests
 import play.api.libs.json.JsValue
 import play.api.mvc.*

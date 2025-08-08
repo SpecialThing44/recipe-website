@@ -3,7 +3,7 @@ package persistence.users
 import api.Querying
 import com.google.inject.ImplementedBy
 import context.ApiContext
-import domain.people.users.User
+import domain.users.User
 import persistence.DbPersisting
 import zio.ZIO
 

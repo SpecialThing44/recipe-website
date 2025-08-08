@@ -1,8 +1,8 @@
 package http.recipes
 import com.google.inject.{Inject, Singleton}
 import context.CookingApi
-import domain.food.ingredients.Ingredient
-import domain.food.recipes.{Recipe, RecipeInput}
+import domain.ingredients.Ingredient
+import domain.recipes.{Recipe, RecipeInput}
 import http.Requests
 import io.circe.Decoder
 import play.api.libs.json.*
