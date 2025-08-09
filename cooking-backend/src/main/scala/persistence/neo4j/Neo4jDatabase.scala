@@ -22,21 +22,30 @@ private[persistence] case class Neo4jDatabase @Inject() (config: Configuration)
 
   override def shutdown(): Unit = driver.close()
 
-  override def writeTransaction(cypher: String): zio.Task[Result] =
+  override def writeTransaction[A](
+      cypher: String,
+      logic: Result => A
+  ): zio.Task[A] =
     ZIO.fromTry {
       Try {
         val session = driver.session
-        session.run("MATCH (n) DETACH DELETE n")
-        session.executeWrite(tx => tx.run(cypher))
+        val result = session.executeWrite(tx => logic(tx.run(cypher)))
+        session.close()
+        result
       }
     }
 
-  override def readTransaction(cypher: String): zio.Task[Result] =
+  override def readTransaction[A](
+      cypher: String,
+      logic: Result => A
+  ): zio.Task[A] =
     ZIO.fromTry {
       Try {
         val session = driver.session
-        session.run("MATCH (n) DETACH DELETE n")
-        session.executeRead(tx => tx.run(cypher))
+        val result = session.executeRead(tx => logic(tx.run(cypher)))
+        session.close()
+        result
       }
     }
+
 }

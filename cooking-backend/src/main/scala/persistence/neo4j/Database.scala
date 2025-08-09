@@ -7,6 +7,6 @@ import org.neo4j.driver.Result
 private[persistence] trait Database {
   def initialize(): Unit
   def shutdown(): Unit
-  def readTransaction(cypher: String): zio.Task[Result]
-  def writeTransaction(cypher: String): zio.Task[Result]
+  def readTransaction[A](cypher: String, logic: Result => A): zio.Task[A]
+  def writeTransaction[A](cypher: String, logic: Result => A): zio.Task[A]
 }

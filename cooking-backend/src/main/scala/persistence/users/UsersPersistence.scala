@@ -5,6 +5,7 @@ import context.ApiContext
 import domain.filters.Filters
 import domain.types.NoSuchEntityError
 import domain.users.User
+import org.neo4j.driver.Result
 import persistence.cypher.{DeleteStatement, MatchByIdStatement, ReturnStatement}
 import persistence.filters.FiltersConverter
 import persistence.neo4j.Database
@@ -17,28 +18,32 @@ class UsersPersistence @Inject() (database: Database) extends Users {
   private implicit val graph: UserGraph = UserGraph()
 
   override def list(filters: Filters): ZIO[ApiContext, Throwable, Seq[User]] =
-    for {
-      dbResult <- database.readTransaction(s"""
+    database.readTransaction(
+      s"""
                |MATCH (${graph.varName}:${graph.nodeName})
                |${FiltersConverter.toCypher(filters, graph.nodeName)}
                |${ReturnStatement.apply}
-               |""".stripMargin)
-      result = dbResult.asScala
-        .map(record => record.get(graph.varName).asMap())
-        .map(UserConverter.toDomain)
-        .toSeq
-    } yield result
+               |""".stripMargin,
+      (result: Result) =>
+        result.asScala
+          .map(record => record.get(graph.varName).asMap())
+          .map(UserConverter.toDomain)
+          .toSeq
+    )
 
   override def create(entity: User): ZIO[ApiContext, Throwable, User] = {
     val properties = UserConverter
       .convert(entity)
     for {
-      dbResult <- database.writeTransaction(s"""
+      dbResult <- database.writeTransaction(
+        s"""
                |CREATE (${graph.varName}:${graph.nodeName} {
                |$properties
                |})
                |${ReturnStatement.apply}
-               |""".stripMargin)
+               |""".stripMargin,
+        (result: Result) => ()
+      )
     } yield entity
   }
 
@@ -48,81 +53,86 @@ class UsersPersistence @Inject() (database: Database) extends Users {
   ): ZIO[ApiContext, Throwable, User] = {
     val properties = UserConverter
       .convertForUpdate(graph.varName, entity)
-    for {
-      dbResult <- database.writeTransaction(s"""
+    database.writeTransaction(
+      s"""
                |${MatchByIdStatement.apply(entity.id)}
                |SET $properties
                |${ReturnStatement.apply}
-               |""".stripMargin)
-      result =
-        if (dbResult.hasNext) {
-          val record = dbResult.next().get(graph.varName).asMap()
+               |""".stripMargin,
+      (result: Result) => {
+        if (result.hasNext) {
+          val record = result.next().get(graph.varName).asMap()
           UserConverter.toDomain(record)
         } else {
           throw NoSuchEntityError(
             s"Update for ${graph.nodeName} with id ${entity.id} has failed for some reason"
           )
-
         }
-    } yield result
+      }
+    )
   }
 
   override def delete(id: UUID): ZIO[ApiContext, Throwable, User] =
     for {
       user <- getById(id)
-      dbResult <- database.writeTransaction(s"""
+      dbResult <- database.writeTransaction(
+        s"""
                |${MatchByIdStatement.apply(id)}
                |${DeleteStatement.apply}
-               |""".stripMargin)
+               |""".stripMargin,
+        (result: Result) => ()
+      )
     } yield user
 
   override def getById(id: UUID): ZIO[ApiContext, Throwable, User] =
-    for {
-      dbResult <- database.readTransaction(s"""
+    database.readTransaction(
+      s"""
                |${MatchByIdStatement.apply(id)}
                |${ReturnStatement.apply}
-               |""".stripMargin)
-      result =
-        if (dbResult.hasNext) {
-          val record = dbResult.next().get(graph.varName).asMap()
+               |""".stripMargin,
+      (result: Result) => {
+        if (result.hasNext) {
+          val record = result.next().get(graph.varName).asMap()
           UserConverter.toDomain(record)
         } else {
           throw NoSuchEntityError(s"${graph.nodeName} with id $id not found")
         }
-    } yield result
+      }
+    )
 
   override def authenticate(
       email: String,
-  ): ZIO[ApiContext, Throwable, User] = {
-    for {
-      dbResult <- database.readTransaction(s"""
+  ): ZIO[ApiContext, Throwable, User] =
+    database.readTransaction(
+      s"""
                |MATCH (${graph.varName}:${graph.nodeName} {email: '$email'})
                |${ReturnStatement.apply}
-               |""".stripMargin)
-      result =
-        if (dbResult.hasNext) {
-          val record = dbResult.next().get(graph.varName).asMap()
+               |""".stripMargin,
+      (result: Result) => {
+        if (result.hasNext) {
+          val record = result.next().get(graph.varName).asMap()
           UserConverter.toAuthDomain(record)
         } else {
           throw NoSuchEntityError(
             s"${graph.nodeName} with email $email not found"
           )
         }
-    } yield result
-  }
+      }
+    )
 
   override def getByIdWithPassword(id: UUID): ZIO[ApiContext, Throwable, User] =
-    for {
-      dbResult <- database.readTransaction(s"""
+    database.readTransaction(
+      s"""
                |${MatchByIdStatement.apply(id)}
                |${ReturnStatement.apply}
-               |""".stripMargin)
-      result =
-        if (dbResult.hasNext) {
-          val record = dbResult.next().get(graph.varName).asMap()
+               |""".stripMargin,
+      (result: Result) => {
+        if (result.hasNext) {
+          val record = result.next().get(graph.varName).asMap()
           UserConverter.toAuthDomain(record)
         } else {
           throw NoSuchEntityError(s"${graph.nodeName} with id $id not found")
         }
-    } yield result
+      }
+    )
 }
