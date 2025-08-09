@@ -1,8 +1,8 @@
 package http.healthcheck
 
-import play.api.mvc._
 import com.google.inject.{Inject, Singleton}
 import play.api.http.ContentTypes
+import play.api.mvc.*
 
 @Singleton
 class HealthCheckController @Inject() (

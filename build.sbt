@@ -1,6 +1,5 @@
 import ProjectExtensions.ProjectOps
-
-import Libraries.*
+import Libraries.{logback, *}
 
 lazy val root = project
   .in(file("."))
@@ -9,7 +8,6 @@ lazy val root = project
     scalacOptions --= Seq("-Werror"),
     scalacOptions --= Seq("-Xfatal-warnings"),
     version := "0.1.0-SNAPSHOT",
-    libraryDependencies += "org.scalameta" %% "munit" % "1.0.0" % Test
   )
   .aggregate(domain, backend)
 
@@ -18,6 +16,12 @@ lazy val domain =
     scalacOptions --= Seq("-Werror"),
     scalacOptions --= Seq("-Xfatal-warnings"),
     libraryDependencies ++= Seq(
+      zio,
+      circeCore,
+      circeGeneric,
+      circeParser,
+      slf4j,
+      logback
     )
   )
 
@@ -28,9 +32,16 @@ lazy val backend =
       scalacOptions --= Seq("-Werror"),
       scalacOptions --= Seq("-Xfatal-warnings"),
       libraryDependencies ++= Seq(
+        jdbc,
+        circeCore,
+        circeGeneric,
+        circeParser,
         PekkoHttp,
         PekkoActor,
+        PekkoActorTyped,
         PekkoStream,
+        PekkoSlf4j,
+        PekkoSerializationJackson,
         play,
         playJson,
         playStreams,
@@ -38,5 +49,11 @@ lazy val backend =
         guiceGoogle,
         GoogleHttpClient,
         GoogleHttpClientGson,
+        zio,
+        neo4jDriver,
+        jwtScala,
+        pbkdf2,
+        scalaTest,
+        mockito
       )
     )

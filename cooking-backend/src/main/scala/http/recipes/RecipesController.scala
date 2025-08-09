@@ -1,0 +1,45 @@
+package http.recipes
+import com.google.inject.{Inject, Singleton}
+import context.CookingApi
+import domain.ingredients.Ingredient
+import domain.recipes.{Recipe, RecipeInput}
+import http.Requests
+import io.circe.Decoder
+import play.api.libs.json.*
+import play.api.mvc.*
+
+@Singleton
+class RecipesController @Inject() (
+    cc: ControllerComponents,
+    cookingApi: CookingApi
+) extends AbstractController(cc) {
+  implicit val recipeDecoder: Decoder[Recipe] = Recipe.decoder
+  implicit val ingredientDecoder: Decoder[Ingredient] = Ingredient.decoder
+
+  def list(): Action[JsValue] = Action(parse.json) { request =>
+    Requests.list[Recipe](request, cookingApi, cookingApi.recipes)
+  }
+
+  def post(): Action[JsValue] = Action(parse.json) { request =>
+    Requests.post[Recipe, RecipeInput, RecipeInput](
+      request,
+      cookingApi,
+      cookingApi.recipes
+    )
+  }
+
+  def get(id: java.util.UUID): Action[AnyContent] = Action { request =>
+    Requests.get[Recipe](id, request, cookingApi, cookingApi.recipes)(
+      Recipe.encoder
+    )
+  }
+
+  def put(id: java.util.UUID): Action[JsValue] = Action(parse.json) { request =>
+    Requests.put[Recipe, RecipeInput, RecipeInput](
+      id,
+      request,
+      cookingApi,
+      cookingApi.recipes
+    )
+  }
+}

@@ -2,7 +2,24 @@
 
 ### Usage
 
-This is a normal sbt project. You can compile code with `sbt compile`, run it with `sbt run`, and `sbt console` will start a Scala 3 REPL.
+Run with `sbt runBackend`
 
-For more information on the sbt-dotty plugin, see the
-[scala3-example-project](https://github.com/scala/scala3-example-project/blob/main/README.md).
+Requires a neo4j 5.x.y instance available at port 7687
+
+
+## Notes
+
+### Auth
+
+Implementing custom auth was a fun exercise, but I should really outsource to something that handles it in a separate store. 
+I could keep my own separate auth service, but so far auth0s free plan looks good, and I'm familiar with it.
+
+### Filters
+
+After I implement recipes, I should think about an endpoint to support more social queries.
+ - Recipes similar to ones you like
+ - Users with similar tastes to you
+
+### Design
+- I could maybe delegate more to fetch interactor
+- Persistence layer will likely become generic. 

@@ -29,7 +29,6 @@ object ProjectExtensions {
         Test / concurrentRestrictions := Seq(
           Tags.limit(Tags.ForkedTestGroup, cores)
         ),
-        excludeDependencies += ExclusionRule("org.slf4j", "slf4j-nop")
       )
 
   }

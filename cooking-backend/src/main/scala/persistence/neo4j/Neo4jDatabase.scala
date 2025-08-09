@@ -1,0 +1,55 @@
+package persistence.neo4j
+
+import com.google.inject.{Inject, Singleton}
+import domain.logging.Logging
+import org.neo4j.driver.{AuthTokens, Driver, GraphDatabase, Result}
+import play.api.Configuration
+import zio.ZIO
+
+import scala.compiletime.uninitialized
+import scala.util.Try
+
+@Singleton
+private[persistence] case class Neo4jDatabase @Inject() (config: Configuration)
+    extends Database
+    with Logging {
+  private var driver: Driver = uninitialized
+
+  override def initialize(): Unit = {
+    val uri = config.get[String]("neo4j.uri")
+    val username = config.get[String]("neo4j.username")
+    val password = config.get[String]("neo4j.password")
+    driver = GraphDatabase.driver(uri, AuthTokens.basic(username, password))
+  }
+
+  override def shutdown(): Unit = driver.close()
+
+  override def writeTransaction[A](
+      cypher: String,
+      logic: Result => A
+  ): zio.Task[A] =
+    ZIO.fromTry {
+      Try {
+        val session = driver.session
+        logger.info(s"Executing cypher: $cypher")
+        val result = session.executeWrite(tx => logic(tx.run(cypher)))
+        session.close()
+        result
+      }
+    }
+
+  override def readTransaction[A](
+      cypher: String,
+      logic: Result => A
+  ): zio.Task[A] =
+    ZIO.fromTry {
+      Try {
+        val session = driver.session
+        logger.info(s"Executing cypher: $cypher")
+        val result = session.executeRead(tx => logic(tx.run(cypher)))
+        session.close()
+        result
+      }
+    }
+
+}

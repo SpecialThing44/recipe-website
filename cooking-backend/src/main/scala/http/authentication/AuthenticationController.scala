@@ -1,0 +1,72 @@
+package http.authentication
+
+import com.google.inject.{Inject, Singleton}
+import context.CookingApi
+import domain.users.{LoginInput, UserInput}
+import http.ErrorMapping.{errorJson, messageJson}
+import http.{ApiRunner, ErrorMapping}
+import io.circe.parser.decode
+import play.api.libs.json.{JsValue, Json}
+import play.api.mvc.{
+  AbstractController,
+  Action,
+  AnyContent,
+  ControllerComponents
+}
+
+@Singleton
+class AuthenticationController @Inject() (
+    cc: ControllerComponents,
+    cookingApi: CookingApi
+) extends AbstractController(cc) {
+  def signup(): Action[JsValue] = Action(parse.json) { request =>
+    decode[UserInput](request.body.toString()) match {
+      case Right(user) =>
+        try {
+          val token = ApiRunner.runResponse(
+            cookingApi.users.signup(user, cookingApi),
+            cookingApi,
+            None
+          )
+          Ok(Json.obj("token" -> token))
+        } catch {
+          case e: Throwable =>
+            ErrorMapping.mapCustomErrorsToHttp(e)
+        }
+      case Left(error) =>
+        BadRequest(Json.obj("error" -> error.getMessage))
+    }
+  }
+
+  def login(): Action[JsValue] = Action(parse.json) { request =>
+    decode[LoginInput](request.body.toString()) match {
+      case Right(loginInput) =>
+        try {
+          val maybeToken = ApiRunner.runResponse(
+            cookingApi.users.login(loginInput.email, loginInput.password),
+            cookingApi,
+            None
+          )
+          maybeToken match {
+            case Some(token) => Ok(Json.obj("token" -> token))
+            case None        => Unauthorized(errorJson("Invalid credentials"))
+          }
+        } catch {
+          case e: Throwable =>
+            ErrorMapping.mapCustomErrorsToHttp(e)
+        }
+      case _ => BadRequest(errorJson("Invalid input"))
+    }
+  }
+
+  def logout(): Action[AnyContent] = Action { request =>
+    val result =
+      ApiRunner.runResponse(
+        cookingApi.users.logout(request),
+        cookingApi,
+        None
+      )
+    if (result) Ok(messageJson("Logged out successfully"))
+    else Unauthorized(errorJson("Invalid token"))
+  }
+}
