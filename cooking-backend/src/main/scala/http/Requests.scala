@@ -19,7 +19,7 @@ object Requests {
       request: Request[JsValue],
       cookingApi: CookingApi,
       entityApi: Querying[Entity]
-  ): Result = {
+  )(implicit encoder: Encoder[Entity]): Result = {
     val maybeUser = extractUser(request, cookingApi)
     val entities: ZIO[ApiContext, Throwable, Seq[Entity]] = for {
       filters <- ZIO.fromEither(decode[Filters](request.body.toString))
@@ -27,7 +27,7 @@ object Requests {
     } yield entities
     val response = entities.fold(
       error => ErrorMapping.mapCustomErrorsToHttp(error),
-      result => Ok(s"{ \"Body\": $result }")
+      result => Ok(s"{ \"Body\": ${Json.parse(result.asJson.noSpaces)}}")
     )
     ApiRunner.runResponseSafely[ApiContext](
       response,

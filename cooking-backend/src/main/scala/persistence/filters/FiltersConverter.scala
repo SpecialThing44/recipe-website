@@ -1,6 +1,7 @@
 package persistence.filters
 
 import domain.filters.Filters
+import io.circe.syntax.EncoderOps
 import persistence.users.UserConverter.lowerPrefix
 
 object FiltersConverter {
@@ -8,8 +9,8 @@ object FiltersConverter {
       filters: Filters,
       nodeVar: String
   ): String = {
-    val idClause = filters.id.map(id => s"$nodeVar.id = $id")
-    val idsClause = filters.ids.map(ids => s"$nodeVar.id IN $ids")
+    val idClause = filters.id.map(id => s"$nodeVar.id = '$id'")
+    val idsClause = filters.ids.map(ids => s"$nodeVar.id IN ${ids.asJson}")
     val nameClause =
       filters.name.map(nameFilter =>
         StringFilterConverter.toCypher(
@@ -86,7 +87,10 @@ object FiltersConverter {
     matchingFilters
       .filter(_.isDefined)
       .map(_.get)
-      .mkString(" \n ") + "MATCH ($nodeVar) WHERE  " + nonMatchingFilters
+      .mkString(" \n ") + {
+      if (nonMatchingFilters.exists(_.isDefined)) s"MATCH ($nodeVar) WHERE  "
+      else ""
+    } + nonMatchingFilters
       .filter(_.isDefined)
       .map(_.get)
       .mkString(" AND ")

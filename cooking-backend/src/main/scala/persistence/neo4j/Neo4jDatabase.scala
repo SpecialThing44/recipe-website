@@ -1,6 +1,7 @@
 package persistence.neo4j
 
 import com.google.inject.{Inject, Singleton}
+import domain.logging.Logging
 import org.neo4j.driver.{AuthTokens, Driver, GraphDatabase, Result}
 import play.api.Configuration
 import zio.ZIO
@@ -10,7 +11,8 @@ import scala.util.Try
 
 @Singleton
 private[persistence] case class Neo4jDatabase @Inject() (config: Configuration)
-    extends Database {
+    extends Database
+    with Logging {
   private var driver: Driver = uninitialized
 
   override def initialize(): Unit = {
@@ -29,6 +31,7 @@ private[persistence] case class Neo4jDatabase @Inject() (config: Configuration)
     ZIO.fromTry {
       Try {
         val session = driver.session
+        logger.info(s"Executing cypher: $cypher")
         val result = session.executeWrite(tx => logic(tx.run(cypher)))
         session.close()
         result
@@ -42,6 +45,7 @@ private[persistence] case class Neo4jDatabase @Inject() (config: Configuration)
     ZIO.fromTry {
       Try {
         val session = driver.session
+        logger.info(s"Executing cypher: $cypher")
         val result = session.executeRead(tx => logic(tx.run(cypher)))
         session.close()
         result

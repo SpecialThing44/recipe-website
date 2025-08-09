@@ -6,7 +6,7 @@ class LoggerImpl(
     slf4jLogger: org.slf4j.Logger,
     clazz: Class[?]
 ) extends Logger {
-  override def info(msg: String): Unit = slf4jLogger.info(msg)
+  override def info(msg: String): Unit = println(msg)
 
   override def error(msg: String): Unit = slf4jLogger.error(msg)
 

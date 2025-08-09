@@ -21,7 +21,7 @@ class UsersPersistence @Inject() (database: Database) extends Users {
     database.readTransaction(
       s"""
                |MATCH (${graph.varName}:${graph.nodeName})
-               |${FiltersConverter.toCypher(filters, graph.nodeName)}
+               |${FiltersConverter.toCypher(filters, graph.varName)}
                |${ReturnStatement.apply}
                |""".stripMargin,
       (result: Result) =>
