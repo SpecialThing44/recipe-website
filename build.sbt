@@ -8,7 +8,6 @@ lazy val root = project
     scalacOptions --= Seq("-Werror"),
     scalacOptions --= Seq("-Xfatal-warnings"),
     version := "0.1.0-SNAPSHOT",
-    libraryDependencies += "org.scalameta" %% "munit" % "1.0.0" % Test
   )
   .aggregate(domain, backend)
 
@@ -18,7 +17,6 @@ lazy val domain =
     scalacOptions --= Seq("-Xfatal-warnings"),
     libraryDependencies ++= Seq(
       zio,
-      zioCats,
       circeCore,
       circeGeneric,
       circeParser,
@@ -40,7 +38,10 @@ lazy val backend =
         circeParser,
         PekkoHttp,
         PekkoActor,
+        PekkoActorTyped,
         PekkoStream,
+        PekkoSlf4j,
+        PekkoSerializationJackson,
         play,
         playJson,
         playStreams,
@@ -49,9 +50,10 @@ lazy val backend =
         GoogleHttpClient,
         GoogleHttpClientGson,
         zio,
-        zioCats,
         neo4jDriver,
         jwtScala,
-        pbkdf2
+        pbkdf2,
+        scalaTest,
+        mockito
       )
     )

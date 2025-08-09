@@ -1,6 +1,7 @@
 package persistence.filters
 
 import domain.filters.StringFilter
+import io.circe.syntax.EncoderOps
 
 object StringFilterConverter extends Cypher[StringFilter] {
   override def toCypher(
@@ -12,7 +13,7 @@ object StringFilterConverter extends Cypher[StringFilter] {
     val equalsClause =
       filter.equals.map(value => s"$nodeVar.$property = '$value'")
     val anyOfClause =
-      filter.anyOf.map(values => s"$nodeVar.$property IN $values")
+      filter.anyOf.map(values => s"$nodeVar.$property IN ${values.asJson}")
     val containsClause =
       filter.contains.map(value => s"$nodeVar.$property CONTAINS '$value'")
     val startsWithClause =

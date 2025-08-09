@@ -42,7 +42,7 @@ class UsersPersistence @Inject() (database: Database) extends Users {
                |})
                |${ReturnStatement.apply}
                |""".stripMargin,
-        (result: Result) => ()
+        (_: Result) => ()
       )
     } yield entity
   }
@@ -80,7 +80,7 @@ class UsersPersistence @Inject() (database: Database) extends Users {
                |${MatchByIdStatement.apply(id)}
                |${DeleteStatement.apply}
                |""".stripMargin,
-        (result: Result) => ()
+        (_: Result) => ()
       )
     } yield user
 
