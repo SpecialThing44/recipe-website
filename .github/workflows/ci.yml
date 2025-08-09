@@ -1,0 +1,37 @@
+name: Recipe App CI
+on:
+  push:
+    branches:
+      - main*
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  COMMIT_SHA: "${{ github.event.pull_request.head.sha || github.sha }}"
+  PR_NUMBER: ${{ github.event.pull_request.number || github.ref_name }}
+
+concurrency:
+  group: "${{ github.workflow_ref }}-${{ github.event_name }}-${{ github.actor_id }}"
+  cancel-in-progress: true
+
+jobs:
+  test-and-coverage:
+    name: Scala and Database Test
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run tests
+        uses: garnercorp/build-actions/scala@main
+        with:
+            skip-checkout: true
+            build-script: project/scripts/backend/build.sh
+            build-script-args: test
