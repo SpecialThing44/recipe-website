@@ -5,8 +5,8 @@ import domain.logging.Logging
 
 class InitializationModule extends AbstractModule with Logging {
   override def configure(): Unit = {
-    logger.debug("Creating init bindings.")
+    logger.info("Creating init bindings.")
     bind(classOf[Startup]).asEagerSingleton()
-    logger.debug("Finished creating init bindings.")
+    logger.info("Finished creating init bindings.")
   }
 }

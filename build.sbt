@@ -1,5 +1,5 @@
 import ProjectExtensions.ProjectOps
-import Libraries.*
+import Libraries.{logback, *}
 
 lazy val root = project
   .in(file("."))
@@ -21,7 +21,9 @@ lazy val domain =
       zioCats,
       circeCore,
       circeGeneric,
-      circeParser
+      circeParser,
+      slf4j,
+      logback
     )
   )
 

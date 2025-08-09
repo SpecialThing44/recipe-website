@@ -1,13 +1,15 @@
 package http
 
+import domain.logging.Logging
 import domain.types.*
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.Result
 import play.api.mvc.Results.{Forbidden, InternalServerError, NotFound}
 
-object ErrorMapping {
+object ErrorMapping extends Logging {
 
   def mapCustomErrorsToHttp(error: Throwable): Result = {
+    logger.info(error.getMessage)
     error match {
       case NotFoundError(message) => Forbidden(errorJson(message))
       case AuthenticationError(message) =>

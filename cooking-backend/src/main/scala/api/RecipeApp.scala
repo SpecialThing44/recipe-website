@@ -8,13 +8,13 @@ import domain.logging.Logging
 case class RecipeApp @Inject (private val database: PersistenceApi)
     extends Logging {
   def initialize(): Unit = {
-    logger.debug("Initializing recipe app.")
+    logger.info("Initializing recipe app.")
     database.initialize()
-    logger.debug("Finished initializing recipe app.")
+    logger.info("Finished initializing recipe app.")
   }
   def shutdown(): Unit = {
-    logger.debug("Shutting down recipe app.")
+    logger.info("Shutting down recipe app.")
     database.shutdown()
-    logger.debug("Finished shutting down recipe app.")
+    logger.info("Finished shutting down recipe app.")
   }
 }

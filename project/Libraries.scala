@@ -14,6 +14,8 @@ object Libraries {
     val jwtVersion = "10.0.1"
     val bcryptVersion = "4.3.1"
     val pbkdf2Version = "0.7.1"
+    val slf4jVersion = "2.0.17"
+    val logbackVersion = "1.5.18"
 
   }
   import Versions.*
@@ -45,4 +47,7 @@ object Libraries {
 
   val jwtScala = "com.github.jwt-scala" %% "jwt-circe" % jwtVersion
   val pbkdf2 = "io.github.nremond" %% "pbkdf2-scala" % "0.7.0"
+
+  val slf4j = "org.slf4j" % "slf4j-api" % slf4jVersion
+  val logback = "ch.qos.logback" % "logback-classic" % logbackVersion
 }
