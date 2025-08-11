@@ -18,7 +18,7 @@ import java.util.UUID
 import scala.util.{Failure, Success}
 
 class AuthenticationInteractor @Inject() (
-    persistence: Users,
+    userPersistence: Users,
 ) {
   private val secretKey = "secrets"
 
@@ -31,7 +31,7 @@ class AuthenticationInteractor @Inject() (
           .fromTry(
             Jwt.decode(
               token.trim.stripPrefix("Bearer "),
-              secretKey,
+              "secrets",
               Seq(JwtAlgorithm.HS256)
             )
           )
@@ -52,7 +52,7 @@ class AuthenticationInteractor @Inject() (
     val hashedPassword = SecureHash.createHash(user.password)
     val userWithHashedPassword = user.copy(password = hashedPassword)
     for {
-      newUserZio <- persistence.create(userWithHashedPassword)
+      newUserZio <- userPersistence.create(userWithHashedPassword)
       claim = JwtClaim(
         content = userWithHashedPassword.asJson.noSpaces,
         expiration = Some(Instant.now.plusSeconds(3600).getEpochSecond),
@@ -67,7 +67,7 @@ class AuthenticationInteractor @Inject() (
       password: String,
   ): ZIO[ApiContext, Throwable, Option[String]] = {
     for {
-      user <- persistence.authenticate(email)
+      user <- userPersistence.authenticate(email)
       _ <- ZIO.cond(
         SecureHash.validatePassword(password, user.password),
         (),
@@ -108,34 +108,36 @@ class AuthenticationInteractor @Inject() (
       }
     } yield result
 
+}
+
+object AuthenticationInteractor {
   def ensureAuthenticatedAndMatchingUser(
       maybeUser: Option[User],
       originalUserId: UUID
-  ): ZIO[Any, AuthenticationError, Unit] = {
-    for {
-      user <- ensureIsLoggedIn(maybeUser)
-      _ <- ensureUUIDMatch(originalUserId, user.id)
-    } yield ()
-  }
+  ): ZIO[Any, AuthenticationError, Unit] = for {
+    user <- ensureIsLoggedIn(maybeUser)
+  } yield ensureUUIDMatch(originalUserId, user.id)
 
   private def ensureUUIDMatch(
       originalUserId: UUID,
       loggedInUserId: UUID
-  ) =
-    if (originalUserId == loggedInUserId) ZIO.succeed(())
-    else
-      ZIO.fail(
-        AuthenticationError(
-          "Cannot update other users or recipes belonging to them"
-        )
+  ): ZIO[Any, AuthenticationError, Unit] = if (
+    originalUserId == loggedInUserId
+  ) {
+    ZIO.unit
+  } else {
+    ZIO.fail(
+      AuthenticationError(
+        "Cannot update other users or recipes belonging to them"
       )
+    )
+  }
 
-  private def ensureIsLoggedIn(
+  def ensureIsLoggedIn(
       maybeUser: Option[User],
-  ): ZIO[Any, AuthenticationError, User] =
-    maybeUser match {
-      case Some(user) => ZIO.succeed(user)
-      case None =>
-        ZIO.fail(AuthenticationError("Cannot update if not logged in"))
-    }
+  ): ZIO[Any, AuthenticationError, User] = maybeUser match {
+    case Some(user) => ZIO.succeed(user)
+    case None =>
+      ZIO.fail(AuthenticationError("Cannot update if not logged in"))
+  }
 }

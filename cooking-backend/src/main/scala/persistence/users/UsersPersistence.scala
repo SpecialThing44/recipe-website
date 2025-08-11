@@ -6,7 +6,12 @@ import domain.filters.Filters
 import domain.types.NoSuchEntityError
 import domain.users.User
 import org.neo4j.driver.Result
-import persistence.cypher.{DeleteStatement, MatchByIdStatement, ReturnStatement}
+import persistence.cypher.{
+  DeleteStatement,
+  MatchByIdStatement,
+  MatchStatement,
+  ReturnStatement
+}
 import persistence.filters.FiltersConverter
 import persistence.neo4j.Database
 import zio.ZIO
@@ -20,7 +25,7 @@ class UsersPersistence @Inject() (database: Database) extends Users {
   override def list(filters: Filters): ZIO[ApiContext, Throwable, Seq[User]] =
     database.readTransaction(
       s"""
-               |MATCH (${graph.varName}:${graph.nodeName})
+               |${MatchStatement.apply}
                |${FiltersConverter.toCypher(filters, graph.varName)}
                |${ReturnStatement.apply}
                |""".stripMargin,

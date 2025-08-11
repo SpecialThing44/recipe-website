@@ -1,0 +1,49 @@
+package api.ingredients
+
+import api.users.AuthenticationInteractor
+import com.google.inject.Inject
+import context.ApiContext
+import domain.filters.Filters
+import domain.ingredients.Ingredient
+import persistence.ingredients.Ingredients
+import persistence.recipes.Recipes
+import zio.ZIO
+
+import java.util.UUID
+
+class IngredientDeleteInteractor @Inject() (
+    persistence: Ingredients,
+    recipePersistence: Recipes,
+) {
+  def delete(id: UUID): ZIO[ApiContext, Throwable, Ingredient] = {
+    for {
+      user <- ZIO.service[ApiContext].map(_.applicationContext.user)
+      ingredient <- persistence.getById(id)
+      _ <- AuthenticationInteractor.ensureAuthenticatedAndMatchingUser(
+        user,
+        ingredient.createdBy.id
+      )
+      _ <- validateNoRecipeLinks(ingredient)
+      deletedIngredient <- persistence.delete(id)
+    } yield deletedIngredient
+  }
+
+  private def validateNoRecipeLinks(
+      ingredient: Ingredient
+  ): ZIO[ApiContext, Throwable, Unit] = {
+    for {
+      recipes <- ZIO.succeed(Seq.empty)
+//      recipePersistence.list(
+//        Filters.empty().copy(ingredients = Some(Seq(ingredient.name)))
+//      )
+      _ <-
+        if (recipes.isEmpty) ZIO.unit
+        else
+          ZIO.fail(
+            new RuntimeException(
+              "Cannot delete ingredient that is used in recipes"
+            )
+          )
+    } yield ()
+  }
+}

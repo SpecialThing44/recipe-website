@@ -21,7 +21,8 @@ lazy val domain =
       circeGeneric,
       circeParser,
       slf4j,
-      logback
+      logback,
+      sttp
     )
   )
 

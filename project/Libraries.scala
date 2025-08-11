@@ -14,6 +14,7 @@ object Libraries {
     val pbkdf2Version = "0.7.2"
     val slf4jVersion = "2.0.17"
     val logbackVersion = "1.5.18"
+    val sttpVersion = "3.11.0"
 
     val scalaTestVersion = "3.2.19"
     val mockitoVersion = "5.18.0"
@@ -54,6 +55,9 @@ object Libraries {
 
   val slf4j = "org.slf4j" % "slf4j-api" % slf4jVersion
   val logback = "ch.qos.logback" % "logback-classic" % logbackVersion
+
+  val sttp = "com.softwaremill.sttp.client3" %% "core" % sttpVersion
+
 
   // Test dependencies
   val scalaTest = "org.scalatest" %% "scalatest" % scalaTestVersion % Test

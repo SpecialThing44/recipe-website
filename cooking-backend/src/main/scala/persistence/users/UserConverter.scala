@@ -10,7 +10,7 @@ import java.util.UUID
 object UserConverter extends Converter[User] {
   override def toGraph(user: User): Map[String, Object] =
     Map(
-      "id" -> user.id,
+      "id" -> user.id.toString,
       "name" -> user.name,
       s"${lowerPrefix}name" -> user.name.toLowerCase,
       "email" -> user.email,

@@ -8,7 +8,6 @@ import zio.ZIO
 
 class UserUpdateInteractor @Inject() (
     persistence: Users,
-    authenticationInteractor: AuthenticationInteractor,
 ) {
   def update(
       entity: UserUpdateInput,
@@ -16,7 +15,7 @@ class UserUpdateInteractor @Inject() (
   ): ZIO[ApiContext, Throwable, User] =
     for {
       context <- ZIO.service[ApiContext]
-      _ <- authenticationInteractor.ensureAuthenticatedAndMatchingUser(
+      _ <- AuthenticationInteractor.ensureAuthenticatedAndMatchingUser(
         context.applicationContext.user,
         originalEntity.id
       )
