@@ -17,12 +17,29 @@ case class Filters(
     vegetarian: Option[Boolean],
     vegan: Option[Boolean],
     public: Option[Boolean],
-    tags: Option[List[String]],
-    ingredients: Option[List[String]],
-    notIngredients: Option[List[String]],
+    tags: Option[Seq[String]],
+    ingredients: Option[Seq[String]],
+    notIngredients: Option[Seq[String]],
 )
 
 object Filters {
   implicit val encoder: Encoder[Filters] = deriveEncoder[Filters]
   implicit val decoder: Decoder[Filters] = deriveDecoder[Filters]
+
+  def empty(): Filters = Filters(
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None
+  )
 }

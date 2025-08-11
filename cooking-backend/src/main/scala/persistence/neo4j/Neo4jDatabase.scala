@@ -3,6 +3,7 @@ package persistence.neo4j
 import com.google.inject.{Inject, Singleton}
 import domain.logging.Logging
 import org.neo4j.driver.{AuthTokens, Driver, GraphDatabase, Result}
+import persistence.schema.Neo4jIndices
 import play.api.Configuration
 import zio.ZIO
 
@@ -15,11 +16,13 @@ private[persistence] case class Neo4jDatabase @Inject() (config: Configuration)
     with Logging {
   private var driver: Driver = uninitialized
 
-  override def initialize(): Unit = {
+  override def initialize(): ZIO[Any, Throwable, Unit] = {
     val uri = config.get[String]("neo4j.uri")
     val username = config.get[String]("neo4j.username")
     val password = config.get[String]("neo4j.password")
     driver = GraphDatabase.driver(uri, AuthTokens.basic(username, password))
+    Neo4jIndices()(this).applySchema()
+
   }
 
   override def shutdown(): Unit = driver.close()
