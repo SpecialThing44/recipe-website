@@ -1,0 +1,22 @@
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 12 * * MON"
+
+name: Scala Steward
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  scala-steward:
+    runs-on: ubuntu-latest
+    name: Scala Steward
+    timeout-minutes: 35
+    steps:
+      - name: Scala Steward
+        uses: scala-steward-org/scala-steward-action@v2
+        with:
+          author-email: 95900100+SpecialThing44@users.noreply.github.com
+          author-name: SpecialThing44
+          scala-steward-version: 0.30.2

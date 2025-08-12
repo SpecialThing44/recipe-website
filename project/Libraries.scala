@@ -11,7 +11,7 @@ object Libraries {
     val circeVersion = "0.14.14"
     val neo4jDriverVersion = "5.28.9"
     val jwtVersion = "11.0.2"
-    val pbkdf2Version = "0.7.1"
+    val pbkdf2Version = "0.7.2"
     val slf4jVersion = "2.0.17"
     val logbackVersion = "1.5.18"
 
@@ -26,7 +26,8 @@ object Libraries {
   val PekkoTestKit = "org.apache.pekko" %% "pekko-testkit" % PekkoVersion
   val PekkoStream = "org.apache.pekko" %% "pekko-stream" % PekkoVersion
   val PekkoSlf4j = "org.apache.pekko" %% "pekko-slf4j" % PekkoVersion
-  val PekkoSerializationJackson = "org.apache.pekko" %% "pekko-serialization-jackson" % PekkoVersion
+  val PekkoSerializationJackson =
+    "org.apache.pekko" %% "pekko-serialization-jackson" % PekkoVersion
 
   // Pekko HTTP
   val PekkoHttp = "org.apache.pekko" %% "pekko-http" % PekkoHttpVersion
@@ -49,7 +50,7 @@ object Libraries {
     "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
 
   val jwtScala = "com.github.jwt-scala" %% "jwt-circe" % jwtVersion
-  val pbkdf2 = "io.github.nremond" %% "pbkdf2-scala" % "0.7.2"
+  val pbkdf2 = "io.github.nremond" %% "pbkdf2-scala" % pbkdf2Version
 
   val slf4j = "org.slf4j" % "slf4j-api" % slf4jVersion
   val logback = "ch.qos.logback" % "logback-classic" % logbackVersion
