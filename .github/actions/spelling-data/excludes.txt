@@ -77,3 +77,4 @@ ignore$
 ^project/Libraries\.scala$
 ^project/plugins\.sbt$
 ^\.github/actions/spelling-data/
+Dockerfile
