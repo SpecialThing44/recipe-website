@@ -26,19 +26,10 @@ object WikipediaCheck {
     }
   }
 
-  private def processWikiLink(link: String): String = {
-    val trimmedLink = link.trim
-    trimmedLink match {
-      case l if l.startsWith("https://") => l.substring("https://".length)
-      case l if l.startsWith("http://")  => l.substring("http://".length)
-      case l if l.startsWith("www.")     => l.substring("www.".length)
-      case _                             => trimmedLink
-    }
-
-  }
+  private def processWikiLink(link: String): String = link.trim
 
   def wikiLinkIsWellFormed(link: String): Boolean =
-    link.startsWith("en.wikipedia.org/wiki/")
+    link.contains("en.wikipedia.org/wiki/")
 
   private def wikiLinkIsReal(link: String): Boolean = {
     val response = basicRequest.head(uri"$link").send(backend)

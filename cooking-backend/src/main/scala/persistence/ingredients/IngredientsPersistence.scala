@@ -5,7 +5,7 @@ import context.ApiContext
 import domain.filters.Filters
 import domain.ingredients.Ingredient
 import domain.types.NoSuchEntityError
-import org.neo4j.driver.{AuthTokens, Driver, GraphDatabase, Result}
+import org.neo4j.driver.Result
 import persistence.cypher.{
   DeleteStatement,
   MatchByIdStatement,
@@ -16,7 +16,6 @@ import persistence.cypher.{
 }
 import persistence.filters.FiltersConverter
 import persistence.neo4j.Database
-import play.api.Configuration
 import zio.ZIO
 
 import java.util.UUID
@@ -41,14 +40,7 @@ class IngredientsPersistence @Inject() (database: Database)
       (result: Result) =>
         result.asScala
           .map(record => {
-            val ingredientMap = new java.util.HashMap[String, Object](
-              record.get(graph.varName).asMap()
-            )
-            val userMap = record.get("createdBy").asMap()
-            val tags = record.get("tags").asList().asScala.map(_.toString).toSeq
-            ingredientMap.put("createdBy", userMap)
-            ingredientMap.put("tags", tags)
-            IngredientConverter.toDomain(ingredientMap)
+            attachUserAndTagsToRecord(result.next())
           })
           .toSeq
     )
@@ -83,15 +75,7 @@ class IngredientsPersistence @Inject() (database: Database)
              |""".stripMargin,
         (result: Result) => {
           if (result.hasNext) {
-            val record = result.next()
-            val ingredientMap = new java.util.HashMap[String, Object](
-              record.get(graph.varName).asMap()
-            )
-            val userMap = record.get("createdBy").asMap()
-            val tags = record.get("tags").asList().asScala.map(_.toString).toSeq
-            ingredientMap.put("createdBy", userMap)
-            ingredientMap.put("tags", tags)
-            IngredientConverter.toDomain(ingredientMap)
+            attachUserAndTagsToRecord(result.next())
           } else {
             throw NoSuchEntityError(
               s"Create for ${graph.nodeName} has failed for some reason"
@@ -134,15 +118,7 @@ class IngredientsPersistence @Inject() (database: Database)
          |""".stripMargin,
       (result: Result) => {
         if (result.hasNext) {
-          val record = result.next()
-          val ingredientMap = new java.util.HashMap[String, Object](
-            record.get(graph.varName).asMap()
-          )
-          val userMap = record.get("createdBy").asMap()
-          val tags = record.get("tags").asList().asScala.map(_.toString).toSeq
-          ingredientMap.put("createdBy", userMap)
-          ingredientMap.put("tags", tags)
-          IngredientConverter.toDomain(ingredientMap)
+          attachUserAndTagsToRecord(result.next())
         } else {
           throw NoSuchEntityError(
             s"Update for ${graph.nodeName} with id ${entity.id} has failed for some reason"
@@ -175,18 +151,23 @@ class IngredientsPersistence @Inject() (database: Database)
          |""".stripMargin,
       (result: Result) => {
         if (result.hasNext) {
-          val record = result.next()
-          val ingredientMap = new java.util.HashMap[String, Object](
-            record.get(graph.varName).asMap()
-          )
-          val userMap = record.get("createdBy").asMap()
-          val tags = record.get("tags").asList().asScala.map(_.toString).toSeq
-          ingredientMap.put("createdBy", userMap)
-          ingredientMap.put("tags", tags)
-          IngredientConverter.toDomain(ingredientMap)
+          attachUserAndTagsToRecord(result.next())
         } else {
           throw NoSuchEntityError(s"${graph.nodeName} with id $id not found")
         }
       }
     )
+
+  private def attachUserAndTagsToRecord(
+      record: org.neo4j.driver.Record
+  ): Ingredient = {
+    val ingredientMap = new java.util.HashMap[String, Object](
+      record.get(graph.varName).asMap()
+    )
+    val userMap = record.get("createdBy").asMap()
+    val tags = record.get("tags").asList().asScala.map(_.toString).toSeq
+    ingredientMap.put("createdBy", userMap)
+    ingredientMap.put("tags", tags)
+    IngredientConverter.toDomain(ingredientMap)
+  }
 }
