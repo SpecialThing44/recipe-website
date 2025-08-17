@@ -53,7 +53,7 @@ class IngredientsPersistence @Inject() (database: Database)
 
     val createTagStatements = entity.tags
       .map(tag => s"""
-         |MERGE (tag:Tag:$tag)
+         |MERGE (tag:Tag:$tag {name: '$tag', lowername: '${tag.toLowerCase}'})
          |CREATE (${graph.varName})-[:HAS_TAG]->(tag)
          |${WithStatement.apply}, user
          |""".stripMargin)
@@ -95,7 +95,7 @@ class IngredientsPersistence @Inject() (database: Database)
 
     val createTagStatements = entity.tags
       .map(tag => s"""
-         |MERGE (tag:Tag:$tag)
+         |MERGE (tag:Tag:$tag {name: '$tag', lowername: '${tag.toLowerCase}'})
          |CREATE (${graph.varName})-[:HAS_TAG]->(tag)
          |""".stripMargin)
       .mkString("\n")

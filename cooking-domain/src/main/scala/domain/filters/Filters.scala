@@ -11,6 +11,7 @@ case class Filters(
     belongsToUser: Option[UUID],
     savedByUser: Option[UUID],
     name: Option[StringFilter],
+    aliasesOrName: Option[Seq[String]],
     email: Option[StringFilter],
     prepTime: Option[NumberFilter],
     cookTime: Option[NumberFilter],
@@ -27,6 +28,7 @@ object Filters {
   implicit val decoder: Decoder[Filters] = deriveDecoder[Filters]
 
   def empty(): Filters = Filters(
+    None,
     None,
     None,
     None,

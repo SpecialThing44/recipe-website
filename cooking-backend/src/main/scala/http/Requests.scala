@@ -1,6 +1,6 @@
 package http
 
-import api.{Persisting, Querying}
+import api.{Listing, Persisting, Querying}
 import context.{ApiContext, CookingApi}
 import domain.filters.Filters
 import domain.users.User
@@ -18,7 +18,7 @@ object Requests {
   def list[Entity](
       request: Request[JsValue],
       cookingApi: CookingApi,
-      entityApi: Querying[Entity]
+      entityApi: Listing[Entity]
   )(implicit encoder: Encoder[Entity]): Result = {
     val maybeUser = extractUser(request, cookingApi)
     val entities: ZIO[ApiContext, Throwable, Seq[Entity]] = for {

@@ -24,3 +24,5 @@ POST          /ingredients            http.ingredients.IngredientsController.pos
 GET           /ingredients/:id        http.ingredients.IngredientsController.get(id: java.util.UUID)
 PUT           /ingredients/:id        http.ingredients.IngredientsController.put(id: java.util.UUID)
 DELETE        /ingredients/:id        http.ingredients.IngredientsController.delete(id: java.util.UUID)
+
+GET           /tags                   http.tags.TagsController.list()

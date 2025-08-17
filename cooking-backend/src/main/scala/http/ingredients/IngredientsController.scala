@@ -13,8 +13,6 @@ class IngredientsController @Inject() (
     cc: ControllerComponents,
     cookingApi: CookingApi
 ) extends AbstractController(cc) {
-  implicit val ingredientDecoder: Decoder[Ingredient] = Ingredient.decoder
-
   def list(): Action[JsValue] = Action(parse.json) { request =>
     Requests.list[Ingredient](request, cookingApi, cookingApi.ingredients)
   }
