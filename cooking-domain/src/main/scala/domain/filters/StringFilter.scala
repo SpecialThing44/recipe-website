@@ -12,6 +12,7 @@ case class StringFilter(
 )
 
 object StringFilter {
+  def empty(): StringFilter = StringFilter(None, None, None, None, None)
   implicit val encoder: Encoder[StringFilter] = deriveEncoder[StringFilter]
   implicit val decoder: Decoder[StringFilter] = deriveDecoder[StringFilter]
 }
