@@ -4,7 +4,12 @@ import domain.logging.Logging
 import domain.types.*
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.Result
-import play.api.mvc.Results.{BadRequest, Forbidden, InternalServerError, NotFound}
+import play.api.mvc.Results.{
+  BadRequest,
+  Forbidden,
+  InternalServerError,
+  NotFound
+}
 
 object ErrorMapping extends Logging {
 
@@ -13,7 +18,7 @@ object ErrorMapping extends Logging {
     logger.info(error.getStackTrace.mkString("\n"))
     error match {
       case NotFoundError(message) => Forbidden(errorJson(message))
-      case InputError(message) => BadRequest(errorJson(message))
+      case InputError(message)    => BadRequest(errorJson(message))
       case AuthenticationError(message) =>
         Forbidden(errorJson(message))
       case NoSuchEntityError(message) => NotFound(errorJson(message))

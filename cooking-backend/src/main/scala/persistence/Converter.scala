@@ -4,6 +4,13 @@ import java.util
 
 trait Converter[Domain] {
   val lowerPrefix = "lower"
+  val idField = "id"
+  val createdOnField = "createdOn"
+  val updatedOnField = "updatedOn"
+  val nameField = "name"
+  val wikiLinkField = "wikiLink"
+  val createdByField = "createdBy"
+  val tagsField = "tags"
 
   def convert(entity: Domain): String =
     toGraph(entity)

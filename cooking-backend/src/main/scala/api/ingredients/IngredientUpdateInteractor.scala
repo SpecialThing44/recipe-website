@@ -6,6 +6,7 @@ import com.google.inject.Inject
 import context.ApiContext
 import domain.filters.Filters
 import domain.ingredients.{Ingredient, IngredientUpdateInput}
+import domain.types.InputError
 import persistence.ingredients.Ingredients
 import persistence.recipes.Recipes
 import persistence.users.Users
@@ -58,7 +59,7 @@ class IngredientUpdateInteractor @Inject() (
         if (recipes.isEmpty) ZIO.unit
         else
           ZIO.fail(
-            new RuntimeException(
+            InputError(
               "Cannot update ingredient that is used in recipes (Expect for tags and aliases)"
             )
           )

@@ -5,6 +5,7 @@ import com.google.inject.Inject
 import context.ApiContext
 import domain.filters.Filters
 import domain.ingredients.Ingredient
+import domain.types.InputError
 import persistence.ingredients.Ingredients
 import persistence.recipes.Recipes
 import zio.ZIO
@@ -40,7 +41,7 @@ class IngredientDeleteInteractor @Inject() (
         if (recipes.isEmpty) ZIO.unit
         else
           ZIO.fail(
-            new RuntimeException(
+            InputError(
               "Cannot delete ingredient that is used in recipes"
             )
           )

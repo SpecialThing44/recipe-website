@@ -12,38 +12,44 @@ import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 import scala.jdk.CollectionConverters.*
 
 object IngredientConverter extends Converter[Ingredient] {
+  val veganField = "vegan"
+  val vegetarianField = "vegetarian"
+  val aliasesField = "aliases"
+
   override def toGraph(ingredient: Ingredient): Map[String, Object] =
     Map(
-      "id" -> ingredient.id.toString,
-      "name" -> ingredient.name,
-      s"${lowerPrefix}name" -> ingredient.name.toLowerCase,
-      "aliases" -> ingredient.aliases.asJson,
-      "wiki_link" -> ingredient.wikiLink,
-      "vegetarian" -> ingredient.vegetarian.toString,
-      "vegan" -> ingredient.vegan.toString
+      idField -> ingredient.id.toString,
+      nameField -> ingredient.name,
+      s"$lowerPrefix$nameField" -> ingredient.name.toLowerCase,
+      aliasesField -> ingredient.aliases.map(_.toLowerCase).asJson,
+      wikiLinkField -> ingredient.wikiLink.toLowerCase,
+      vegetarianField -> ingredient.vegetarian.toString,
+      veganField -> ingredient.vegan.toString
     )
 
   override def toDomain(
       record: util.Map[String, AnyRef],
   ): Ingredient = {
-    val user = record.get("createdBy") match {
+    val user = record.get(createdByField) match {
       case userMap: util.Map[String, AnyRef] => UserConverter.toDomain(userMap)
-      case _ => throw new RuntimeException("User not found for ingredient")
+      case _ => User.empty()
     }
 
-    val tags = record.get("tags") match {
+    val tags = record.get(tagsField) match {
       case tagMap: Seq[String] => tagMap
-      case _ => throw new RuntimeException("User not found for ingredient")
+      case _ => Seq.empty
     }
 
     Ingredient(
-      id = UUID.fromString(record.get("id").toString),
-      name = record.get("name").toString,
-      aliases = Option(record.get("aliases").asInstanceOf[java.util.List[String]].toSeq)
+      id = UUID.fromString(record.get(idField).toString),
+      name = record.get(nameField).toString,
+      aliases = Option(
+        record.get(aliasesField).asInstanceOf[java.util.List[String]].toSeq
+      )
         .getOrElse(Seq.empty),
-      wikiLink = record.get("wiki_link").toString,
-      vegetarian = record.get("vegetarian").toString.toBoolean,
-      vegan = record.get("vegan").toString.toBoolean,
+      wikiLink = record.get(wikiLinkField).toString,
+      vegetarian = record.get(vegetarianField).toString.toBoolean,
+      vegan = record.get(veganField).toString.toBoolean,
       tags = tags,
       createdBy = user
     )

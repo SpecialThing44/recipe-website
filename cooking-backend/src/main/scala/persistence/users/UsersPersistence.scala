@@ -102,7 +102,6 @@ class UsersPersistence @Inject() (database: Database) extends Users {
                |$deleteUnusedIngredientsCreatedByUser
                |WITH DISTINCT user
                |SET user.email = ""
-               |SET user.password = ""
                |SET user.name = "Deleted User"
                |SET user.updatedOn = "${Instant.now.toString}"
                |SET user:DeletedUser
