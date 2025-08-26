@@ -6,7 +6,7 @@ import domain.filters.Filters
 import domain.types.NoSuchEntityError
 import domain.users.User
 import org.neo4j.driver.Result
-import persistence.cypher.{DeleteStatement, MatchByIdStatement, MatchStatement, ReturnStatement, WithStatement}
+import persistence.cypher.{MatchByIdStatement, MatchStatement, ReturnStatement}
 import persistence.filters.FiltersConverter
 import persistence.neo4j.Database
 import zio.ZIO
@@ -17,6 +17,21 @@ import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 class UsersPersistence @Inject() (database: Database) extends Users {
   private implicit val graph: UserGraph = UserGraph()
+  private val deletePrivateRecipesForUser =
+    s"""
+       |OPTIONAL MATCH (privateRecipe:Recipe)-[CREATED_BY]->(user) WHERE privateRecipe.private = true
+       |DETACH DELETE privateRecipe""".stripMargin
+  private val deleteUnusedRecipesCreatedByUser =
+    s"""
+       |OPTIONAL MATCH (unusedRecipe:Recipe)-[CREATED_BY]->(user)
+       |WHERE NOT (unusedRecipe)<-[:SAVED_BY]-(:User)
+       |DETACH DELETE unusedRecipe
+       """.stripMargin
+  private val deleteUnusedIngredientsCreatedByUser =
+    s"""
+       |OPTIONAL MATCH (user)<-[:CREATED_BY]-(ingredient:Ingredient)
+       |WHERE NOT (ingredient)<-[:USES]-(:Recipe)
+       |DETACH DELETE ingredient""".stripMargin
 
   override def list(filters: Filters): ZIO[ApiContext, Throwable, Seq[User]] =
     database.readTransaction(
@@ -71,23 +86,10 @@ class UsersPersistence @Inject() (database: Database) extends Users {
     )
   }
 
-  private val deletePrivateRecipesForUser =
-    s"""
-       |OPTIONAL MATCH (privateRecipe:Recipe)-[CREATED_BY]->(user) WHERE privateRecipe.private = true
-       |DETACH DELETE privateRecipe""".stripMargin
-
-  private val deleteUnusedRecipesCreatedByUser =
-    s"""
-       |OPTIONAL MATCH (unusedRecipe:Recipe)-[CREATED_BY]->(user)
-       |WHERE NOT (unusedRecipe)<-[:SAVED_BY]-(:User)
-       |DETACH DELETE unusedRecipe
-       """.stripMargin
-
-  private val deleteUnusedIngredientsCreatedByUser =
-    s"""
-       |OPTIONAL MATCH (user)<-[:CREATED_BY]-(ingredient:Ingredient)
-       |WHERE NOT (ingredient)<-[:USES]-(:Recipe)
-       |DETACH DELETE ingredient""".stripMargin
+  private def recordToUser(record: org.neo4j.driver.Record): User = {
+    val userMap = record.get(graph.varName).asMap()
+    UserConverter.toDomain(userMap)
+  }
 
   override def delete(id: UUID): ZIO[ApiContext, Throwable, User] =
     for {
@@ -160,8 +162,4 @@ class UsersPersistence @Inject() (database: Database) extends Users {
         }
       }
     )
-  private def recordToUser(record: org.neo4j.driver.Record): User = {
-    val userMap = record.get(graph.varName).asMap()
-    UserConverter.toDomain(userMap)
-  }
 }

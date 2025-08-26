@@ -39,8 +39,8 @@ object FiltersConverter {
       NumberFilterConverter.toCypher(cookTimeFilter, "cookTime", nodeVar)
     )
     val vegetarianClause =
-      filters.vegetarian.map(vegetarian => s"$nodeVar.vegetarian = $vegetarian")
-    val veganClause = filters.vegan.map(vegan => s"$nodeVar.vegan = $vegan")
+      filters.vegetarian.map(vegetarian => s"$nodeVar.vegetarian = '$vegetarian'")
+    val veganClause = filters.vegan.map(vegan => s"$nodeVar.vegan = '$vegan'")
     val publicClause =
       filters.public.map(public => s"$nodeVar.public = $public")
 

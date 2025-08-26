@@ -81,6 +81,13 @@ object Neo4jIndices {
         }
       )
 
+  private def convert(result: AnyRef): Seq[String] = if (result != null)
+    result.asInstanceOf[util.AbstractList[String]].asScala.toSeq
+  else Seq.empty
+
+  private def head(seq: Seq[String]): String =
+    if (seq.nonEmpty) seq.head else ""
+
   private def constraintsInDatabase(implicit
       database: Database
   ): zio.Task[Seq[Constraint]] =
@@ -106,11 +113,4 @@ object Neo4jIndices {
           }
         }
       )
-
-  private def convert(result: AnyRef): Seq[String] = if (result != null)
-    result.asInstanceOf[util.AbstractList[String]].asScala.toSeq
-  else Seq.empty
-
-  private def head(seq: Seq[String]): String =
-    if (seq.nonEmpty) seq.head else ""
 }

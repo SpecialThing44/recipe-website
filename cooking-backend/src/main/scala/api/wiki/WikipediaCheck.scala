@@ -1,5 +1,6 @@
 package api.wiki
 
+import com.google.inject.{ImplementedBy, Singleton}
 import domain.types.InputError
 import sttp.client3.{
   HttpURLConnectionBackend,
@@ -11,10 +12,17 @@ import sttp.client3.{
 import sttp.model.StatusCode
 import zio.ZIO
 
-object WikipediaCheck {
-  val backend: SttpBackend[Identity, Any] = HttpURLConnectionBackend()
+@ImplementedBy(classOf[DefaultWikipediaCheck])
+trait WikipediaCheck {
+  def validateWikiLink(link: String): ZIO[Any, Throwable, Unit]
+  def wikiLinkIsWellFormed(link: String): Boolean
+}
 
-  def validateWikiLink(link: String): ZIO[Any, Throwable, Unit] = {
+@Singleton
+class DefaultWikipediaCheck extends WikipediaCheck {
+  private val backend: SttpBackend[Identity, Any] = HttpURLConnectionBackend()
+
+  override def validateWikiLink(link: String): ZIO[Any, Throwable, Unit] = {
     val processedLink = processWikiLink(link)
     val wellFormedLink = wikiLinkIsWellFormed(processedLink)
     val realLink = wikiLinkIsReal(processedLink)
@@ -28,7 +36,7 @@ object WikipediaCheck {
 
   private def processWikiLink(link: String): String = link.trim
 
-  def wikiLinkIsWellFormed(link: String): Boolean =
+  override def wikiLinkIsWellFormed(link: String): Boolean =
     link.contains("en.wikipedia.org/wiki/")
 
   private def wikiLinkIsReal(link: String): Boolean = {
@@ -38,4 +46,12 @@ object WikipediaCheck {
       case _             => false
     }
   }
+}
+
+object WikipediaCheck {
+  def validateWikiLink(link: String): ZIO[Any, Throwable, Unit] =
+    new DefaultWikipediaCheck().validateWikiLink(link)
+
+  def wikiLinkIsWellFormed(link: String): Boolean =
+    new DefaultWikipediaCheck().wikiLinkIsWellFormed(link)
 }

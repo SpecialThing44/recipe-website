@@ -7,7 +7,8 @@ import zio.ZIO
 class PersistenceFacade @Inject() (val persistence: DatabaseWrapper)
     extends PersistenceApi {
 
-  override def initialize(): ZIO[Any, Throwable, Unit] = persistence.initialize()
+  override def initialize(): ZIO[Any, Throwable, Unit] =
+    persistence.initialize()
 
   override def shutdown(): Unit = persistence.shutdown()
 }

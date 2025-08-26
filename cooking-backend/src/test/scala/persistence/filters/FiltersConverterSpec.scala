@@ -1,8 +1,9 @@
 package persistence.filters
 
+import domain.filters.{Filters, NumberFilter, StringFilter}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import domain.filters.{Filters, StringFilter, NumberFilter}
+
 import java.util.UUID
 
 class FiltersConverterSpec extends AnyFlatSpec with Matchers {
@@ -80,7 +81,7 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
 
     val result = FiltersConverter.toCypher(filters, "n")
 
-    result shouldBe "MATCH (n) WHERE  n.vegetarian = true"
+    result shouldBe "MATCH (n) WHERE  n.vegetarian = 'true'"
   }
 
   it should "convert a filter with vegan" in {
@@ -88,7 +89,7 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
 
     val result = FiltersConverter.toCypher(filters, "n")
 
-    result shouldBe "MATCH (n) WHERE  n.vegan = true"
+    result shouldBe "MATCH (n) WHERE  n.vegan = 'true'"
   }
 
   it should "convert a filter with public" in {
@@ -111,7 +112,8 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "convert a filter with ingredients" in {
-    val filters = Filters.empty().copy(ingredients = Some(List("Tomato", "Cheese")))
+    val filters =
+      Filters.empty().copy(ingredients = Some(List("Tomato", "Cheese")))
 
     val result = FiltersConverter.toCypher(filters, "n")
 
@@ -122,7 +124,8 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "convert a filter with notIngredients" in {
-    val filters = Filters.empty().copy(notIngredients = Some(List("Meat", "Fish")))
+    val filters =
+      Filters.empty().copy(notIngredients = Some(List("Meat", "Fish")))
 
     val result = FiltersConverter.toCypher(filters, "n")
 
@@ -166,18 +169,20 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
       lessOrEqual = Some(20)
     )
 
-    val filters = Filters.empty().copy(
-      name = Some(nameFilter),
-      prepTime = Some(prepTimeFilter),
-      vegetarian = Some(true)
-    )
+    val filters = Filters
+      .empty()
+      .copy(
+        name = Some(nameFilter),
+        prepTime = Some(prepTimeFilter),
+        vegetarian = Some(true)
+      )
 
     val result = FiltersConverter.toCypher(filters, "n")
 
     result should (
       include("n.lowername = 'test'") and
         include("n.prepTime >= 10 AND n.prepTime <= 20") and
-        include("n.vegetarian = true")
+        include("n.vegetarian = 'true'")
     )
   }
 }

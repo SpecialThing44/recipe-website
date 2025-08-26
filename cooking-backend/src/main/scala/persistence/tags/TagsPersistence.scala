@@ -26,6 +26,7 @@ class TagsPersistence @Inject() (database: Database) extends Tags {
           .map(record => {
             record.get("tags").asList().asScala.map(_.toString).toSeq
           })
-          .toSeq.flatten
+          .toSeq
+          .flatten
     )
 }

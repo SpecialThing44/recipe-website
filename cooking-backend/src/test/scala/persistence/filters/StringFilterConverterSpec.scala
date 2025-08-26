@@ -1,8 +1,8 @@
 package persistence.filters
 
+import domain.filters.StringFilter
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import domain.filters.StringFilter
 
 class StringFilterConverterSpec extends AnyFlatSpec with Matchers {
 
@@ -101,7 +101,9 @@ class StringFilterConverterSpec extends AnyFlatSpec with Matchers {
 
     val result = StringFilterConverter.toCypher(filter, "name", "n")
 
-    RemoveSpaces(result) shouldBe "n.name = 'test' AND n.name IN [ \"test1\", \"test2\"] AND n.name CONTAINS 'content' AND n.name STARTS WITH 'start' AND n.name ENDS WITH 'end'"
+    RemoveSpaces(
+      result
+    ) shouldBe "n.name = 'test' AND n.name IN [ \"test1\", \"test2\"] AND n.name CONTAINS 'content' AND n.name STARTS WITH 'start' AND n.name ENDS WITH 'end'"
   }
 
   it should "return empty string for empty filter" in {

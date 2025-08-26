@@ -11,21 +11,27 @@ import scala.compiletime.uninitialized
 import scala.util.Try
 
 @Singleton
-private[persistence] case class Neo4jDatabase @Inject() (config: Configuration)
-    extends Database
+private[persistence] case class Neo4jDatabase @Inject() (
+    config: Configuration,
+    embeddedDatabase: initialization.embedded.EmbeddedDatabase
+) extends Database
     with Logging {
   private var driver: Driver = uninitialized
 
   override def initialize(): ZIO[Any, Throwable, Unit] = {
+    embeddedDatabase.initializeIfRequired()
+
     val uri = config.get[String]("neo4j.uri")
     val username = config.get[String]("neo4j.username")
     val password = config.get[String]("neo4j.password")
     driver = GraphDatabase.driver(uri, AuthTokens.basic(username, password))
     Neo4jIndices()(this).applySchema()
-
   }
 
-  override def shutdown(): Unit = driver.close()
+  override def shutdown(): Unit = {
+    driver.close()
+    embeddedDatabase.shutdown()
+  }
 
   override def writeTransaction[A](
       cypher: String,

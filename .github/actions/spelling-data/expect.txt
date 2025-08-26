@@ -12,6 +12,7 @@ pekko
 SAMEORIGIN
 sbt
 scalafmt
+scalatest
 Scoverage
 slf
 sttp
@@ -20,3 +21,4 @@ Wikified
 workflows
 ZEnvironment
 zio
+ZLayer

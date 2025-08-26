@@ -1,12 +1,10 @@
 package api.ingredients
 
-import api.users.AuthenticationInteractor
 import com.google.inject.Inject
 import context.ApiContext
 import domain.filters.Filters
 import domain.ingredients.{Ingredient, IngredientInput, IngredientUpdateInput}
 import persistence.ingredients.Ingredients
-import persistence.users.Users
 import zio.ZIO
 
 import java.util.UUID

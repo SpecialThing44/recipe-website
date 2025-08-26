@@ -6,14 +6,7 @@ import domain.filters.Filters
 import domain.ingredients.Ingredient
 import domain.types.NoSuchEntityError
 import org.neo4j.driver.Result
-import persistence.cypher.{
-  DeleteStatement,
-  MatchByIdStatement,
-  MatchRelationship,
-  MatchStatement,
-  ReturnStatement,
-  WithStatement
-}
+import persistence.cypher.*
 import persistence.filters.FiltersConverter
 import persistence.neo4j.Database
 import zio.ZIO
@@ -34,16 +27,29 @@ class IngredientsPersistence @Inject() (database: Database)
          |${FiltersConverter.toCypher(query, graph.varName)}
          |${MatchRelationship.outgoing("CREATED_BY", "user", "User")}
          |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
-         |${WithStatement.apply}, user, collect(labels(tag)[1]) as tags
+         |${WithStatement.apply}, user, collect(DISTINCT labels(tag)[1]) as tags
          |${ReturnStatement.apply}, user as createdBy, tags
          |""".stripMargin,
       (result: Result) =>
         result.asScala
           .map(record => {
-            attachUserAndTagsToRecord(result.next())
+            attachUserAndTagsToRecord(record)
           })
           .toSeq
     )
+
+  private def attachUserAndTagsToRecord(
+      record: org.neo4j.driver.Record
+  ): Ingredient = {
+    val ingredientMap = new java.util.HashMap[String, Object](
+      record.get(graph.varName).asMap()
+    )
+    val userMap = record.get("createdBy").asMap()
+    val tags = record.get("tags").asList().asScala.map(_.toString).toSeq
+    ingredientMap.put("createdBy", userMap)
+    ingredientMap.put("tags", tags)
+    IngredientConverter.toDomain(ingredientMap)
+  }
 
   override def create(
       entity: Ingredient
@@ -70,7 +76,7 @@ class IngredientsPersistence @Inject() (database: Database)
              |${WithStatement.apply}, user
              |$createTagStatements
              |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
-             |${WithStatement.apply}, user, collect(labels(tag)[1]) as tags
+             |${WithStatement.apply}, user, collect(DISTINCT labels(tag)[1]) as tags
              |${ReturnStatement.apply}, user as createdBy, tags
              |""".stripMargin,
         (result: Result) => {
@@ -95,8 +101,8 @@ class IngredientsPersistence @Inject() (database: Database)
 
     val createTagStatements = entity.tags
       .map(tag => s"""
-         |MERGE (tag:Tag:$tag {name: '$tag', lowername: '${tag.toLowerCase}'})
-         |CREATE (${graph.varName})-[:HAS_TAG]->(tag)
+         |MERGE (tag$tag:Tag:$tag {name: '$tag', lowername: '${tag.toLowerCase}'})
+         |CREATE (${graph.varName})-[:HAS_TAG]->(tag$tag)
          |""".stripMargin)
       .mkString("\n")
 
@@ -113,7 +119,7 @@ class IngredientsPersistence @Inject() (database: Database)
          |$createTagStatements
          |${WithStatement.apply}, user
          |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
-         |${WithStatement.apply}, user, collect(labels(tag)[1]) as tags
+         |${WithStatement.apply}, user, collect(DISTINCT labels(tag)[1]) as tags
          |${ReturnStatement.apply}, user as createdBy, tags
          |""".stripMargin,
       (result: Result) => {
@@ -146,7 +152,7 @@ class IngredientsPersistence @Inject() (database: Database)
          |${MatchByIdStatement.apply(id)}
          |${MatchRelationship.outgoing("CREATED_BY", "user", "User")}
          |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
-         |${WithStatement.apply}, user, collect(labels(tag)[1]) as tags
+         |${WithStatement.apply}, user, collect(DISTINCT labels(tag)[1]) as tags
          |${ReturnStatement.apply}, user as createdBy, tags
          |""".stripMargin,
       (result: Result) => {
@@ -157,17 +163,4 @@ class IngredientsPersistence @Inject() (database: Database)
         }
       }
     )
-
-  private def attachUserAndTagsToRecord(
-      record: org.neo4j.driver.Record
-  ): Ingredient = {
-    val ingredientMap = new java.util.HashMap[String, Object](
-      record.get(graph.varName).asMap()
-    )
-    val userMap = record.get("createdBy").asMap()
-    val tags = record.get("tags").asList().asScala.map(_.toString).toSeq
-    ingredientMap.put("createdBy", userMap)
-    ingredientMap.put("tags", tags)
-    IngredientConverter.toDomain(ingredientMap)
-  }
 }

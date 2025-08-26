@@ -4,7 +4,6 @@ import com.google.inject.{Inject, Singleton}
 import context.CookingApi
 import domain.ingredients.{Ingredient, IngredientInput, IngredientUpdateInput}
 import http.Requests
-import io.circe.Decoder
 import play.api.libs.json.*
 import play.api.mvc.*
 

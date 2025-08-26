@@ -55,6 +55,8 @@ lazy val backend =
         jwtScala,
         pbkdf2,
         scalaTest,
-        mockito
+        mockito,
+        testContainers,
+        testContainersNeo4j
       )
     )

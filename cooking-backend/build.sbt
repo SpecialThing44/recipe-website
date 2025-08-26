@@ -34,6 +34,7 @@ Test / testOptions += Tests.Argument(
   "-u",
   "target/test-reports"
 )
+Test / scalacOptions += "-Wconf:cat=other-pure-statement&msg=org.scalatest.Assertion:s"
 
 // Scoverage Configuration
 coverageMinimumStmtTotal := 70

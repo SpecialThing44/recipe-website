@@ -9,7 +9,6 @@ import persistence.users.UserConverter
 import java.util
 import java.util.UUID
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
-import scala.jdk.CollectionConverters.*
 
 object IngredientConverter extends Converter[Ingredient] {
   val veganField = "vegan"
@@ -32,12 +31,12 @@ object IngredientConverter extends Converter[Ingredient] {
   ): Ingredient = {
     val user = record.get(createdByField) match {
       case userMap: util.Map[String, AnyRef] => UserConverter.toDomain(userMap)
-      case _ => User.empty()
+      case _                                 => User.empty()
     }
 
     val tags = record.get(tagsField) match {
       case tagMap: Seq[String] => tagMap
-      case _ => Seq.empty
+      case _                   => Seq.empty
     }
 
     Ingredient(
