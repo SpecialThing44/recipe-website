@@ -21,7 +21,8 @@ lazy val domain =
       circeGeneric,
       circeParser,
       slf4j,
-      logback
+      logback,
+      sttp
     )
   )
 
@@ -54,6 +55,8 @@ lazy val backend =
         jwtScala,
         pbkdf2,
         scalaTest,
-        mockito
+        mockito,
+        testContainers,
+        testContainersNeo4j
       )
     )

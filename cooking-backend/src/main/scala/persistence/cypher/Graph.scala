@@ -1,7 +1,7 @@
 package persistence.cypher
 
 import domain.users.User
-import persistence.schema.{Constraint, ConstraintType, Index, IndexType}
+import persistence.schema.{Constraint, Index, IndexType}
 
 import scala.reflect.ClassTag
 

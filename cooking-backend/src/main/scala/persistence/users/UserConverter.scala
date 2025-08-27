@@ -8,36 +8,39 @@ import java.util
 import java.util.UUID
 
 object UserConverter extends Converter[User] {
+  val emailField = "email"
+  val passwordField = "password"
+  val countryOfOriginField = "countryOfOrigin"
   override def toGraph(user: User): Map[String, Object] =
     Map(
-      "id" -> user.id,
-      "name" -> user.name,
-      s"${lowerPrefix}name" -> user.name.toLowerCase,
-      "email" -> user.email,
-      s"${lowerPrefix}email" -> user.email.toLowerCase,
-      "password" -> user.password,
-      "country_of_origin" -> user.countryOfOrigin.getOrElse(""),
-      "created_on" -> user.createdOn.toString,
-      "updated_on" -> user.updatedOn.toString
+      idField -> user.id.toString,
+      nameField -> user.name,
+      lowerPrefix + nameField -> user.name.toLowerCase,
+      emailField -> user.email,
+      lowerPrefix + emailField -> user.email.toLowerCase,
+      passwordField -> user.password,
+      countryOfOriginField -> user.countryOfOrigin.getOrElse(""),
+      createdOnField -> user.createdOn.toString,
+      updatedOnField -> user.updatedOn.toString
     )
 
   override def toDomain(record: util.Map[String, AnyRef]): User = User(
-    id = UUID.fromString(record.get("id").toString),
-    name = record.get("name").toString,
-    email = record.get("email").toString,
+    id = UUID.fromString(record.get(idField).toString),
+    name = record.get(nameField).toString,
+    email = record.get(emailField).toString,
     password = "",
-    countryOfOrigin = Option(record.get("country_of_origin").toString),
-    createdOn = Instant.parse(record.get("created_on").toString),
-    updatedOn = Instant.parse(record.get("updated_on").toString)
+    countryOfOrigin = Option(record.get(countryOfOriginField).toString),
+    createdOn = Instant.parse(record.get(createdOnField).toString),
+    updatedOn = Instant.parse(record.get(updatedOnField).toString)
   )
 
   def toAuthDomain(record: util.Map[String, AnyRef]): User = User(
-    id = UUID.fromString(record.get("id").toString),
-    name = record.get("name").toString,
-    email = record.get("email").toString,
-    password = record.get("password").toString,
-    countryOfOrigin = Option(record.get("country_of_origin").toString),
-    createdOn = Instant.parse(record.get("created_on").toString),
-    updatedOn = Instant.parse(record.get("updated_on").toString)
+    id = UUID.fromString(record.get(idField).toString),
+    name = record.get(nameField).toString,
+    email = record.get(emailField).toString,
+    password = record.get(passwordField).toString,
+    countryOfOrigin = Option(record.get(countryOfOriginField).toString),
+    createdOn = Instant.parse(record.get(createdOnField).toString),
+    updatedOn = Instant.parse(record.get(updatedOnField).toString)
   )
 }

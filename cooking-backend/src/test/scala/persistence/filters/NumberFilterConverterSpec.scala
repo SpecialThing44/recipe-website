@@ -1,12 +1,12 @@
 package persistence.filters
 
+import domain.filters.NumberFilter
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import domain.filters.NumberFilter
 
 class NumberFilterConverterSpec extends AnyFlatSpec with Matchers {
 
-  "NumberFilterConverter" should "convert a filter with greaterOrEqual clause" in {
+  it should "convert a filter with greaterOrEqual clause" in {
     val filter = NumberFilter(
       greaterOrEqual = Some(10),
       lessOrEqual = None

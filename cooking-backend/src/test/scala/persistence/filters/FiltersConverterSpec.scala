@@ -1,30 +1,16 @@
 package persistence.filters
 
+import domain.filters.{Filters, NumberFilter, StringFilter}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import domain.filters.{Filters, StringFilter, NumberFilter}
+
 import java.util.UUID
 
 class FiltersConverterSpec extends AnyFlatSpec with Matchers {
 
   it should "convert a filter with id" in {
     val id = UUID.randomUUID()
-    val filters = Filters(
-      id = Some(id),
-      ids = None,
-      belongsToUser = None,
-      savedByUser = None,
-      name = None,
-      email = None,
-      prepTime = None,
-      cookTime = None,
-      vegetarian = None,
-      vegan = None,
-      public = None,
-      tags = None,
-      ingredients = None,
-      notIngredients = None
-    )
+    val filters = Filters.empty().copy(id = Some(id))
 
     val result = FiltersConverter.toCypher(filters, "n")
 
@@ -34,58 +20,21 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
   it should "convert a filter with ids" in {
     val id1 = UUID.randomUUID()
     val id2 = UUID.randomUUID()
-    val filters = Filters(
-      id = None,
-      ids = Some(List(id1, id2)),
-      belongsToUser = None,
-      savedByUser = None,
-      name = None,
-      email = None,
-      prepTime = None,
-      cookTime = None,
-      vegetarian = None,
-      vegan = None,
-      public = None,
-      tags = None,
-      ingredients = None,
-      notIngredients = None
-    )
+    val filters = Filters.empty().copy(ids = Some(List(id1, id2)))
 
     val result = FiltersConverter.toCypher(filters, "n")
 
     result should (
       include(s"MATCH (n) WHERE") and
-      include(s"n.id IN") and
-      include(id1.toString) and
-      include(id2.toString)
+        include(s"n.id IN") and
+        include(id1.toString) and
+        include(id2.toString)
     )
   }
 
   it should "convert a filter with name" in {
-    val nameFilter = StringFilter(
-      equals = Some("test"),
-      anyOf = None,
-      contains = None,
-      startsWith = None,
-      endsWith = None
-    )
-
-    val filters = Filters(
-      id = None,
-      ids = None,
-      belongsToUser = None,
-      savedByUser = None,
-      name = Some(nameFilter),
-      email = None,
-      prepTime = None,
-      cookTime = None,
-      vegetarian = None,
-      vegan = None,
-      public = None,
-      tags = None,
-      ingredients = None,
-      notIngredients = None
-    )
+    val nameFilter = StringFilter.empty().copy(equals = Some("test"))
+    val filters = Filters.empty().copy(name = Some(nameFilter))
 
     val result = FiltersConverter.toCypher(filters, "n")
 
@@ -93,31 +42,9 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "convert a filter with email" in {
-    val emailFilter = StringFilter(
-      equals = Some("test@example.com"),
-      anyOf = None,
-      contains = None,
-      startsWith = None,
-      endsWith = None
-    )
-
-    val filters = Filters(
-      id = None,
-      ids = None,
-      belongsToUser = None,
-      savedByUser = None,
-      name = None,
-      email = Some(emailFilter),
-      prepTime = None,
-      cookTime = None,
-      vegetarian = None,
-      vegan = None,
-      public = None,
-      tags = None,
-      ingredients = None,
-      notIngredients = None
-    )
-
+    val emailFilter =
+      StringFilter.empty().copy(equals = Some("test@example.com"))
+    val filters = Filters.empty().copy(email = Some(emailFilter))
     val result = FiltersConverter.toCypher(filters, "n")
 
     result shouldBe "MATCH (n) WHERE  n.loweremail = 'test@example.com'"
@@ -129,22 +56,7 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
       lessOrEqual = Some(20)
     )
 
-    val filters = Filters(
-      id = None,
-      ids = None,
-      belongsToUser = None,
-      savedByUser = None,
-      name = None,
-      email = None,
-      prepTime = Some(prepTimeFilter),
-      cookTime = None,
-      vegetarian = None,
-      vegan = None,
-      public = None,
-      tags = None,
-      ingredients = None,
-      notIngredients = None
-    )
+    val filters = Filters.empty().copy(prepTime = Some(prepTimeFilter))
 
     val result = FiltersConverter.toCypher(filters, "n")
 
@@ -157,22 +69,7 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
       lessOrEqual = Some(40)
     )
 
-    val filters = Filters(
-      id = None,
-      ids = None,
-      belongsToUser = None,
-      savedByUser = None,
-      name = None,
-      email = None,
-      prepTime = None,
-      cookTime = Some(cookTimeFilter),
-      vegetarian = None,
-      vegan = None,
-      public = None,
-      tags = None,
-      ingredients = None,
-      notIngredients = None
-    )
+    val filters = Filters.empty().copy(cookTime = Some(cookTimeFilter))
 
     val result = FiltersConverter.toCypher(filters, "n")
 
@@ -180,68 +77,23 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "convert a filter with vegetarian" in {
-    val filters = Filters(
-      id = None,
-      ids = None,
-      belongsToUser = None,
-      savedByUser = None,
-      name = None,
-      email = None,
-      prepTime = None,
-      cookTime = None,
-      vegetarian = Some(true),
-      vegan = None,
-      public = None,
-      tags = None,
-      ingredients = None,
-      notIngredients = None
-    )
+    val filters = Filters.empty().copy(vegetarian = Some(true))
 
     val result = FiltersConverter.toCypher(filters, "n")
 
-    result shouldBe "MATCH (n) WHERE  n.vegetarian = true"
+    result shouldBe "MATCH (n) WHERE  n.vegetarian = 'true'"
   }
 
   it should "convert a filter with vegan" in {
-    val filters = Filters(
-      id = None,
-      ids = None,
-      belongsToUser = None,
-      savedByUser = None,
-      name = None,
-      email = None,
-      prepTime = None,
-      cookTime = None,
-      vegetarian = None,
-      vegan = Some(true),
-      public = None,
-      tags = None,
-      ingredients = None,
-      notIngredients = None
-    )
+    val filters = Filters.empty().copy(vegan = Some(true))
 
     val result = FiltersConverter.toCypher(filters, "n")
 
-    result shouldBe "MATCH (n) WHERE  n.vegan = true"
+    result shouldBe "MATCH (n) WHERE  n.vegan = 'true'"
   }
 
   it should "convert a filter with public" in {
-    val filters = Filters(
-      id = None,
-      ids = None,
-      belongsToUser = None,
-      savedByUser = None,
-      name = None,
-      email = None,
-      prepTime = None,
-      cookTime = None,
-      vegetarian = None,
-      vegan = None,
-      public = Some(true),
-      tags = None,
-      ingredients = None,
-      notIngredients = None
-    )
+    val filters = Filters.empty().copy(public = Some(true))
 
     val result = FiltersConverter.toCypher(filters, "n")
 
@@ -249,168 +101,88 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "convert a filter with tags" in {
-    val filters = Filters(
-      id = None,
-      ids = None,
-      belongsToUser = None,
-      savedByUser = None,
-      name = None,
-      email = None,
-      prepTime = None,
-      cookTime = None,
-      vegetarian = None,
-      vegan = None,
-      public = None,
-      tags = Some(List("Italian", "Pasta")),
-      ingredients = None,
-      notIngredients = None
-    )
+    val filters = Filters.empty().copy(tags = Some(List("Italian", "Pasta")))
 
     val result = FiltersConverter.toCypher(filters, "n")
 
     result should (
       include("MATCH (n)-[:HAS_TAG]->(tag:Italian:Tag)") and
-      include("MATCH (n)-[:HAS_TAG]->(tag:Pasta:Tag)")
+        include("MATCH (n)-[:HAS_TAG]->(tag:Pasta:Tag)")
     )
   }
 
   it should "convert a filter with ingredients" in {
-    val filters = Filters(
-      id = None,
-      ids = None,
-      belongsToUser = None,
-      savedByUser = None,
-      name = None,
-      email = None,
-      prepTime = None,
-      cookTime = None,
-      vegetarian = None,
-      vegan = None,
-      public = None,
-      tags = None,
-      ingredients = Some(List("Tomato", "Cheese")),
-      notIngredients = None
-    )
+    val filters =
+      Filters.empty().copy(ingredients = Some(List("Tomato", "Cheese")))
 
     val result = FiltersConverter.toCypher(filters, "n")
 
     result should (
       include("MATCH (n)-[:HAS_INGREDIENT]->(ingredient:Tomato:Ingredient)") and
-      include("MATCH (n)-[:HAS_INGREDIENT]->(ingredient:Cheese:Ingredient)")
+        include("MATCH (n)-[:HAS_INGREDIENT]->(ingredient:Cheese:Ingredient)")
     )
   }
 
   it should "convert a filter with notIngredients" in {
-    val filters = Filters(
-      id = None,
-      ids = None,
-      belongsToUser = None,
-      savedByUser = None,
-      name = None,
-      email = None,
-      prepTime = None,
-      cookTime = None,
-      vegetarian = None,
-      vegan = None,
-      public = None,
-      tags = None,
-      ingredients = None,
-      notIngredients = Some(List("Meat", "Fish"))
-    )
+    val filters =
+      Filters.empty().copy(notIngredients = Some(List("Meat", "Fish")))
 
     val result = FiltersConverter.toCypher(filters, "n")
 
     result should (
-      include("MATCH (n) WHERE NOT (n)-[:HAS_INGREDIENT]->(notIngredient:Meat:Ingredient)") and
-      include("MATCH (n) WHERE NOT (n)-[:HAS_INGREDIENT]->(notIngredient:Fish:Ingredient)")
+      include(
+        "MATCH (n) WHERE NOT (n)-[:HAS_INGREDIENT]->(notIngredient:Meat:Ingredient)"
+      ) and
+        include(
+          "MATCH (n) WHERE NOT (n)-[:HAS_INGREDIENT]->(notIngredient:Fish:Ingredient)"
+        )
     )
   }
 
   it should "convert a filter with belongsToUser" in {
     val userId = UUID.randomUUID()
-    val filters = Filters(
-      id = None,
-      ids = None,
-      belongsToUser = Some(userId),
-      savedByUser = None,
-      name = None,
-      email = None,
-      prepTime = None,
-      cookTime = None,
-      vegetarian = None,
-      vegan = None,
-      public = None,
-      tags = None,
-      ingredients = None,
-      notIngredients = None
-    )
+    val filters = Filters.empty().copy(belongsToUser = Some(userId))
 
     val result = FiltersConverter.toCypher(filters, "n")
 
-    result should include(s"MATCH (n)-[:BELONGS_TO]->(user:User) WHERE user.id = $userId")
+    result should include(
+      s"MATCH (n)-[:BELONGS_TO]->(user:User) WHERE user.id = $userId"
+    )
   }
 
   it should "convert a filter with savedByUser" in {
     val userId = UUID.randomUUID()
-    val filters = Filters(
-      id = None,
-      ids = None,
-      belongsToUser = None,
-      savedByUser = Some(userId),
-      name = None,
-      email = None,
-      prepTime = None,
-      cookTime = None,
-      vegetarian = None,
-      vegan = None,
-      public = None,
-      tags = None,
-      ingredients = None,
-      notIngredients = None
-    )
+    val filters = Filters.empty().copy(savedByUser = Some(userId))
 
     val result = FiltersConverter.toCypher(filters, "n")
 
-    result should include(s"MATCH (n)-[:SAVED_BY]->(user:User) WHERE user.id = $userId")
+    result should include(
+      s"MATCH (n)-[:SAVED_BY]->(user:User) WHERE user.id = $userId"
+    )
   }
 
   it should "combine multiple filters" in {
-    val nameFilter = StringFilter(
-      equals = Some("test"),
-      anyOf = None,
-      contains = None,
-      startsWith = None,
-      endsWith = None
-    )
+    val nameFilter = StringFilter.empty().copy(equals = Some("test"))
 
     val prepTimeFilter = NumberFilter(
       greaterOrEqual = Some(10),
       lessOrEqual = Some(20)
     )
 
-    val filters = Filters(
-      id = None,
-      ids = None,
-      belongsToUser = None,
-      savedByUser = None,
-      name = Some(nameFilter),
-      email = None,
-      prepTime = Some(prepTimeFilter),
-      cookTime = None,
-      vegetarian = Some(true),
-      vegan = None,
-      public = None,
-      tags = None,
-      ingredients = None,
-      notIngredients = None
-    )
+    val filters = Filters
+      .empty()
+      .copy(
+        name = Some(nameFilter),
+        prepTime = Some(prepTimeFilter),
+        vegetarian = Some(true)
+      )
 
     val result = FiltersConverter.toCypher(filters, "n")
 
     result should (
       include("n.lowername = 'test'") and
-      include("n.prepTime >= 10 AND n.prepTime <= 20") and
-      include("n.vegetarian = true")
+        include("n.prepTime >= 10 AND n.prepTime <= 20") and
+        include("n.vegetarian = 'true'")
     )
   }
 }

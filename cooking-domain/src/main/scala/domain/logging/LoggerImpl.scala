@@ -15,7 +15,6 @@ class LoggerImpl(
   override def warn(msg: String): Unit = slf4jLogger.warn(msg)
 }
 
-
 object LoggerImpl {
   def apply(clazz: Class[?]): LoggerImpl =
     new LoggerImpl(LoggerFactory.getLogger(clazz), clazz)

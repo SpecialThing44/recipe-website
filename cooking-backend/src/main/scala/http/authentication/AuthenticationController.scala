@@ -24,7 +24,7 @@ class AuthenticationController @Inject() (
       case Right(user) =>
         try {
           val token = ApiRunner.runResponse(
-            cookingApi.users.signup(user, cookingApi),
+            cookingApi.users.signup(user),
             cookingApi,
             None
           )

@@ -27,6 +27,11 @@ object FiltersConverter {
           nodeVar
         )
       )
+    val aliasesOrNameClause = filters.aliasesOrName.map(aliasesList =>
+      s"(ANY(alias IN $nodeVar.aliases WHERE alias IN ${aliasesList.asJson}) OR " +
+        s"ANY(searchTerm IN ${aliasesList.asJson} WHERE $nodeVar.name CONTAINS searchTerm))"
+    )
+
     val prepTimeClause = filters.prepTime.map(prepTimeFilter =>
       NumberFilterConverter.toCypher(prepTimeFilter, "prepTime", nodeVar)
     )
@@ -34,29 +39,29 @@ object FiltersConverter {
       NumberFilterConverter.toCypher(cookTimeFilter, "cookTime", nodeVar)
     )
     val vegetarianClause =
-      filters.vegetarian.map(vegetarian => s"$nodeVar.vegetarian = $vegetarian")
-    val veganClause = filters.vegan.map(vegan => s"$nodeVar.vegan = $vegan")
+      filters.vegetarian.map(vegetarian => s"$nodeVar.vegetarian = '$vegetarian'")
+    val veganClause = filters.vegan.map(vegan => s"$nodeVar.vegan = '$vegan'")
     val publicClause =
       filters.public.map(public => s"$nodeVar.public = $public")
 
     val tagsClause = filters.tags.map(tags =>
       tags
         .map(tag => s"MATCH ($nodeVar)-[:HAS_TAG]->(tag:$tag:Tag)")
-        .mkString(" AND ")
+        .mkString("\n")
     )
     val ingredientsClause = filters.ingredients.map(ingredients =>
       ingredients
         .map(ingredient =>
           s"MATCH ($nodeVar)-[:HAS_INGREDIENT]->(ingredient:$ingredient:Ingredient)"
         )
-        .mkString(" AND ")
+        .mkString("\n")
     )
     val notIngredientsClause = filters.notIngredients.map(notIngredients =>
       notIngredients
         .map(notIngredient =>
           s"MATCH ($nodeVar) WHERE NOT ($nodeVar)-[:HAS_INGREDIENT]->(notIngredient:$notIngredient:Ingredient)"
         )
-        .mkString(" AND ")
+        .mkString("\n")
     )
     val belongsToUserClause = filters.belongsToUser.map(id =>
       s"MATCH ($nodeVar)-[:BELONGS_TO]->(user:User) WHERE user.id = $id"
@@ -81,7 +86,8 @@ object FiltersConverter {
       cookTimeClause,
       vegetarianClause,
       veganClause,
-      publicClause
+      publicClause,
+      aliasesOrNameClause
     )
 
     matchingFilters

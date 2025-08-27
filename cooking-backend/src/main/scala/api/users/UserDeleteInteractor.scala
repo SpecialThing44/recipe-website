@@ -10,12 +10,11 @@ import java.util.UUID
 
 class UserDeleteInteractor @Inject() (
     persistence: Users,
-    authenticationInteractor: AuthenticationInteractor,
 ) {
   def delete(id: UUID): ZIO[ApiContext, Throwable, User] = for {
     context <- ZIO.service[ApiContext]
     user <- persistence.getById(id)
-    _ <- authenticationInteractor.ensureAuthenticatedAndMatchingUser(
+    _ <- AuthenticationInteractor.ensureAuthenticatedAndMatchingUser(
       context.applicationContext.user,
       user.id
     )

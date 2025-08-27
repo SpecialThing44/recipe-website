@@ -1,6 +1,6 @@
 package http
 
-import api.{Persisting, Querying}
+import api.{Listing, Persisting, Querying}
 import context.{ApiContext, CookingApi}
 import domain.filters.Filters
 import domain.users.User
@@ -18,7 +18,7 @@ object Requests {
   def list[Entity](
       request: Request[JsValue],
       cookingApi: CookingApi,
-      entityApi: Querying[Entity]
+      entityApi: Listing[Entity]
   )(implicit encoder: Encoder[Entity]): Result = {
     val maybeUser = extractUser(request, cookingApi)
     val entities: ZIO[ApiContext, Throwable, Seq[Entity]] = for {
@@ -34,6 +34,22 @@ object Requests {
       cookingApi,
       maybeUser
     )
+  }
+
+  private def extractUser(
+      request: Request[Any],
+      cookingApi: CookingApi
+  ): Option[User] = {
+    val authHeader = request.headers.get("Authorization")
+    try {
+      ApiRunner.runResponse[ApiContext, Throwable, Option[User]](
+        cookingApi.users.authenticate(authHeader),
+        cookingApi,
+        None
+      )
+    } catch {
+      case e: Throwable => None
+    }
   }
 
   def get[Entity](
@@ -57,27 +73,11 @@ object Requests {
     )
   }
 
-  private def extractUser(
-      request: Request[Any],
-      cookingApi: CookingApi
-  ): Option[User] = {
-    val authHeader = request.headers.get("Authorization")
-    try {
-      ApiRunner.runResponse[ApiContext, Throwable, Option[User]](
-        cookingApi.users.authenticate(authHeader),
-        cookingApi,
-        None
-      )
-    } catch {
-      case _: Throwable => None
-    }
-  }
-
   def post[Entity: Decoder, EntityInput: Decoder, EntityUpdateInput: Decoder](
       request: Request[JsValue],
       cookingApi: CookingApi,
       entityApi: Persisting[Entity, EntityInput, EntityUpdateInput]
-  ): Result = {
+  )(implicit encoder: Encoder[Entity]): Result = {
     val maybeUser = extractUser(request, cookingApi)
     val createdEntity: ZIO[ApiContext, Throwable, Entity] = for {
       newEntity <- ZIO.fromEither(
@@ -87,7 +87,8 @@ object Requests {
     } yield createdEntity
     val response = createdEntity.fold(
       error => ErrorMapping.mapCustomErrorsToHttp(error),
-      result => Results.Created(s"{ \"Body\": $result }")
+      result =>
+        Results.Created(s"{ \"Body\": ${Json.parse(result.asJson.noSpaces)} }")
     )
     ApiRunner.runResponseSafely[ApiContext](
       response,
@@ -105,6 +106,7 @@ object Requests {
       ]
   )(implicit encoder: Encoder[Entity]): Result = {
     val maybeUser = extractUser(request, cookingApi)
+    println(maybeUser)
     val maybeUpdatedEntity: ZIO[ApiContext, Throwable, Entity] = for {
       newEntity <- ZIO.fromEither(
         decode[EntityUpdateInput](request.body.toString)
@@ -113,6 +115,10 @@ object Requests {
         case userApi: api.users.UserFacade =>
           userApi
             .getByIdWithPassword(id)
+            .asInstanceOf[ZIO[ApiContext, Throwable, Entity]]
+        case ingredientApi: api.ingredients.IngredientsFacade =>
+          ingredientApi
+            .getById(id)
             .asInstanceOf[ZIO[ApiContext, Throwable, Entity]]
         case _ =>
           entityApi.getById(id)
