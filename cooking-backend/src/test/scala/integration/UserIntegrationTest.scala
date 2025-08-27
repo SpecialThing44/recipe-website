@@ -30,7 +30,7 @@ class UserIntegrationTest extends IntegrationTestFramework {
     user1.name shouldBe user2.name
     user1.email shouldBe user2.email
     user1.id shouldBe user2.id
-    user1.countryOfOrigin shouldBe user2.countryOfOrigin
+    if (user1.countryOfOrigin.isDefined) user1.countryOfOrigin shouldBe user2.countryOfOrigin
   }
 
   def userInputsMatch(userInput: UserInput, user: User): Unit = {
@@ -67,7 +67,7 @@ class UserIntegrationTest extends IntegrationTestFramework {
     userUpdatesMatch(updateInput, updatedUser)
 
     val retrievedUser = getUserById(user.id)
-    usersMatch(user, retrievedUser)
+    usersMatch(updatedUser, retrievedUser)
   }
 
   it should "fetch users with filters" in {

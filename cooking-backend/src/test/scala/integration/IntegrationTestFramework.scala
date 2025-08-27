@@ -36,23 +36,21 @@ class IntegrationTestFramework
   given [A, B]: CanEqual[Seq[A], Seq[B]] = CanEqual.derived
 
 
-  private val application = new GuiceApplicationBuilder()
-    .configure("neo4j.isEmbedded" -> true)
-    .overrides(bind[WikipediaCheck].to[FakeWikipediaCheck])
-    .build()
-  private val recipeApp: RecipeApp = application.injector.instanceOf[RecipeApp]
-  override protected val userFacade: UserFacade = application.injector.instanceOf[UserFacade]
-  override protected val ingredientsFacade: IngredientsFacade =
-    application.injector.instanceOf[IngredientsFacade]
-  private val recipeFacade = application.injector.instanceOf[RecipeFacade]
+  // Use a shared test application to ensure a single database across all integration tests
+  private val application = TestAppHolder.application
+  private val recipeApp: RecipeApp = TestAppHolder.recipeApp
+  override protected val userFacade: UserFacade = TestAppHolder.userFacade
+  override protected val ingredientsFacade: IngredientsFacade = TestAppHolder.ingredientsFacade
+  private val recipeFacade = TestAppHolder.recipeFacade
 
   override def beforeAll(): Unit = {
-    recipeApp.initialize()
+    // Initialize once for the entire test run; safe to call multiple times
+    TestAppHolder.initOnce()
   }
 
   override def afterAll(): Unit = {
-    recipeApp.shutdown()
-    application.stop()
+    // Do not shutdown here to avoid tearing down DB for other test suites.
+    // Shutdown is handled by a JVM shutdown hook in TestAppHolder.
   }
 
   override def beforeEach(): Unit = {
