@@ -8,12 +8,6 @@ import scala.language.implicitConversions
 import scala.language.strictEquality
 
 class UserIntegrationTest extends IntegrationTestFramework {
-  val standardUserInput = UserInput(
-    name = "Test User",
-    email = "test@example.com",
-    password = "password123"
-  )
-
   val johnDoeUserInput = UserInput(
     name = "John Doe",
     email = "john@example.com",
@@ -54,6 +48,8 @@ class UserIntegrationTest extends IntegrationTestFramework {
   it should "create a user and get it by ID" in {
     val user = createTestUser(standardUserInput)
     userInputsMatch(standardUserInput, user)
+    val retrievedUser = getUserById(user.id)
+    usersMatch(user, retrievedUser)
   }
 
   it should "update a user" in {

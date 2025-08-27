@@ -74,12 +74,6 @@ class IngredientsIntegrationTest extends IntegrationTestFramework {
     tags = Seq("meat", "protein")
   )
 
-  val standardUserInput = UserInput(
-    name = "Test User",
-    email = "test@example.com",
-    password = "password123"
-  )
-
   var user: User = _
 
   override def beforeEach(): Unit = {

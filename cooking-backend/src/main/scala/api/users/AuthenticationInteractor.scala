@@ -48,7 +48,7 @@ class AuthenticationInteractor @Inject() (
       case _ => ZIO.succeed(None)
     }
 
-  def signup(user: User): ZIO[ApiContext, Throwable, String] = {
+  def signupAndLogin(user: User): ZIO[ApiContext, Throwable, String] = {
     val hashedPassword = SecureHash.createHash(user.password)
     val userWithHashedPassword = user.copy(password = hashedPassword)
     for {
@@ -60,6 +60,12 @@ class AuthenticationInteractor @Inject() (
       )
       token: String = Jwt.encode(claim, secretKey, JwtAlgorithm.HS256)
     } yield token
+  }
+
+  def signup(user: User): ZIO[ApiContext, Throwable, User] = {
+    val hashedPassword = SecureHash.createHash(user.password)
+    val userWithHashedPassword = user.copy(password = hashedPassword)
+    userPersistence.create(userWithHashedPassword)
   }
 
   def login(

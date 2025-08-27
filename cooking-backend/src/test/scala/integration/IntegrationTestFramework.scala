@@ -7,7 +7,6 @@ import api.users.UserFacade
 import api.wiki.WikipediaCheck
 import com.google.inject.Singleton
 import context.{ApiContext, ApplicationContext, CookingApi}
-import domain.users.{User, UserInput}
 import integration.stubs.FakeWikipediaCheck
 import integration.support.{IntegrationIngredientSupport, IntegrationUserSupport}
 import org.scalatest.flatspec.AnyFlatSpec
@@ -18,7 +17,6 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import zio.{Runtime, Unsafe, ZLayer}
 
 import java.util.UUID
-import scala.collection.mutable.ListBuffer
 
 @Singleton
 class IntegrationTestFramework

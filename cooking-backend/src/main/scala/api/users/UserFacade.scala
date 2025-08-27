@@ -21,7 +21,7 @@ class UserFacade @Inject() (
   override def create(
       entity: UserInput
   ): ZIO[ApiContext, Throwable, User] =
-    persistence.create(UserAdapter.adapt(entity))
+    authenticationInteractor.signup(UserAdapter.adapt(entity))
 
   override def update(
       entity: UserUpdateInput,
@@ -60,7 +60,6 @@ class UserFacade @Inject() (
 
   override def signup(
       user: UserInput,
-      cookingApi: CookingApi
   ): ZIO[ApiContext, Throwable, String] =
-    authenticationInteractor.signup(UserAdapter.adapt(user))
+    authenticationInteractor.signupAndLogin(UserAdapter.adapt(user))
 }

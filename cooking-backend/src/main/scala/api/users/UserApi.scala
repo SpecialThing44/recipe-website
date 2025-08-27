@@ -21,7 +21,6 @@ trait UserApi
 
   def signup(
       user: UserInput,
-      cookingApi: CookingApi
   ): ZIO[ApiContext, Throwable, String]
 
   def login(
