@@ -17,7 +17,7 @@ class RecipeDeleteInteractor @Inject() (
       recipe <- persistence.getById(id)
       _ <- AuthenticationInteractor.ensureAuthenticatedAndMatchingUser(
         user,
-        recipe.user.id
+        recipe.createdBy.id
       )
       deleted <- persistence.delete(id)
     } yield deleted

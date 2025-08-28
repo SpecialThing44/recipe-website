@@ -6,11 +6,11 @@ import java.time.Instant
 import java.util.UUID
 
 object RecipeAdapter {
-  def adapt(recipe: RecipeInput, resolvedIngredients: Seq[domain.ingredients.InstructionIngredient]): Recipe = {
+  def adapt(recipe: RecipeInput, resolvedIngredients: Seq[domain.ingredients.InstructionIngredient], createdBy: domain.users.User): Recipe = {
     val now = Instant.now
     Recipe(
       name = recipe.name,
-      user = recipe.user,
+      createdBy = createdBy,
       aliases = recipe.aliases,
       tags = recipe.tags,
       ingredients = resolvedIngredients,
@@ -32,7 +32,7 @@ object RecipeAdapter {
     val now = Instant.now
     Recipe(
       name = input.name.getOrElse(original.name),
-      user = original.user,
+      createdBy = original.createdBy,
       aliases = input.aliases.getOrElse(original.aliases),
       tags = input.tags.getOrElse(original.tags),
       ingredients = resolvedIngredients.getOrElse(original.ingredients),

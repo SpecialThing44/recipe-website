@@ -22,7 +22,7 @@ class RecipeUpdateInteractor @Inject() (
       context <- ZIO.service[ApiContext]
       _ <- AuthenticationInteractor.ensureAuthenticatedAndMatchingUser(
         context.applicationContext.user,
-        originalRecipe.user.id
+        originalRecipe.createdBy.id
       )
       _ <- if (input.wikiLink.isDefined) wikipediaCheck.validateWikiLink(input.wikiLink.get) else ZIO.unit
       resolved <- input.ingredients match {

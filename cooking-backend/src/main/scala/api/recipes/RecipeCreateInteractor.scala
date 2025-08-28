@@ -17,7 +17,7 @@ class RecipeCreateInteractor @Inject() (
   def create(input: RecipeInput): ZIO[ApiContext, Throwable, Recipe] = {
     for {
       maybeUser <- ZIO.service[ApiContext].map(_.applicationContext.user)
-      _ <- AuthenticationInteractor.ensureIsLoggedIn(maybeUser)
+      user <- AuthenticationInteractor.ensureIsLoggedIn(maybeUser)
       _ <- input.wikiLink.map(wikipediaCheck.validateWikiLink).getOrElse(ZIO.unit)
       ingredients <- zio.ZIO.foreach(input.ingredients) { ii =>
         for {
@@ -33,7 +33,7 @@ class RecipeCreateInteractor @Inject() (
           zio.ZIO.fail(domain.types.InputError("Recipe marked vegetarian but includes non-vegetarian ingredient(s)"))
         else ZIO.unit
       }
-      recipe = RecipeAdapter.adapt(input, ingredients)
+      recipe = RecipeAdapter.adapt(input, ingredients, user)
       result <- persistence.create(recipe)
     } yield result
   }
