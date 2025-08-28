@@ -12,7 +12,6 @@ import java.util.UUID
 case class Recipe(
     name: String,
     createdBy: User,
-    aliases: Seq[String],
     tags: Seq[String],
     ingredients: Seq[InstructionIngredient],
     prepTime: Int,
@@ -30,7 +29,6 @@ case class Recipe(
 
 case class RecipeInput(
     name: String,
-    aliases: Seq[String],
     tags: Seq[String],
     ingredients: Seq[RecipeIngredientInput],
     prepTime: Int,
@@ -45,7 +43,6 @@ case class RecipeInput(
 
 case class RecipeUpdateInput(
     name: Option[String] = None,
-    aliases: Option[Seq[String]] = None,
     tags: Option[Seq[String]] = None,
     ingredients: Option[Seq[RecipeIngredientInput]] = None,
     prepTime: Option[Int] = None,

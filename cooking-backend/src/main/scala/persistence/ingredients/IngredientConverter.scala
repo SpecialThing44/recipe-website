@@ -39,13 +39,15 @@ object IngredientConverter extends Converter[Ingredient] {
       case _                   => Seq.empty
     }
 
+    val aliases = record.get(aliasesField) match {
+      case list: java.util.List[String] => list.toSeq
+      case _ => Seq.empty
+    }
+
     Ingredient(
       id = UUID.fromString(record.get(idField).toString),
       name = record.get(nameField).toString,
-      aliases = Option(
-        record.get(aliasesField).asInstanceOf[java.util.List[String]].toSeq
-      )
-        .getOrElse(Seq.empty),
+      aliases = aliases,
       wikiLink = record.get(wikiLinkField).toString,
       vegetarian = record.get(vegetarianField).toString.toBoolean,
       vegan = record.get(veganField).toString.toBoolean,

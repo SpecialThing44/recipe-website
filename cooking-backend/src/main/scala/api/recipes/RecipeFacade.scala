@@ -15,6 +15,8 @@ class RecipeFacade @Inject() (
     updateInteractor: RecipeUpdateInteractor,
     deleteInteractor: RecipeDeleteInteractor,
     fetchInteractor: RecipeFetchInteractor,
+    saveInteractor: RecipeSaveInteractor,
+    getInteractor: RecipeGetInteractor,
 ) extends RecipeApi {
 
   override def create(
@@ -35,5 +37,8 @@ class RecipeFacade @Inject() (
     fetchInteractor.list(query)
 
   override def getById(id: UUID): ZIO[ApiContext, Throwable, Recipe] =
-    persistence.getById(id)
+    getInteractor.getById(id)
+
+  override def save(recipeId: UUID): ZIO[ApiContext, Throwable, Recipe] =
+    saveInteractor.save(recipeId)
 }

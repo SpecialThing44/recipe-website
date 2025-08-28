@@ -13,6 +13,12 @@ class RecipesController @Inject() (
     cc: ControllerComponents,
     cookingApi: CookingApi
 ) extends AbstractController(cc) {
+  import io.circe.syntax.EncoderOps
+  import domain.filters.Filters
+  import http.ApiRunner
+  import http.ErrorMapping
+  import play.api.mvc.Results
+  import context.ApiContext
   implicit val recipeDecoder: Decoder[Recipe] = Recipe.decoder
   implicit val ingredientDecoder: Decoder[Ingredient] = Ingredient.decoder
 
@@ -41,5 +47,15 @@ class RecipesController @Inject() (
       cookingApi,
       cookingApi.recipes
     )
+  }
+
+  def save(id: java.util.UUID): Action[AnyContent] = Action { request =>
+    val maybeUser = request.headers.get("Authorization")
+    val result = cookingApi.recipes.save(id)
+    val response = result.fold(
+      error => ErrorMapping.mapCustomErrorsToHttp(error),
+      saved => Results.Created(s"{ \"Body\": ${play.api.libs.json.Json.parse(saved.asJson.noSpaces)} }")
+    )
+    ApiRunner.runResponseSafely[ApiContext](response, cookingApi, None)
   }
 }

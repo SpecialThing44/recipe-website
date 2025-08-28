@@ -2,11 +2,13 @@ csrf
 Gson
 guice
 healthcheck
+idx
 interactor
 logback
 loweremail
 lowername
 mockito
+mvc
 outsource
 pekko
 SAMEORIGIN

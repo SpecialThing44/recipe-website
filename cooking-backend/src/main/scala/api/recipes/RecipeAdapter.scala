@@ -11,7 +11,6 @@ object RecipeAdapter {
     Recipe(
       name = recipe.name,
       createdBy = createdBy,
-      aliases = recipe.aliases,
       tags = recipe.tags,
       ingredients = resolvedIngredients,
       prepTime = recipe.prepTime,
@@ -33,7 +32,6 @@ object RecipeAdapter {
     Recipe(
       name = input.name.getOrElse(original.name),
       createdBy = original.createdBy,
-      aliases = input.aliases.getOrElse(original.aliases),
       tags = input.tags.getOrElse(original.tags),
       ingredients = resolvedIngredients.getOrElse(original.ingredients),
       prepTime = input.prepTime.getOrElse(original.prepTime),

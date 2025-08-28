@@ -28,7 +28,7 @@ object FiltersConverter {
         )
       )
     val aliasesOrNameClause = filters.aliasesOrName.map(aliasesList =>
-      s"(ANY(alias IN $nodeVar.aliases WHERE alias IN ${aliasesList.asJson}) OR " +
+      s"(((EXISTS($nodeVar.aliases) AND ANY(alias IN $nodeVar.aliases WHERE alias IN ${aliasesList.asJson}))) OR " +
         s"ANY(searchTerm IN ${aliasesList.asJson} WHERE $nodeVar.name CONTAINS searchTerm))"
     )
 
@@ -52,22 +52,22 @@ object FiltersConverter {
     val ingredientsClause = filters.ingredients.map(ingredients =>
       ingredients
         .map(ingredient =>
-          s"MATCH ($nodeVar)-[:HAS_INGREDIENT]->(ingredient:$ingredient:Ingredient)"
+          s"MATCH ($nodeVar)-[:HAS_INGREDIENT]->(hasIngredient:Ingredient {name: '$ingredient'})"
         )
         .mkString("\n")
     )
     val notIngredientsClause = filters.notIngredients.map(notIngredients =>
       notIngredients
         .map(notIngredient =>
-          s"MATCH ($nodeVar) WHERE NOT ($nodeVar)-[:HAS_INGREDIENT]->(notIngredient:$notIngredient:Ingredient)"
+          s"MATCH ($nodeVar) WHERE NOT ($nodeVar)-[:HAS_INGREDIENT]->(notIngredient:Ingredient {name: '$notIngredient'})"
         )
         .mkString("\n")
     )
     val belongsToUserClause = filters.belongsToUser.map(id =>
-      s"MATCH ($nodeVar)-[:BELONGS_TO]->(user:User) WHERE user.id = $id"
+      s"MATCH ($nodeVar)-[:BELONGS_TO|CREATED_BY]->(belongsToUser:User) WHERE belongsToUser.id = '$id'"
     )
     val savedByUserClause = filters.savedByUser.map(id =>
-      s"MATCH ($nodeVar)-[:SAVED_BY]->(user:User) WHERE user.id = $id"
+      s"MATCH ($nodeVar)-[:SAVED_BY]->(savedUser:User) WHERE savedUser.id = '$id'"
     )
 
     val matchingFilters = Seq(

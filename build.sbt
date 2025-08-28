@@ -32,6 +32,7 @@ lazy val backend =
     .settings(
       scalacOptions --= Seq("-Werror"),
       scalacOptions --= Seq("-Xfatal-warnings"),
+      Test / parallelExecution := false,
       libraryDependencies ++= Seq(
         jdbc,
         circeCore,

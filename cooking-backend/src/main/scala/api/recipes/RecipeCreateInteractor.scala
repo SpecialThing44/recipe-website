@@ -25,7 +25,7 @@ class RecipeCreateInteractor @Inject() (
         } yield domain.ingredients.InstructionIngredient(ingredient, ii.quantity)
       }
       _ <- {
-        val anyNonVegetarian = ingredients.exists(!_.ingredient.vegetarian)
+        val anyNonVegetarian = ingredients.exists(ingredient => !ingredient.ingredient.vegetarian && !ingredient.ingredient.vegan)
         val anyNonVegan = ingredients.exists(!_.ingredient.vegan)
         if (input.vegan && anyNonVegan)
           zio.ZIO.fail(domain.types.InputError("Recipe marked vegan but includes non-vegan ingredient(s)"))

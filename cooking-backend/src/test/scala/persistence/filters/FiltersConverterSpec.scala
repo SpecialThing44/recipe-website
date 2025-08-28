@@ -118,8 +118,8 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
     val result = FiltersConverter.toCypher(filters, "n")
 
     result should (
-      include("MATCH (n)-[:HAS_INGREDIENT]->(ingredient:Tomato:Ingredient)") and
-        include("MATCH (n)-[:HAS_INGREDIENT]->(ingredient:Cheese:Ingredient)")
+      include("MATCH (n)-[:HAS_INGREDIENT]->(hasIngredient:Ingredient {name: 'Tomato'})") and
+        include("MATCH (n)-[:HAS_INGREDIENT]->(hasIngredient:Ingredient {name: 'Cheese'})")
     )
   }
 
@@ -131,10 +131,10 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
 
     result should (
       include(
-        "MATCH (n) WHERE NOT (n)-[:HAS_INGREDIENT]->(notIngredient:Meat:Ingredient)"
+        "MATCH (n) WHERE NOT (n)-[:HAS_INGREDIENT]->(notIngredient:Ingredient {name: 'Meat'})"
       ) and
         include(
-          "MATCH (n) WHERE NOT (n)-[:HAS_INGREDIENT]->(notIngredient:Fish:Ingredient)"
+          "MATCH (n) WHERE NOT (n)-[:HAS_INGREDIENT]->(notIngredient:Ingredient {name: 'Fish'})"
         )
     )
   }
@@ -146,7 +146,7 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
     val result = FiltersConverter.toCypher(filters, "n")
 
     result should include(
-      s"MATCH (n)-[:BELONGS_TO]->(user:User) WHERE user.id = $userId"
+      s"MATCH (n)-[:BELONGS_TO|CREATED_BY]->(belongsToUser:User) WHERE belongsToUser.id = '$userId'"
     )
   }
 
@@ -157,7 +157,7 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
     val result = FiltersConverter.toCypher(filters, "n")
 
     result should include(
-      s"MATCH (n)-[:SAVED_BY]->(user:User) WHERE user.id = $userId"
+      s"MATCH (n)-[:SAVED_BY]->(savedUser:User) WHERE savedUser.id = '$userId'"
     )
   }
 

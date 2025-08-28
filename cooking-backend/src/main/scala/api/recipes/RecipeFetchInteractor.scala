@@ -10,6 +10,14 @@ import zio.ZIO
 class RecipeFetchInteractor @Inject() (
     persistence: Recipes
 ) {
-  def list(query: Filters): ZIO[ApiContext, Throwable, Seq[Recipe]] =
-    persistence.list(query)
+  def list(query: Filters): ZIO[ApiContext, Throwable, Seq[Recipe]] = {
+    for {
+      context <- ZIO.service[ApiContext]
+      userOpt = context.applicationContext.user
+      base <- persistence.list(query)
+      filtered = base.filter { r =>
+        r.public || userOpt.exists(u => u.id == r.createdBy.id)
+      }
+    } yield filtered
+  }
 }
