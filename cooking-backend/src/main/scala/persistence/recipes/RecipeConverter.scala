@@ -69,7 +69,8 @@ object RecipeConverter extends Converter[Recipe] {
         }
         val unitName = Option(iq.get("unit")).map(_.toString).getOrElse("")
         val unit = Unit(unitName, volume = false, wikiLink = "")
-        InstructionIngredient(ingredient, Quantity(unit, amount))
+        val description = Option(iq.get("description")).map(_.toString).filter(_.nonEmpty)
+        InstructionIngredient(ingredient, Quantity(unit, amount), description)
       }
 
     Recipe(

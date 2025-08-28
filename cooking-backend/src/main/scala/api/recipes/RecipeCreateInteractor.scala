@@ -23,7 +23,7 @@ class RecipeCreateInteractor @Inject() (
       ingredients <- zio.ZIO.foreach(input.ingredients) { ii =>
         for {
           ingredient <- ingredientPersistence.getById(ii.ingredientId)
-        } yield domain.ingredients.InstructionIngredient(ingredient, ii.quantity)
+        } yield domain.ingredients.InstructionIngredient(ingredient, ii.quantity, ii.description)
       }
       _ <- {
         val anyNonVegetarian = ingredients.exists(ingredient => !ingredient.ingredient.vegetarian && !ingredient.ingredient.vegan)

@@ -6,7 +6,8 @@ import java.util.UUID
 
 case class RecipeIngredientInput(
     ingredientId: UUID,
-    quantity: domain.ingredients.Quantity
+    quantity: domain.ingredients.Quantity,
+    description: Option[String] = None,
 )
 
 object RecipeIngredientInput {

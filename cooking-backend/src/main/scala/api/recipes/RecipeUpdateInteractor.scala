@@ -37,7 +37,8 @@ class RecipeUpdateInteractor @Inject() (
                 ingredient <- ingredientPersistence.getById(instructionIngredient.ingredientId)
               } yield domain.ingredients.InstructionIngredient(
                 ingredient,
-                instructionIngredient.quantity
+                instructionIngredient.quantity,
+                instructionIngredient.description
               )
             }
             .map(Some(_))

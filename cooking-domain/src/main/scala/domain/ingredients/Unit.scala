@@ -58,7 +58,6 @@ object Unit:
     Json.obj(
       ("name", Json.fromString(unitValue.name)),
       ("volume", Json.fromBoolean(unitValue.isVolume)),
-      ("wikiLink", Json.fromString(unitValue.wikiLink))
     )
   )
 

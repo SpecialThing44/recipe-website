@@ -5,7 +5,8 @@ import io.circe.{Decoder, Encoder}
 
 case class InstructionIngredient(
     ingredient: Ingredient,
-    quantity: Quantity
+    quantity: Quantity,
+    description: Option[String] = None
 )
 
 object InstructionIngredient {

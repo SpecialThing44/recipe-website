@@ -1,8 +1,18 @@
 package integration
 
 import domain.filters.{Filters, StringFilter}
-import domain.ingredients.{Ingredient, IngredientInput, Quantity, Unit => IngUnit}
-import domain.recipes.{Recipe, RecipeInput, RecipeIngredientInput, RecipeUpdateInput}
+import domain.ingredients.{
+  Ingredient,
+  IngredientInput,
+  Quantity,
+  Unit => IngUnit
+}
+import domain.recipes.{
+  Recipe,
+  RecipeInput,
+  RecipeIngredientInput,
+  RecipeUpdateInput
+}
 import domain.users.User
 
 class RecipeIntegrationTest extends IntegrationTestFramework {
@@ -10,7 +20,9 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
     r1.id shouldBe r2.id
     r1.name shouldBe r2.name
     r1.tags.toSet shouldBe r2.tags.toSet
-    r1.ingredients.map(_.ingredient.id).toSet shouldBe r2.ingredients.map(_.ingredient.id).toSet
+    r1.ingredients.map(_.ingredient.id).toSet shouldBe r2.ingredients
+      .map(_.ingredient.id)
+      .toSet
     r1.ingredients.map(_.quantity) shouldBe r2.ingredients.map(_.quantity)
     r1.prepTime shouldBe r2.prepTime
     r1.cookTime shouldBe r2.cookTime
@@ -23,7 +35,11 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
     r1.createdBy.id shouldBe r2.createdBy.id
   }
 
-  def recipeInputMatches(input: RecipeInput, created: Recipe, ingredientIds: Seq[java.util.UUID]): Unit = {
+  def recipeInputMatches(
+      input: RecipeInput,
+      created: Recipe,
+      ingredientIds: Seq[java.util.UUID]
+  ): Unit = {
     created.name shouldBe input.name
     created.tags shouldBe input.tags
     created.prepTime shouldBe input.prepTime
@@ -32,11 +48,19 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
     created.vegan shouldBe input.vegan
     created.countryOfOrigin shouldBe input.countryOfOrigin
     created.public shouldBe input.public
-    created.wikiLink.map(_.toLowerCase) shouldBe input.wikiLink.map(_.toLowerCase)
+    created.wikiLink.map(_.toLowerCase) shouldBe input.wikiLink.map(
+      _.toLowerCase
+    )
     created.instructions shouldBe input.instructions
     created.ingredients.map(_.ingredient.id).toSet shouldBe ingredientIds.toSet
-    created.ingredients.map(_.quantity.amount) shouldBe input.ingredients.map(_.quantity.amount)
-    created.ingredients.map(_.quantity.unit.name) shouldBe input.ingredients.map(_.quantity.unit.name)
+    created.ingredients.map(_.quantity.amount) shouldBe input.ingredients.map(
+      _.quantity.amount
+    )
+    created.ingredients.map(_.quantity.unit.name) shouldBe input.ingredients
+      .map(_.quantity.unit.name)
+    created.ingredients.map(_.description) shouldBe input.ingredients.map(
+      _.description
+    )
   }
 
   var user: User = _
@@ -68,7 +92,15 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
     val update = RecipeUpdateInput(
       name = Some("Updated Recipe"),
       tags = Some(Seq("dinner", "quick")),
-      ingredients = Some(Seq(RecipeIngredientInput(onion.id, Quantity(IngUnit("cup", true, ""), 2)))) ,
+      ingredients = Some(
+        Seq(
+          RecipeIngredientInput(
+            onion.id,
+            Quantity(IngUnit("cup", true, ""), 2),
+            description = Some("about one onion")
+          )
+        )
+      ),
       prepTime = Some(10),
       cookTime = Some(20),
       vegetarian = Some(true),
@@ -86,14 +118,18 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
     updated.ingredients.map(_.ingredient.id) shouldBe Seq(onion.id)
     updated.ingredients.head.quantity.amount shouldBe 2
     updated.ingredients.head.quantity.unit.name shouldBe "cup"
+    updated.ingredients.head.description shouldBe Some("about one onion")
     updated.prepTime shouldBe 10
     updated.cookTime shouldBe 20
     updated.vegetarian shouldBe true
     updated.vegan shouldBe true
     updated.countryOfOrigin shouldBe Some("Italy")
     updated.public shouldBe true
-    updated.wikiLink.map(_.toLowerCase()) shouldBe Some("https://en.wikipedia.org/wiki/soup")
+    updated.wikiLink.map(_.toLowerCase()) shouldBe Some(
+      "https://en.wikipedia.org/wiki/soup"
+    )
     updated.instructions shouldBe "Chop and cook"
+    updated.ingredients.head.description shouldBe Some("about one onion")
 
     val fetched = getRecipeById(created.id)
     recipesMatch(updated, fetched)
@@ -101,14 +137,28 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
 
   it should "list recipes with filters" in {
     val r1 = createTestRecipe(standardRecipeInput(Seq(tomato)))
-    val r2 = createTestRecipe(standardRecipeInput(Seq(onion)).copy(name = "Onion Dish"))
+    val r2 = createTestRecipe(
+      standardRecipeInput(Seq(onion)).copy(name = "Onion Dish")
+    )
 
     val idFilter = Filters.empty().copy(id = Some(r1.id))
     val idResults = listRecipes(idFilter)
     idResults.length shouldBe 1
     idResults.head.id shouldBe r1.id
 
-    val nameContainsFilter = Filters.empty().copy(name = Some(StringFilter(equals = None, anyOf = None, contains = Some("onion"), startsWith = None, endsWith = None)))
+    val nameContainsFilter = Filters
+      .empty()
+      .copy(name =
+        Some(
+          StringFilter(
+            equals = None,
+            anyOf = None,
+            contains = Some("onion"),
+            startsWith = None,
+            endsWith = None
+          )
+        )
+      )
     val nameResults = listRecipes(nameContainsFilter)
     nameResults.map(_.id).toSet shouldBe Set(r2.id)
 
