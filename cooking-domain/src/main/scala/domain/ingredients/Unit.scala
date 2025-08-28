@@ -16,6 +16,9 @@ enum Unit(val name: String, val isVolume: Boolean, val wikiLink: String) extends
   case Ounce extends Unit("ounce", false, "")
   case Pound extends Unit("pound", false, "")
 
+  def standardizedUnitName: String = if isVolume then "milliliter" else "gram"
+  def toStandardizedAmount(amount: Int): Int = Unit.toStandardizedAmount(this, amount)
+
 object Unit:
   private val predefinedUnits: Seq[Unit] =
     Seq(Cup, Milliliter, Liter, Teaspoon, Tablespoon, Piece, Gram, Kilogram, Ounce, Pound)
@@ -25,6 +28,25 @@ object Unit:
   def fromName(unitName: String): Option[Unit] = unitsByName.get(unitName.toLowerCase)
 
   def isPredefined(unit: Unit): Boolean = predefinedUnits.contains(unit)
+
+  def toStandardizedAmount(unit: Unit, amount: Int): Int =
+    if unit.isVolume then
+      val factor = unit match
+        case Milliliter => 1
+        case Liter => 1000
+        case Teaspoon => 5
+        case Tablespoon => 15
+        case Cup => 250
+        case _ => 1
+      amount * factor
+    else
+      val factor = unit match
+        case Gram => 1
+        case Kilogram => 1000
+        case Ounce => 28
+        case Pound => 454
+        case _ => 1
+      amount * factor
 
   def apply(name: String, volume: Boolean, wikiLink: String): Unit =
     fromName(name) match {

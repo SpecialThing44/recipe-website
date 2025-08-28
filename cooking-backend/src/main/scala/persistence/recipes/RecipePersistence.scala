@@ -8,6 +8,7 @@ import persistence.cypher.*
 import persistence.filters.FiltersConverter
 import persistence.neo4j.Database
 import zio.ZIO
+import domain.ingredients.Unit
 
 import java.util.UUID
 import scala.jdk.CollectionConverters.*
@@ -23,7 +24,7 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
          |${MatchRelationship.outgoing("CREATED_BY", "user", "User")}
          |OPTIONAL MATCH (${graph.varName})-[ri:HAS_INGREDIENT]->(ingredient:Ingredient)
          |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
-         |WITH ${graph.varName}, user, collect(DISTINCT tag.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit}) as ingredientQuantities
+         |WITH ${graph.varName}, user, collect(DISTINCT tag.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit, weight: ri.weight}) as ingredientQuantities
          |${ReturnStatement.apply}, user as createdBy, tags, ingredientQuantities
          |""".stripMargin,
       (result: org.neo4j.driver.Result) =>
@@ -45,9 +46,14 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
     val createIngredientStatements = entity.ingredients
       .map(ii => s"""
          |MATCH (ing:Ingredient {id: '%s'})
-         |CREATE (${graph.varName})-[:HAS_INGREDIENT {amount: %d, unit: '%s'}]->(ing)
+         |CREATE (${graph.varName})-[:HAS_INGREDIENT {amount: %d, unit: '%s', weight: %d}]->(ing)
          |${WithStatement.apply}, user
-         |""".stripMargin.format(ii.ingredient.id.toString, ii.quantity.amount, ii.quantity.unit.name))
+         |""".stripMargin.format(
+        ii.ingredient.id.toString,
+        ii.quantity.amount,
+        ii.quantity.unit.name,
+        Unit.toStandardizedAmount(ii.quantity.unit, ii.quantity.amount)
+      ))
       .mkString("\n")
 
     database.writeTransaction(
@@ -63,7 +69,7 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
          |$createIngredientStatements
          |OPTIONAL MATCH (${graph.varName})-[ri:HAS_INGREDIENT]->(ingredient:Ingredient)
          |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
-         |WITH ${graph.varName}, user, collect(DISTINCT tag.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit}) as ingredientQuantities
+         |WITH ${graph.varName}, user, collect(DISTINCT tag.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit, weight: ri.weight}) as ingredientQuantities
          |${ReturnStatement.apply}, user as createdBy, tags, ingredientQuantities
          |""".stripMargin,
       (result: org.neo4j.driver.Result) => {
@@ -91,10 +97,17 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
 
     val createIngredientStatements = entity.ingredients
       .map(ii => s"""
-         |MATCH (ing%s:Ingredient {id: '%s'})
-         |CREATE (${graph.varName})-[:HAS_INGREDIENT {amount: %d, unit: '%s'}]->(ing%s)
-         |${WithStatement.apply}, user
-         |""".stripMargin.format(ii.ingredient.id.toString.replace("-", ""), ii.ingredient.id.toString, ii.quantity.amount, ii.quantity.unit.name, ii.ingredient.id.toString.replace("-", "")))
+          |MATCH (ing%s:Ingredient {id: '%s'})
+          |CREATE (${graph.varName})-[:HAS_INGREDIENT {amount: %d, unit: '%s', weight: %d}]->(ing%s)
+          |${WithStatement.apply}, user
+          |""".stripMargin.format(
+        ii.ingredient.id.toString.replace("-", ""),
+        ii.ingredient.id.toString,
+        ii.quantity.amount,
+        ii.quantity.unit.name,
+        Unit.toStandardizedAmount(ii.quantity.unit, ii.quantity.amount),
+        ii.ingredient.id.toString.replace("-", "")
+      ))
       .mkString("\n")
 
     database.writeTransaction(
@@ -115,7 +128,7 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
          |${WithStatement.apply}, user
          |OPTIONAL MATCH (${graph.varName})-[ri:HAS_INGREDIENT]->(ingredient:Ingredient)
          |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
-         |WITH ${graph.varName}, user, collect(DISTINCT tag.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit}) as ingredientQuantities
+         |WITH ${graph.varName}, user, collect(DISTINCT tag.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit, weight: ri.weight}) as ingredientQuantities
          |${ReturnStatement.apply}, user as createdBy, tags, ingredientQuantities
          |""".stripMargin,
       (result: org.neo4j.driver.Result) => {
@@ -147,7 +160,7 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
          |${MatchRelationship.outgoing("CREATED_BY", "user", "User")}
          |OPTIONAL MATCH (${graph.varName})-[ri:HAS_INGREDIENT]->(ingredient:Ingredient)
          |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
-         |WITH ${graph.varName}, user, collect(DISTINCT tag.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit}) as ingredientQuantities
+         |WITH ${graph.varName}, user, collect(DISTINCT tag.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit, weight: ri.weight}) as ingredientQuantities
          |${ReturnStatement.apply}, user as createdBy, tags, ingredientQuantities
          |""".stripMargin,
       (result: org.neo4j.driver.Result) => {
@@ -170,7 +183,7 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
          |WITH ${graph.varName}, created as user
          |OPTIONAL MATCH (${graph.varName})-[ri:HAS_INGREDIENT]->(ingredient:Ingredient)
          |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
-         |WITH ${graph.varName}, user, collect(DISTINCT tag.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit}) as ingredientQuantities
+         |WITH ${graph.varName}, user, collect(DISTINCT tag.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit, weight: ri.weight}) as ingredientQuantities
          |${ReturnStatement.apply}, user as createdBy, tags, ingredientQuantities
          |""".stripMargin,
       (result: org.neo4j.driver.Result) => {
