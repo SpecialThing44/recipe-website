@@ -48,29 +48,26 @@ object RecipeConverter extends Converter[Recipe] {
       case _                   => Seq.empty
     }
 
-    val ingredientNodes = record.get("ingredients") match {
+    val ingredientQuantities = record.get("ingredientQuantities") match {
       case list: java.util.List[util.Map[String, AnyRef]] =>
         list.asScala.toSeq
       case _ => Seq.empty
     }
 
-    val amounts: Seq[Int] = record.get("amounts") match {
-      case list: java.util.List[Number] =>
-        list.asScala.map(_.intValue()).toSeq
-      case _ => Seq.empty
-    }
-
-    val units: Seq[String] = record.get("units") match {
-      case list: java.util.List[String] =>
-        list.asScala.toSeq
-      case _ => Seq.empty
-    }
-
     val ingredients: Seq[InstructionIngredient] =
-      ingredientNodes.zipWithIndex.map { case (ingMap, idx) =>
+      ingredientQuantities.map { iq =>
+        val ingAny = iq.get("ingredient")
+        val ingMap = ingAny match {
+          case m: util.Map[String, AnyRef] => m
+          case _ => new util.HashMap[String, AnyRef]()
+        }
         val ingredient = IngredientConverter.toDomain(ingMap)
-        val amount = if (idx < amounts.size) amounts(idx) else 0
-        val unitName = if (idx < units.size) units(idx) else ""
+        val amountAny = iq.get("amount")
+        val amount = amountAny match {
+          case n: Number => n.intValue()
+          case _ => amountAny.toString.toInt
+        }
+        val unitName = Option(iq.get("unit")).map(_.toString).getOrElse("")
         val unit = Unit(unitName, volume = false, wikiLink = "")
         InstructionIngredient(ingredient, Quantity(unit, amount))
       }

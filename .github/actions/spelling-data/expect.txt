@@ -1,6 +1,7 @@
 csrf
 Gson
 guice
+HCursor
 healthcheck
 idx
 interactor

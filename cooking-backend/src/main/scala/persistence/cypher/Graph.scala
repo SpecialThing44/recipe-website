@@ -21,7 +21,7 @@ object Graph {
   val Constraints: Seq[Constraint] = Vector(
     Constraint("name", Ingredient.getClass.getSimpleName.replaceAll("$", ""), Unique),
     Constraint(s"${lowerPrefix}name", Ingredient.getClass.getSimpleName.replaceAll("$", ""), Unique),
-    Constraint("wikilink", Ingredient.getClass.getSimpleName.replaceAll("$", ""), Unique),
+    Constraint("wikiLink", Ingredient.getClass.getSimpleName.replaceAll("$", ""), Unique),
     Constraint("id", Ingredient.getClass.getSimpleName.replaceAll("$", ""), Unique),
     Constraint("email", User.getClass.getSimpleName.replaceAll("$", ""), Unique),
     Constraint(s"${lowerPrefix}email", User.getClass.getSimpleName.replaceAll("$", ""), Unique),

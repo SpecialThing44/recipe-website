@@ -23,8 +23,8 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
          |${MatchRelationship.outgoing("CREATED_BY", "user", "User")}
          |OPTIONAL MATCH (${graph.varName})-[ri:HAS_INGREDIENT]->(ingredient:Ingredient)
          |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
-         |WITH ${graph.varName}, user, collect(DISTINCT tag.name) as tags, collect(DISTINCT ingredient) as ingredients, collect(DISTINCT ri.amount) as amounts, collect(DISTINCT ri.unit) as units
-         |${ReturnStatement.apply}, user as createdBy, tags, ingredients, amounts, units
+         |WITH ${graph.varName}, user, collect(DISTINCT tag.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit}) as ingredientQuantities
+         |${ReturnStatement.apply}, user as createdBy, tags, ingredientQuantities
          |""".stripMargin,
       (result: org.neo4j.driver.Result) =>
         result.asScala
@@ -63,8 +63,8 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
          |$createIngredientStatements
          |OPTIONAL MATCH (${graph.varName})-[ri:HAS_INGREDIENT]->(ingredient:Ingredient)
          |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
-         |WITH ${graph.varName}, user, collect(DISTINCT tag.name) as tags, collect(DISTINCT ingredient) as ingredients, collect(ri.amount) as amounts, collect(ri.unit) as units
-         |${ReturnStatement.apply}, user as createdBy, tags, ingredients, amounts, units
+         |WITH ${graph.varName}, user, collect(DISTINCT tag.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit}) as ingredientQuantities
+         |${ReturnStatement.apply}, user as createdBy, tags, ingredientQuantities
          |""".stripMargin,
       (result: org.neo4j.driver.Result) => {
         if (result.hasNext) {
@@ -115,8 +115,8 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
          |${WithStatement.apply}, user
          |OPTIONAL MATCH (${graph.varName})-[ri:HAS_INGREDIENT]->(ingredient:Ingredient)
          |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
-         |WITH ${graph.varName}, user, collect(DISTINCT tag.name) as tags, collect(DISTINCT ingredient) as ingredients, collect(ri.amount) as amounts, collect(ri.unit) as units
-         |${ReturnStatement.apply}, user as createdBy, tags, ingredients, amounts, units
+         |WITH ${graph.varName}, user, collect(DISTINCT tag.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit}) as ingredientQuantities
+         |${ReturnStatement.apply}, user as createdBy, tags, ingredientQuantities
          |""".stripMargin,
       (result: org.neo4j.driver.Result) => {
         if (result.hasNext) {
@@ -147,8 +147,8 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
          |${MatchRelationship.outgoing("CREATED_BY", "user", "User")}
          |OPTIONAL MATCH (${graph.varName})-[ri:HAS_INGREDIENT]->(ingredient:Ingredient)
          |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
-         |WITH ${graph.varName}, user, collect(DISTINCT tag.name) as tags, collect(DISTINCT ingredient) as ingredients, collect(ri.amount) as amounts, collect(ri.unit) as units
-         |${ReturnStatement.apply}, user as createdBy, tags, ingredients, amounts, units
+         |WITH ${graph.varName}, user, collect(DISTINCT tag.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit}) as ingredientQuantities
+         |${ReturnStatement.apply}, user as createdBy, tags, ingredientQuantities
          |""".stripMargin,
       (result: org.neo4j.driver.Result) => {
         if (result.hasNext) {
@@ -170,8 +170,8 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
          |WITH ${graph.varName}, created as user
          |OPTIONAL MATCH (${graph.varName})-[ri:HAS_INGREDIENT]->(ingredient:Ingredient)
          |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
-         |WITH ${graph.varName}, user, collect(DISTINCT tag.name) as tags, collect(DISTINCT ingredient) as ingredients, collect(ri.amount) as amounts, collect(ri.unit) as units
-         |${ReturnStatement.apply}, user as createdBy, tags, ingredients, amounts, units
+         |WITH ${graph.varName}, user, collect(DISTINCT tag.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit}) as ingredientQuantities
+         |${ReturnStatement.apply}, user as createdBy, tags, ingredientQuantities
          |""".stripMargin,
       (result: org.neo4j.driver.Result) => {
         if (result.hasNext) attachAllToRecord(result.next())
@@ -183,8 +183,8 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
     val recipeMap = new java.util.HashMap[String, Object](record.get(graph.varName).asMap())
     val userMap = record.get("createdBy").asMap()
     val tags = record.get("tags").asList().asScala.map(_.toString).toSeq
-    val ingredients = record
-      .get("ingredients")
+    val ingredientQuantities = record
+      .get("ingredientQuantities")
       .asList((v: org.neo4j.driver.Value) => v.asMap())
       .asScala
       .map(entry => {
@@ -196,20 +196,16 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
         }
         m
       })
-    val amounts = record.get("amounts").asList().asScala.map(_.toString.toInt).toSeq
-    val units = record.get("units").asList().asScala.map(_.toString).toSeq
     recipeMap.put("createdBy", userMap)
     recipeMap.put("tags", tags)
-    val ingredientMaps = new java.util.ArrayList[java.util.Map[String, AnyRef]]()
+    val iqList = new java.util.ArrayList[java.util.Map[String, AnyRef]]()
     var idx = 0
-    while (idx < ingredients.size) {
-      val map = ingredients(idx)
-      ingredientMaps.add(map)
+    while (idx < ingredientQuantities.size) {
+      val map = ingredientQuantities(idx)
+      iqList.add(map)
       idx = idx + 1
     }
-    recipeMap.put("ingredients", ingredientMaps)
-    recipeMap.put("amounts", amounts.asJava)
-    recipeMap.put("units", units.asJava)
+    recipeMap.put("ingredientQuantities", iqList)
     RecipeConverter.toDomain(recipeMap)
   }
 }

@@ -8,6 +8,7 @@ import domain.recipes.{Recipe, RecipeUpdateInput}
 import persistence.ingredients.Ingredients
 import zio.ZIO
 import persistence.recipes.Recipes
+import domain.ingredients.Unit
 
 class RecipeUpdateInteractor @Inject() (
     persistence: Recipes,
@@ -31,12 +32,12 @@ class RecipeUpdateInteractor @Inject() (
       resolved <- input.ingredients match {
         case Some(list) =>
           zio.ZIO
-            .foreach(list) { ii =>
+            .foreach(list) { instructionIngredient =>
               for {
-                ingredient <- ingredientPersistence.getById(ii.ingredientId)
+                ingredient <- ingredientPersistence.getById(instructionIngredient.ingredientId)
               } yield domain.ingredients.InstructionIngredient(
                 ingredient,
-                ii.quantity
+                instructionIngredient.quantity
               )
             }
             .map(Some(_))
@@ -63,6 +64,13 @@ class RecipeUpdateInteractor @Inject() (
               "Recipe marked vegetarian but includes non-vegetarian ingredient(s)"
             )
           )
+        else ZIO.unit
+      }
+      _ <- {
+        val ingredientsToCheck = resolved.getOrElse(originalRecipe.ingredients)
+        val anyNonPredefinedUnit = ingredientsToCheck.exists(instructionIngredient => !Unit.isPredefined(instructionIngredient.quantity.unit))
+        if (anyNonPredefinedUnit)
+          ZIO.fail(domain.types.InputError("Recipe includes ingredient(s) with non-predefined unit"))
         else ZIO.unit
       }
       updated = RecipeAdapter.adaptUpdate(input, originalRecipe, resolved)

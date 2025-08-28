@@ -8,6 +8,7 @@ import domain.recipes.{Recipe, RecipeInput}
 import persistence.recipes.Recipes
 import persistence.ingredients.Ingredients
 import zio.ZIO
+import domain.ingredients.Unit
 
 class RecipeCreateInteractor @Inject() (
     persistence: Recipes,
@@ -31,6 +32,12 @@ class RecipeCreateInteractor @Inject() (
           zio.ZIO.fail(domain.types.InputError("Recipe marked vegan but includes non-vegan ingredient(s)"))
         else if (input.vegetarian && anyNonVegetarian)
           zio.ZIO.fail(domain.types.InputError("Recipe marked vegetarian but includes non-vegetarian ingredient(s)"))
+        else ZIO.unit
+      }
+      _ <- {
+        val anyNonPredefinedUnit = ingredients.exists(instructionIngredient => !Unit.isPredefined(instructionIngredient.quantity.unit))
+        if (anyNonPredefinedUnit)
+          zio.ZIO.fail(domain.types.InputError("Recipe includes ingredient(s) with non-predefined unit"))
         else ZIO.unit
       }
       recipe = RecipeAdapter.adapt(input, ingredients, user)

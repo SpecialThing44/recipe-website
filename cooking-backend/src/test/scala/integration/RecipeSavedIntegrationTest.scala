@@ -34,11 +34,11 @@ class RecipeSavedIntegrationTest extends IntegrationTestFramework {
   }
 
   private def buildRecipeInput(ingredients: Seq[Ingredient], public: Boolean = true, name: String = "Saved Test Recipe"): RecipeInput = {
-    val ingInputs = ingredients.map(i => RecipeIngredientInput(i.id, Quantity(IngUnit("piece", false, ""), 1)))
+    val ingredientInputs = ingredients.map(i => RecipeIngredientInput(i.id, Quantity(IngUnit("Piece", false, ""), 1)))
     RecipeInput(
       name = name,
       tags = Seq("quick", "easy"),
-      ingredients = ingInputs,
+      ingredients = ingredientInputs,
       prepTime = 5,
       cookTime = 10,
       vegetarian = true,
