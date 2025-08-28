@@ -9,46 +9,54 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import java.time.Instant
 import java.util.UUID
 
-case class Recipe( // Maybe want a double reference back to user, at least in DB for search speed
+case class Recipe(
     name: String,
     user: User,
     aliases: Seq[String],
-    // image: Image, // Thumbnail
-    tags: Seq[String], // Strongly type this ,//
-    ingredients: Seq[InstructionIngredient], // Instruction Ingredient
+    tags: Seq[String],
+    ingredients: Seq[InstructionIngredient],
     prepTime: Int,
     cookTime: Int,
     vegetarian: Boolean,
     vegan: Boolean,
-    countryOfOrigin: Option[String], // Type!
-    cuisine: Option[String], // Type!
+    countryOfOrigin: Option[String],
     public: Boolean,
-    wikiLink: String, // May want to strongly type this
-    videoLink: String, // May want to strongly type this
-    instructions: String, // Rich text?
+    wikiLink: Option[String],
+    instructions: String,
     createdOn: Instant,
     updatedOn: Instant,
     id: UUID
 ) extends Identified
-    with Wikified
 
 case class RecipeInput(
     name: String,
     user: User,
     aliases: Seq[String],
-    // image: Image, // Thumbnail
-    tags: Seq[String], // Strongly type this ,//
-    ingredients: Seq[InstructionIngredient], // Instruction Ingredient
+    tags: Seq[String],
+    ingredients: Seq[RecipeIngredientInput],
     prepTime: Int,
     cookTime: Int,
     vegetarian: Boolean,
     vegan: Boolean,
-    countryOfOrigin: Option[String], // Type!
-    cuisine: Option[String], // Type!
+    countryOfOrigin: Option[String],
     public: Boolean,
-    wikiLink: String, // May want to strongly type this
-    videoLink: String, // May want to strongly type this
+    wikiLink: Option[String],
     instructions: String,
+)
+
+case class RecipeUpdateInput(
+    name: Option[String] = None,
+    aliases: Option[Seq[String]] = None,
+    tags: Option[Seq[String]] = None,
+    ingredients: Option[Seq[RecipeIngredientInput]] = None,
+    prepTime: Option[Int] = None,
+    cookTime: Option[Int] = None,
+    vegetarian: Option[Boolean] = None,
+    vegan: Option[Boolean] = None,
+    countryOfOrigin: Option[String] = None,
+    public: Option[Boolean] = None,
+    wikiLink: Option[String] = None,
+    instructions: Option[String] = None,
 )
 
 object Recipe {
@@ -59,4 +67,9 @@ object Recipe {
 object RecipeInput {
   implicit val encoder: Encoder[RecipeInput] = deriveEncoder[RecipeInput]
   implicit val decoder: Decoder[RecipeInput] = deriveDecoder[RecipeInput]
+}
+
+object RecipeUpdateInput {
+  implicit val encoder: Encoder[RecipeUpdateInput] = deriveEncoder[RecipeUpdateInput]
+  implicit val decoder: Decoder[RecipeUpdateInput] = deriveDecoder[RecipeUpdateInput]
 }

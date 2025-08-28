@@ -2,7 +2,7 @@ package http.recipes
 import com.google.inject.{Inject, Singleton}
 import context.CookingApi
 import domain.ingredients.Ingredient
-import domain.recipes.{Recipe, RecipeInput}
+import domain.recipes.{Recipe, RecipeInput, RecipeUpdateInput}
 import http.Requests
 import io.circe.Decoder
 import play.api.libs.json.*
@@ -21,7 +21,7 @@ class RecipesController @Inject() (
   }
 
   def post(): Action[JsValue] = Action(parse.json) { request =>
-    Requests.post[Recipe, RecipeInput, RecipeInput](
+    Requests.post[Recipe, RecipeInput, RecipeUpdateInput](
       request,
       cookingApi,
       cookingApi.recipes
@@ -35,7 +35,7 @@ class RecipesController @Inject() (
   }
 
   def put(id: java.util.UUID): Action[JsValue] = Action(parse.json) { request =>
-    Requests.put[Recipe, RecipeInput, RecipeInput](
+    Requests.put[Recipe, RecipeInput, RecipeUpdateInput](
       id,
       request,
       cookingApi,
