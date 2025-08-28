@@ -27,7 +27,7 @@ class IngredientsPersistence @Inject() (database: Database)
          |${FiltersConverter.toCypher(query, graph.varName)}
          |${MatchRelationship.outgoing("CREATED_BY", "user", "User")}
          |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
-         |${WithStatement.apply}, user, collect(DISTINCT labels(tag)[1]) as tags
+         |${WithStatement.apply}, user, collect(DISTINCT tag.name) as tags
          |${ReturnStatement.apply}, user as createdBy, tags
          |""".stripMargin,
       (result: Result) =>
@@ -59,7 +59,7 @@ class IngredientsPersistence @Inject() (database: Database)
 
     val createTagStatements = entity.tags
       .map(tag => s"""
-         |MERGE (tag:Tag:$tag {name: '$tag', lowername: '${tag.toLowerCase}'})
+         |MERGE (tag:Tag {name: '$tag', lowername: '${tag.toLowerCase}'})
          |CREATE (${graph.varName})-[:HAS_TAG]->(tag)
          |${WithStatement.apply}, user
          |""".stripMargin)
@@ -76,7 +76,7 @@ class IngredientsPersistence @Inject() (database: Database)
              |${WithStatement.apply}, user
              |$createTagStatements
              |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
-             |${WithStatement.apply}, user, collect(DISTINCT labels(tag)[1]) as tags
+             |${WithStatement.apply}, user, collect(DISTINCT tag.name) as tags
              |${ReturnStatement.apply}, user as createdBy, tags
              |""".stripMargin,
         (result: Result) => {
@@ -101,7 +101,7 @@ class IngredientsPersistence @Inject() (database: Database)
 
     val createTagStatements = entity.tags
       .map(tag => s"""
-         |MERGE (tag$tag:Tag:$tag {name: '$tag', lowername: '${tag.toLowerCase}'})
+         |MERGE (tag$tag:Tag {name: '$tag', lowername: '${tag.toLowerCase}'})
          |CREATE (${graph.varName})-[:HAS_TAG]->(tag$tag)
          |""".stripMargin)
       .mkString("\n")
@@ -119,7 +119,7 @@ class IngredientsPersistence @Inject() (database: Database)
          |$createTagStatements
          |${WithStatement.apply}, user
          |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
-         |${WithStatement.apply}, user, collect(DISTINCT labels(tag)[1]) as tags
+         |${WithStatement.apply}, user, collect(DISTINCT tag.name) as tags
          |${ReturnStatement.apply}, user as createdBy, tags
          |""".stripMargin,
       (result: Result) => {
@@ -152,7 +152,7 @@ class IngredientsPersistence @Inject() (database: Database)
          |${MatchByIdStatement.apply(id)}
          |${MatchRelationship.outgoing("CREATED_BY", "user", "User")}
          |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
-         |${WithStatement.apply}, user, collect(DISTINCT labels(tag)[1]) as tags
+         |${WithStatement.apply}, user, collect(DISTINCT tag.name) as tags
          |${ReturnStatement.apply}, user as createdBy, tags
          |""".stripMargin,
       (result: Result) => {

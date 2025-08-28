@@ -27,7 +27,7 @@ class IngredientsIntegrationTest extends IntegrationTestFramework {
     ingredient.wikiLink shouldBe ingredientInput.wikiLink.toLowerCase
     ingredient.vegetarian shouldBe ingredientInput.vegetarian
     ingredient.vegan shouldBe ingredientInput.vegan
-    ingredient.tags shouldBe ingredientInput.tags
+    ingredient.tags.toSet shouldBe ingredientInput.tags.toSet
   }
 
   def ingredientUpdatesMatch(ingredientUpdateInput: IngredientUpdateInput, ingredient: Ingredient): Unit = {
@@ -36,7 +36,7 @@ class IngredientsIntegrationTest extends IntegrationTestFramework {
     ingredientUpdateInput.wikiLink.map(wikiLink => ingredient.wikiLink shouldBe wikiLink.toLowerCase)
     ingredientUpdateInput.vegetarian.map(vegetarian => ingredient.vegetarian shouldBe vegetarian)
     ingredientUpdateInput.vegan.map(vegan => ingredient.vegan shouldBe vegan)
-    ingredientUpdateInput.tags.map(tags => ingredient.tags shouldBe tags)
+    ingredientUpdateInput.tags.map(tags => ingredient.tags.toSet shouldBe tags.toSet)
   }
   val standardIngredientInput = IngredientInput(
     name = "Test Ingredient",

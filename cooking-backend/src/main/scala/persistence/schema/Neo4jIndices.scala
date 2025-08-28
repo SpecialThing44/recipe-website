@@ -81,9 +81,12 @@ object Neo4jIndices {
         }
       )
 
-  private def convert(result: AnyRef): Seq[String] = if (result != null)
-    result.asInstanceOf[util.AbstractList[String]].asScala.toSeq
-  else Seq.empty
+  private def convert(result: AnyRef): Seq[String] = if (result != null) {
+    result match {
+      case list: util.AbstractList[String] => list.asScala.toSeq
+      case _                                 => Seq.empty
+    }
+  } else Seq.empty
 
   private def head(seq: Seq[String]): String =
     if (seq.nonEmpty) seq.head else ""

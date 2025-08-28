@@ -4,6 +4,7 @@ import api.users.AuthenticationInteractor
 import api.wiki.WikipediaCheck
 import com.google.inject.Inject
 import context.ApiContext
+import domain.filters.Filters
 import domain.ingredients.{Ingredient, IngredientUpdateInput}
 import domain.types.InputError
 import persistence.ingredients.Ingredients
@@ -33,7 +34,8 @@ class IngredientUpdateInteractor @Inject() (
         ) validateNoRecipeLinks(originalIngredient)
         else ZIO.succeed(())
       _ <-
-        if (input.wikiLink.isDefined) wikipediaCheck.validateWikiLink(input.wikiLink.get)
+        if (input.wikiLink.isDefined)
+          wikipediaCheck.validateWikiLink(input.wikiLink.get)
         else ZIO.unit
       updatedIngredient = IngredientAdapter.adaptUpdate(
         input,
@@ -50,10 +52,10 @@ class IngredientUpdateInteractor @Inject() (
       ingredient: Ingredient
   ): ZIO[ApiContext, Throwable, Unit] = {
     for {
-      recipes <- ZIO.succeed(Seq.empty)
-//        recipePersistence.list(
-//        Filters.empty().copy(ingredients = Some(Seq(ingredient.name)))
-//      )
+      recipes <-
+        recipePersistence.list(
+          Filters.empty().copy(ingredients = Some(Seq(ingredient.name)))
+        )
       _ <-
         if (recipes.isEmpty) ZIO.unit
         else

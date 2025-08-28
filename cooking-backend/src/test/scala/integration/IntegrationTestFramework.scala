@@ -8,7 +8,7 @@ import api.wiki.WikipediaCheck
 import com.google.inject.Singleton
 import context.{ApiContext, ApplicationContext, CookingApi}
 import integration.stubs.FakeWikipediaCheck
-import integration.support.{IntegrationIngredientSupport, IntegrationUserSupport}
+import integration.support.{IntegrationIngredientSupport, IntegrationUserSupport, IntegrationRecipeSupport}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
@@ -25,7 +25,7 @@ class IntegrationTestFramework
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with IntegrationUserSupport
-    with IntegrationIngredientSupport {
+    with IntegrationIngredientSupport with IntegrationRecipeSupport {
 
   given CanEqual[UUID, UUID] = CanEqual.derived
   given CanEqual[Int, Int] = CanEqual.derived
@@ -41,7 +41,7 @@ class IntegrationTestFramework
   private val recipeApp: RecipeApp = TestAppHolder.recipeApp
   override protected val userFacade: UserFacade = TestAppHolder.userFacade
   override protected val ingredientsFacade: IngredientsFacade = TestAppHolder.ingredientsFacade
-  private val recipeFacade = TestAppHolder.recipeFacade
+  protected val recipeFacade: RecipeFacade = TestAppHolder.recipeFacade
 
   override def beforeAll(): Unit = {
     // Initialize once for the entire test run; safe to call multiple times
@@ -56,10 +56,21 @@ class IntegrationTestFramework
   override def beforeEach(): Unit = {
     createdUsers.clear()
     createdIngredients.clear()
+    createdRecipes.clear()
     loggedInUser = None
   }
 
   override def afterEach(): Unit = {
+    createdRecipes.foreach { id =>
+      Unsafe.unsafe { implicit unsafe =>
+        Runtime.default.unsafe
+          .run(
+            recipeFacade.delete(id).provideLayer(createApiContext())
+          )
+          .fold(_ => (), _ => ())
+      }
+    }
+
     createdIngredients.foreach { id =>
       Unsafe.unsafe { implicit unsafe =>
         Runtime.default.unsafe
