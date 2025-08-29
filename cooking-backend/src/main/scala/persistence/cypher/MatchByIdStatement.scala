@@ -6,5 +6,5 @@ import java.util.UUID
 
 object MatchByIdStatement {
   def apply[A <: Identified](id: UUID)(implicit graph: Graph[A]) =
-    s"MATCH (${graph.varName}:${graph.nodeName} {id: '$id'})"
+    s"MATCH (${graph.nodeVar}:${graph.nodeLabel} {id: '$id'})"
 }

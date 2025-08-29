@@ -37,8 +37,8 @@ class UsersPersistence @Inject() (database: Database) extends Users {
     database.readTransaction(
       s"""
                |${MatchStatement.apply}
-               |${FiltersConverter.toCypher(filters, graph.varName)}
-               |${ReturnStatement.apply}
+               |${FiltersConverter.toCypher(filters, graph.nodeVar)}
+               |${ReturnStatement.apply} ${filters.limitAndSkipStatement}
                |""".stripMargin,
       (result: Result) =>
         result.asScala
@@ -52,7 +52,7 @@ class UsersPersistence @Inject() (database: Database) extends Users {
     for {
       dbResult <- database.writeTransaction(
         s"""
-               |CREATE (${graph.varName}:${graph.nodeName} {
+               |CREATE (${graph.nodeVar}:${graph.nodeLabel} {
                |$properties
                |})
                |${ReturnStatement.apply}
@@ -67,7 +67,7 @@ class UsersPersistence @Inject() (database: Database) extends Users {
       originalEntity: User
   ): ZIO[ApiContext, Throwable, User] = {
     val properties = UserConverter
-      .convertForUpdate(graph.varName, entity)
+      .convertForUpdate(graph.nodeVar, entity)
     database.writeTransaction(
       s"""
                |${MatchByIdStatement.apply(entity.id)}
@@ -79,7 +79,7 @@ class UsersPersistence @Inject() (database: Database) extends Users {
           recordToUser(result.next())
         } else {
           throw NoSuchEntityError(
-            s"Update for ${graph.nodeName} with id ${entity.id} has failed for some reason"
+            s"Update for ${graph.nodeLabel} with id ${entity.id} has failed for some reason"
           )
         }
       }
@@ -87,7 +87,7 @@ class UsersPersistence @Inject() (database: Database) extends Users {
   }
 
   private def recordToUser(record: org.neo4j.driver.Record): User = {
-    val userMap = record.get(graph.varName).asMap()
+    val userMap = record.get(graph.nodeVar).asMap()
     UserConverter.toDomain(userMap)
   }
 
@@ -122,7 +122,7 @@ class UsersPersistence @Inject() (database: Database) extends Users {
         if (result.hasNext) {
           recordToUser(result.next())
         } else {
-          throw NoSuchEntityError(s"${graph.nodeName} with id $id not found")
+          throw NoSuchEntityError(s"${graph.nodeLabel} with id $id not found")
         }
       }
     )
@@ -132,16 +132,16 @@ class UsersPersistence @Inject() (database: Database) extends Users {
   ): ZIO[ApiContext, Throwable, User] =
     database.readTransaction(
       s"""
-               |MATCH (${graph.varName}:${graph.nodeName} {email: '$email'})
+               |MATCH (${graph.nodeVar}:${graph.nodeLabel} {email: '$email'})
                |${ReturnStatement.apply}
                |""".stripMargin,
       (result: Result) => {
         if (result.hasNext) {
-          val userMap = result.next().get(graph.varName).asMap()
+          val userMap = result.next().get(graph.nodeVar).asMap()
           UserConverter.toAuthDomain(userMap)
         } else {
           throw NoSuchEntityError(
-            s"${graph.nodeName} with email $email not found"
+            s"${graph.nodeLabel} with email $email not found"
           )
         }
       }
@@ -155,10 +155,10 @@ class UsersPersistence @Inject() (database: Database) extends Users {
                |""".stripMargin,
       (result: Result) => {
         if (result.hasNext) {
-          val userMap = result.next().get(graph.varName).asMap()
+          val userMap = result.next().get(graph.nodeVar).asMap()
           UserConverter.toAuthDomain(userMap)
         } else {
-          throw NoSuchEntityError(s"${graph.nodeName} with id $id not found")
+          throw NoSuchEntityError(s"${graph.nodeLabel} with id $id not found")
         }
       }
     )

@@ -9,9 +9,10 @@ import persistence.users.UserConverter.lowerPrefix
 
 import scala.reflect.ClassTag
 
-trait Graph[Domain: ClassTag] {
-  lazy val nodeName: String = implicitly[ClassTag[Domain]].runtimeClass.getSimpleName
-  lazy val varName: String = nodeName.toLowerCase
+trait Graph[Domain: ClassTag] extends TagPathing {
+  lazy val nodeLabel: String = implicitly[ClassTag[Domain]].runtimeClass.getSimpleName
+  lazy val nodeVar: String = nodeLabel.toLowerCase
+
 }
 
 

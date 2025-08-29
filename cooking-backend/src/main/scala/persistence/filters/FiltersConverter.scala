@@ -5,6 +5,14 @@ import io.circe.syntax.EncoderOps
 import persistence.users.UserConverter.lowerPrefix
 
 object FiltersConverter {
+  def similarityActive(filters: Filters): Boolean =
+    (filters.ingredientSimilarity.isDefined || filters.coSaveSimilarity.isDefined) && filters.analyzedEntity.isDefined
+  def getOrderLine(filters: Filters, nodeVar: String): String = {
+    if (similarityActive(filters)) "ORDER BY score DESC" else ""
+  }
+  def getWithScoreLine(filters: Filters, withStatement: String): String =
+    if (similarityActive(filters)) withStatement + ", score" else withStatement
+
   def toCypher(
       filters: Filters,
       nodeVar: String
@@ -39,7 +47,9 @@ object FiltersConverter {
       NumberFilterConverter.toCypher(cookTimeFilter, "cookTime", nodeVar)
     )
     val vegetarianClause =
-      filters.vegetarian.map(vegetarian => s"$nodeVar.vegetarian = '$vegetarian'")
+      filters.vegetarian.map(vegetarian =>
+        s"$nodeVar.vegetarian = '$vegetarian'"
+      )
     val veganClause = filters.vegan.map(vegan => s"$nodeVar.vegan = '$vegan'")
     val publicClause =
       filters.public.map(public => s"$nodeVar.public = $public")
@@ -90,7 +100,7 @@ object FiltersConverter {
       aliasesOrNameClause
     )
 
-    matchingFilters
+    val base = matchingFilters
       .filter(_.isDefined)
       .map(_.get)
       .mkString(" \n ") + {
@@ -100,5 +110,59 @@ object FiltersConverter {
       .filter(_.isDefined)
       .map(_.get)
       .mkString(" AND ")
+
+    val isRecipeNode = nodeVar == "recipe"
+    val ingredientActive = filters.ingredientSimilarity.isDefined && filters.analyzedEntity.isDefined && isRecipeNode
+    val coSaveActive = filters.coSaveSimilarity.isDefined && filters.analyzedEntity.isDefined && isRecipeNode
+
+    if (!ingredientActive && !coSaveActive) base
+    else {
+      val analyzedId = filters.analyzedEntity.get
+      val ingredientMin = filters.ingredientSimilarity.map(_.minScore)
+      val coSaveMin = filters.coSaveSimilarity.map(_.minScore)
+
+      val start = s"""
+         |WITH $nodeVar
+         |MATCH (target:Recipe {id: '$analyzedId'})
+         |""".stripMargin
+
+      val ingredientPart =
+        if (!ingredientActive) ""
+        else s"""
+           |MATCH (target)-[tr:HAS_INGREDIENT]->(ti:Ingredient)
+           |WITH $nodeVar, target, collect({ingredientId: ti.id, weight: coalesce(tr.normalizedWeight, 0.0)}) AS targetVec
+           |MATCH ($nodeVar)-[ci:HAS_INGREDIENT]->(ciIngr:Ingredient)
+           |WITH $nodeVar, target, targetVec, collect({ingredientId: ciIngr.id, weight: coalesce(ci.normalizedWeight, 0.0)}) AS candVec
+           |WITH $nodeVar, target, targetVec, candVec,
+           |     reduce(dot = 0.0, x IN targetVec | dot + coalesce([y IN candVec WHERE y.ingredientId = x.ingredientId][0].weight, 0.0) * x.weight) AS dotProd,
+           |     sqrt(reduce(s = 0.0, x IN targetVec | s + x.weight * x.weight)) AS normT,
+           |     sqrt(reduce(s = 0.0, x IN candVec | s + x.weight * x.weight)) AS normC
+           |WITH $nodeVar, target, CASE WHEN normT = 0 OR normC = 0 THEN 0.0 ELSE dotProd / (normT * normC) END AS ingredientScore
+           |""".stripMargin + ingredientMin.map(min => s"\nWHERE ingredientScore >= $min").getOrElse("")
+
+      val coSaveCarry = if (ingredientActive) s"$nodeVar, target, ingredientScore" else s"$nodeVar, target"
+      val coSavePart =
+        if (!coSaveActive) ""
+        else s"""
+           |WITH $coSaveCarry
+           |OPTIONAL MATCH (target)-[:SAVED_BY]->(ur:User)
+           |WITH $coSaveCarry, collect(DISTINCT ur.id) AS usersT
+           |OPTIONAL MATCH ($nodeVar)-[:SAVED_BY]->(uc:User)
+           |WITH $coSaveCarry, usersT, collect(DISTINCT uc.id) AS usersC
+           |WITH $coSaveCarry,
+           |     size([x IN usersC WHERE x IN usersT]) AS inter,
+           |     size(usersT) AS sizeT,
+           |     size(usersC) AS sizeC,
+           |     CASE WHEN sizeT + sizeC - inter = 0 THEN 0.0 ELSE toFloat(inter) / toFloat(sizeT + sizeC - inter) END AS coSaveScore
+           |""".stripMargin + coSaveMin.map(min => s"\nWHERE coSaveScore >= $min").getOrElse("")
+      val finalWhereOrAnd = if (coSaveActive && coSaveMin.isDefined) "AND" else if (!coSaveActive && ingredientActive && ingredientMin.isDefined) "AND" else "WHERE"
+      val finalWhere = s"\n$finalWhereOrAnd $nodeVar.id <> '$analyzedId'\n"
+      val finalWith =
+        if (ingredientActive && coSaveActive) s"WITH $nodeVar, (ingredientScore + coSaveScore) / 2.0 AS score\n"
+        else if (ingredientActive) s"WITH $nodeVar, ingredientScore AS score\n"
+        else s"WITH $nodeVar, coSaveScore AS score\n"
+
+      base + start + ingredientPart + coSavePart + finalWhere + finalWith
+    }
   }
 }
