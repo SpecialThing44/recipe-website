@@ -1,5 +1,5 @@
 package persistence.cypher
 
 object WithStatement {
-  def apply[A](implicit graph: Graph[A]) = s"WITH ${graph.varName}"
+  def apply[A](implicit graph: Graph[A]) = s"WITH ${graph.nodeVar}"
 }

@@ -167,6 +167,98 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
     vegetarianResults.forall(_.vegetarian) shouldBe true
   }
 
+  it should "ingredient similarity filter returns two recipes ordered and filters out third by min score" in {
+    val garlic = createTestIngredient(
+      IngredientsIntegrationTestData.onion.copy(name = "Garlic", aliases = Seq("garlic"), wikiLink = "https://en.wikipedia.org/wiki/Garlic")
+    )
+    val target = createTestRecipe(
+      RecipeInput(
+        name = "Target",
+        tags = Seq("similarity-test"),
+        ingredients = Seq(
+          RecipeIngredientInput(tomato.id, Quantity(IngUnit("gram", false, ""), 100)),
+          RecipeIngredientInput(onion.id, Quantity(IngUnit("gram", false, ""), 100))
+        ),
+        prepTime = 5,
+        cookTime = 10,
+        vegetarian = true,
+        vegan = true,
+        countryOfOrigin = Some("USA"),
+        public = true,
+        wikiLink = Some("https://en.wikipedia.org/wiki/Recipe"),
+        instructions = "Cook"
+      )
+    )
+
+    val candidateHigh = createTestRecipe(
+      RecipeInput(
+        name = "High Similarity",
+        tags = Seq("similarity-test"),
+        ingredients = Seq(
+          RecipeIngredientInput(tomato.id, Quantity(IngUnit("gram", false, ""), 100)),
+          RecipeIngredientInput(onion.id, Quantity(IngUnit("gram", false, ""), 100))
+        ),
+        prepTime = 5,
+        cookTime = 10,
+        vegetarian = true,
+        vegan = true,
+        countryOfOrigin = Some("USA"),
+        public = true,
+        wikiLink = Some("https://en.wikipedia.org/wiki/Recipe"),
+        instructions = "Cook"
+      )
+    )
+
+    val candidateMedium = createTestRecipe(
+      RecipeInput(
+        name = "Medium Similarity",
+        tags = Seq("similarity-test"),
+        ingredients = Seq(
+          RecipeIngredientInput(tomato.id, Quantity(IngUnit("gram", false, ""), 100))
+        ),
+        prepTime = 5,
+        cookTime = 10,
+        vegetarian = true,
+        vegan = true,
+        countryOfOrigin = Some("USA"),
+        public = true,
+        wikiLink = Some("https://en.wikipedia.org/wiki/Recipe"),
+        instructions = "Cook"
+      )
+    )
+
+    val candidateLow = createTestRecipe(
+      RecipeInput(
+        name = "Low Similarity",
+        tags = Seq("similarity-test"),
+        ingredients = Seq(
+          RecipeIngredientInput(garlic.id, Quantity(IngUnit("gram", false, ""), 100))
+        ),
+        prepTime = 5,
+        cookTime = 10,
+        vegetarian = true,
+        vegan = true,
+        countryOfOrigin = Some("USA"),
+        public = true,
+        wikiLink = Some("https://en.wikipedia.org/wiki/Recipe"),
+        instructions = "Cook"
+      )
+    )
+
+    val filters = Filters
+      .empty()
+      .copy(
+        analyzedEntity = Some(target.id),
+        ingredientSimilarity = Some(domain.filters.SimilarityFilter(alpha = 0.0, beta = 1.0, gamma = 0.0, minScore = 0.4))
+      )
+
+    val results = listRecipes(filters)
+
+    results.map(_.id) shouldBe Seq(candidateHigh.id, candidateMedium.id)
+    results.forall(_.id != target.id) shouldBe true
+    results.forall(_.id != candidateLow.id) shouldBe true
+  }
+
   it should "delete a recipe" in {
     val created = createTestRecipe(standardRecipeInput(Seq(tomato)))
     val fetched = getRecipeById(created.id)

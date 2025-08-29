@@ -6,6 +6,6 @@ object MatchRelationship {
       matchedVarName: String,
       matchedNodeName: String
   )(implicit graph: Graph[A]) =
-    s"MATCH (${graph.varName})-[:$relationshipLabel]->($matchedVarName:$matchedNodeName)"
+    s"MATCH (${graph.nodeVar})-[:$relationshipLabel]->($matchedVarName:$matchedNodeName)"
 
 }

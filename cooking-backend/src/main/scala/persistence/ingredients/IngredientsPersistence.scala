@@ -24,10 +24,11 @@ class IngredientsPersistence @Inject() (database: Database)
     database.readTransaction(
       s"""
          |${MatchStatement.apply}
-         |${FiltersConverter.toCypher(query, graph.varName)}
+         |${FiltersConverter.toCypher(query, graph.nodeVar)}
          |${MatchRelationship.outgoing("CREATED_BY", "user", "User")}
          |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
          |${WithStatement.apply}, user, collect(DISTINCT tag.name) as tags
+         |${query.limitAndSkipStatement}
          |${ReturnStatement.apply}, user as createdBy, tags
          |""".stripMargin,
       (result: Result) =>
@@ -42,7 +43,7 @@ class IngredientsPersistence @Inject() (database: Database)
       record: org.neo4j.driver.Record
   ): Ingredient = {
     val ingredientMap = new java.util.HashMap[String, Object](
-      record.get(graph.varName).asMap()
+      record.get(graph.nodeVar).asMap()
     )
     val userMap = record.get("createdBy").asMap()
     val tags = record.get("tags").asList().asScala.map(_.toString).toSeq
@@ -57,22 +58,16 @@ class IngredientsPersistence @Inject() (database: Database)
     val properties = IngredientConverter
       .convert(entity)
 
-    val createTagStatements = entity.tags
-      .map(tag => s"""
-         |MERGE (tag:Tag {name: '$tag', lowername: '${tag.toLowerCase}'})
-         |CREATE (${graph.varName})-[:HAS_TAG]->(tag)
-         |${WithStatement.apply}, user
-         |""".stripMargin)
-      .mkString("\n")
+    val createTagStatements = graph.createTagStatementsFor(graph.nodeVar, graph.tagRelation, graph.tagLabel, entity.tags, includeWithUser = true, useAliasSuffix = false)
     for {
       dbResult <- database.writeTransaction(
         s"""
-             |CREATE (${graph.varName}:${graph.nodeName} {
+             |CREATE (${graph.nodeVar}:${graph.nodeLabel} {
              |$properties
              |})
              |${WithStatement.apply}
              |MATCH (user:User {id: '${entity.createdBy.id}'})
-             |CREATE (${graph.varName})-[:CREATED_BY]->(user)
+             |CREATE (${graph.nodeVar})-[:CREATED_BY]->(user)
              |${WithStatement.apply}, user
              |$createTagStatements
              |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
@@ -84,7 +79,7 @@ class IngredientsPersistence @Inject() (database: Database)
             attachUserAndTagsToRecord(result.next())
           } else {
             throw NoSuchEntityError(
-              s"Create for ${graph.nodeName} has failed for some reason"
+              s"Create for ${graph.nodeLabel} has failed for some reason"
             )
           }
         }
@@ -97,21 +92,16 @@ class IngredientsPersistence @Inject() (database: Database)
       originalEntity: Ingredient
   ): ZIO[ApiContext, Throwable, Ingredient] = {
     val properties = IngredientConverter
-      .convertForUpdate(graph.varName, entity)
+      .convertForUpdate(graph.nodeVar, entity)
 
-    val createTagStatements = entity.tags
-      .map(tag => s"""
-         |MERGE (tag$tag:Tag {name: '$tag', lowername: '${tag.toLowerCase}'})
-         |CREATE (${graph.varName})-[:HAS_TAG]->(tag$tag)
-         |""".stripMargin)
-      .mkString("\n")
+    val createTagStatements = graph.createTagStatementsFor(graph.nodeVar, graph.tagRelation, graph.tagLabel, entity.tags, includeWithUser = false, useAliasSuffix = true)
 
     database.writeTransaction(
       s"""
          |${MatchByIdStatement.apply(entity.id)}
          |SET $properties
          |${WithStatement.apply}
-         |OPTIONAL MATCH (${graph.varName})-[r:HAS_TAG]->()
+         |OPTIONAL MATCH (${graph.nodeVar})-[r:HAS_TAG]->()
          |DELETE r
          |${WithStatement.apply}
          |${MatchRelationship.outgoing("CREATED_BY", "user", "User")}
@@ -127,7 +117,7 @@ class IngredientsPersistence @Inject() (database: Database)
           attachUserAndTagsToRecord(result.next())
         } else {
           throw NoSuchEntityError(
-            s"Update for ${graph.nodeName} with id ${entity.id} has failed for some reason"
+            s"Update for ${graph.nodeLabel} with id ${entity.id} has failed for some reason"
           )
         }
       }
@@ -159,7 +149,7 @@ class IngredientsPersistence @Inject() (database: Database)
         if (result.hasNext) {
           attachUserAndTagsToRecord(result.next())
         } else {
-          throw NoSuchEntityError(s"${graph.nodeName} with id $id not found")
+          throw NoSuchEntityError(s"${graph.nodeLabel} with id $id not found")
         }
       }
     )
