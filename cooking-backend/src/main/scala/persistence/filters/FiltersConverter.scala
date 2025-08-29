@@ -6,7 +6,7 @@ import persistence.users.UserConverter.lowerPrefix
 
 object FiltersConverter {
   def similarityActive(filters: Filters): Boolean =
-    (filters.ingredientSimilarity.isDefined || filters.coSaveSimilarity.isDefined) && filters.analyzedEntity.isDefined
+    (filters.ingredientSimilarity.isDefined || filters.coSaveSimilarity.isDefined || filters.tagSimilarity.isDefined) && filters.analyzedEntity.isDefined
   def getOrderLine(filters: Filters, nodeVar: String): String = {
     if (similarityActive(filters)) "ORDER BY score DESC" else ""
   }
@@ -114,12 +114,14 @@ object FiltersConverter {
     val isRecipeNode = nodeVar == "recipe"
     val ingredientActive = filters.ingredientSimilarity.isDefined && filters.analyzedEntity.isDefined && isRecipeNode
     val coSaveActive = filters.coSaveSimilarity.isDefined && filters.analyzedEntity.isDefined && isRecipeNode
+    val tagActive = filters.tagSimilarity.isDefined && filters.analyzedEntity.isDefined && isRecipeNode
 
-    if (!ingredientActive && !coSaveActive) base
+    if (!ingredientActive && !coSaveActive && !tagActive) base
     else {
       val analyzedId = filters.analyzedEntity.get
       val ingredientMin = filters.ingredientSimilarity.map(_.minScore)
       val coSaveMin = filters.coSaveSimilarity.map(_.minScore)
+      val tagMin = filters.tagSimilarity.map(_.minScore)
 
       val start = s"""
          |WITH $nodeVar
@@ -155,14 +157,33 @@ object FiltersConverter {
            |     size(usersC) AS sizeC,
            |     CASE WHEN sizeT + sizeC - inter = 0 THEN 0.0 ELSE toFloat(inter) / toFloat(sizeT + sizeC - inter) END AS coSaveScore
            |""".stripMargin + coSaveMin.map(min => s"\nWHERE coSaveScore >= $min").getOrElse("")
-      val finalWhereOrAnd = if (coSaveActive && coSaveMin.isDefined) "AND" else if (!coSaveActive && ingredientActive && ingredientMin.isDefined) "AND" else "WHERE"
-      val finalWhere = s"\n$finalWhereOrAnd $nodeVar.id <> '$analyzedId'\n"
-      val finalWith =
-        if (ingredientActive && coSaveActive) s"WITH $nodeVar, (ingredientScore + coSaveScore) / 2.0 AS score\n"
-        else if (ingredientActive) s"WITH $nodeVar, ingredientScore AS score\n"
-        else s"WITH $nodeVar, coSaveScore AS score\n"
 
-      base + start + ingredientPart + coSavePart + finalWhere + finalWith
+      val tagCarryBase = if (coSaveActive && ingredientActive) s"$nodeVar, target, ingredientScore, coSaveScore" else if (ingredientActive) s"$nodeVar, target, ingredientScore" else if (coSaveActive) s"$nodeVar, target, coSaveScore" else s"$nodeVar, target"
+      val tagPart =
+        if (!tagActive) ""
+        else s"""
+           |WITH $tagCarryBase
+           |OPTIONAL MATCH (target)-[:HAS_TAG]->(tt:Tag)
+           |WITH $tagCarryBase, collect(DISTINCT tt.name) AS targetTags
+           |OPTIONAL MATCH ($nodeVar)-[:HAS_TAG]->(ct:Tag)
+           |WITH $tagCarryBase, targetTags, collect(DISTINCT ct.name) AS candidateTags
+           |WITH $tagCarryBase,
+           |     size([x IN candidateTags WHERE x IN targetTags]) AS interTags,
+           |     size(targetTags) AS sizeTT,
+           |     size(candidateTags) AS sizeCT,
+           |     CASE WHEN sizeTT + sizeCT - interTags = 0 THEN 0.0 ELSE toFloat(interTags) / toFloat(sizeTT + sizeCT - interTags) END AS tagScore
+           |""".stripMargin + tagMin.map(min => s"\nWHERE tagScore >= $min").getOrElse("")
+
+      val anyMinApplied = (ingredientActive && ingredientMin.isDefined) || (coSaveActive && coSaveMin.isDefined) || (tagActive && tagMin.isDefined)
+      val finalWhereOrAnd = if (anyMinApplied) "AND" else "WHERE"
+      val finalWhere = s"\n$finalWhereOrAnd $nodeVar.id <> '$analyzedId'\n"
+
+      val sumExprParts = (if (ingredientActive) Seq("ingredientScore") else Seq()) ++ (if (coSaveActive) Seq("coSaveScore") else Seq()) ++ (if (tagActive) Seq("tagScore") else Seq())
+      val sumExpr = sumExprParts.mkString(" + ")
+      val denom = sumExprParts.size.max(1)
+      val finalWith = s"WITH $nodeVar, ($sumExpr) / $denom AS score\n"
+
+      base + start + ingredientPart + coSavePart + tagPart + finalWhere + finalWith
     }
   }
 }

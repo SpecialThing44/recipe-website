@@ -24,6 +24,7 @@ case class Filters(
                     analyzedEntity: Option[UUID],
                     ingredientSimilarity: Option[SimilarityFilter],
                     coSaveSimilarity: Option[SimilarityFilter],
+                    tagSimilarity: Option[SimilarityFilter],
                     limit: Option[Int],
                     page: Option[Int],
 ) {
@@ -36,6 +37,7 @@ object Filters {
   implicit val decoder: Decoder[Filters] = deriveDecoder[Filters]
 
   def empty(): Filters = Filters(
+    None,
     None,
     None,
     None,
