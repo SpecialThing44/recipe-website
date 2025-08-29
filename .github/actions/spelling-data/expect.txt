@@ -4,6 +4,7 @@ guice
 HCursor
 healthcheck
 idx
+Ingr
 interactor
 logback
 loweremail
@@ -11,6 +12,7 @@ lowername
 mockito
 mvc
 outsource
+Pathing
 pekko
 SAMEORIGIN
 sbt
@@ -19,6 +21,7 @@ scalatest
 Scoverage
 slf
 sttp
+Vec
 website
 Wikified
 workflows
