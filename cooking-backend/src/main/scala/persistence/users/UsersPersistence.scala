@@ -35,11 +35,19 @@ class UsersPersistence @Inject() (database: Database) extends Users {
 
   override def list(filters: Filters): ZIO[ApiContext, Throwable, Seq[User]] =
     database.readTransaction(
-      s"""
+      {
+        val orderLine = FiltersConverter.getOrderLine(filters, graph.nodeVar)
+        val withLine = s"WITH ${graph.nodeVar}"
+        s"""
+               |${MatchStatement.apply} WHERE NOT (user:DeletedUser)
                |${MatchStatement.apply}
                |${FiltersConverter.toCypher(filters, graph.nodeVar)}
-               |${ReturnStatement.apply} ${filters.limitAndSkipStatement}
-               |""".stripMargin,
+               |${FiltersConverter.getWithScoreLine(filters, withLine)}
+               |$orderLine
+               |${filters.limitAndSkipStatement}
+               |${ReturnStatement.apply}
+               |""".stripMargin
+      },
       (result: Result) =>
         result.asScala
           .map(record => recordToUser(record))
