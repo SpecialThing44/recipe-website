@@ -6,7 +6,7 @@ object Libraries {
     val PekkoHttpVersion = "1.2.0"
     val PlayVersion = "3.0.8"
     val guiceVersion = "6.0.0"
-    val GoogleHttpClientVersion = "1.47.1"
+    val GoogleHttpClientVersion = "2.0.0"
     val ZioVersion = "2.1.20"
     val circeVersion = "0.14.14"
     val neo4jDriverVersion = "5.28.9"
