@@ -10,7 +10,7 @@ object Libraries {
     val ZioVersion = "2.1.20"
     val circeVersion = "0.14.14"
     val neo4jDriverVersion = "5.28.9"
-    val jwtVersion = "11.0.2"
+    val jwtVersion = "11.0.3"
     val pbkdf2Version = "0.7.2"
     val slf4jVersion = "2.0.17"
     val logbackVersion = "1.5.18"
