@@ -3,6 +3,7 @@ package api.users
 import com.google.inject.Inject
 import context.ApiContext
 import domain.users.User
+import persistence.authentication.AuthUsers
 import persistence.users.Users
 import zio.ZIO
 
@@ -10,6 +11,7 @@ import java.util.UUID
 
 class UserDeleteInteractor @Inject() (
     persistence: Users,
+    authPersistence: AuthUsers
 ) {
   def delete(id: UUID): ZIO[ApiContext, Throwable, User] = for {
     context <- ZIO.service[ApiContext]

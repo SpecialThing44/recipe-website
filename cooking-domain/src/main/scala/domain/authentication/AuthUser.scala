@@ -10,7 +10,6 @@ import java.util.UUID
 case class AuthUser(
     id: UUID,
     passwordHash: String,
-    salt: String
 ) extends Identified {}
 
 object AuthUser {

@@ -2,6 +2,7 @@ package persistence.authentication
 
 import com.google.inject.Inject
 import context.ApiContext
+import domain.authentication.AuthUser
 import domain.filters.Filters
 import domain.types.NoSuchEntityError
 import domain.users.User
@@ -18,14 +19,13 @@ import scala.jdk.CollectionConverters.IteratorHasAsScala
 class AuthUsersPersistence @Inject()(database: Database) extends AuthUsers {
   private implicit val graph: AuthUserGraph = AuthUserGraph()
 
-  override def list(filters: Filters): ZIO[ApiContext, Throwable, Seq[User]] =
+  override def list(filters: Filters): ZIO[ApiContext, Throwable, Seq[AuthUser]] =
     database.readTransaction(
       {
         val orderLine = FiltersConverter.getOrderLine(filters, graph.nodeVar)
         val withLine = s"WITH ${graph.nodeVar}"
         s"""
-               |${MatchStatement.apply} WHERE NOT (user:DeletedUser)
-               |${MatchStatement.apply}
+               |${MatchStatement.apply} 
                |${FiltersConverter.toCypher(filters, graph.nodeVar)}
                |${FiltersConverter.getWithScoreLine(filters, withLine)}
                |$orderLine
@@ -39,8 +39,8 @@ class AuthUsersPersistence @Inject()(database: Database) extends AuthUsers {
           .toSeq
     )
 
-  override def create(entity: User): ZIO[ApiContext, Throwable, User] = {
-    val properties = UserConverter
+  override def create(entity: AuthUser): ZIO[ApiContext, Throwable, AuthUser] = {
+    val properties = AuthUserConverter
       .convert(entity)
     for {
       dbResult <- database.writeTransaction(
@@ -56,10 +56,10 @@ class AuthUsersPersistence @Inject()(database: Database) extends AuthUsers {
   }
 
   override def update(
-      entity: User,
-      originalEntity: User
-  ): ZIO[ApiContext, Throwable, User] = {
-    val properties = UserConverter
+      entity: AuthUser,
+      originalEntity: AuthUser
+  ): ZIO[ApiContext, Throwable, AuthUser] = {
+    val properties = AuthUserConverter
       .convertForUpdate(graph.nodeVar, entity)
     database.writeTransaction(
       s"""
@@ -79,33 +79,24 @@ class AuthUsersPersistence @Inject()(database: Database) extends AuthUsers {
     )
   }
 
-  private def recordToUser(record: org.neo4j.driver.Record): User = {
+  private def recordToUser(record: org.neo4j.driver.Record): AuthUser = {
     val userMap = record.get(graph.nodeVar).asMap()
-    UserConverter.toDomain(userMap)
+    AuthUserConverter.toDomain(userMap)
   }
 
-  override def delete(id: UUID): ZIO[ApiContext, Throwable, User] =
+  override def delete(id: UUID): ZIO[ApiContext, Throwable, AuthUser] =
     for {
       user <- getById(id)
       dbResult <- database.writeTransaction(
         s"""
                |${MatchByIdStatement.apply(id)}
-               |$deletePrivateRecipesForUser
-               |WITH DISTINCT user
-               |$deleteUnusedRecipesCreatedByUser
-               |WITH DISTINCT user
-               |$deleteUnusedIngredientsCreatedByUser
-               |WITH DISTINCT user
-               |SET user.email = ""
-               |SET user.name = "Deleted User"
-               |SET user.updatedOn = "${Instant.now.toString}"
-               |SET user:DeletedUser
+               |DETACH DELETE ${graph.nodeVar}
                |""".stripMargin,
         (_: Result) => ()
       )
     } yield user
 
-  override def getById(id: UUID): ZIO[ApiContext, Throwable, User] =
+  override def getById(id: UUID): ZIO[ApiContext, Throwable, AuthUser] =
     database.readTransaction(
       s"""
                |${MatchByIdStatement.apply(id)}

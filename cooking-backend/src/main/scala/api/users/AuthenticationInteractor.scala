@@ -3,36 +3,41 @@ package api.users
 import com.google.inject.Inject
 import context.ApiContext
 import domain.types.{AuthenticationError, NoSuchEntityError}
-import domain.users.User
+import domain.users.{User, UserInput}
 import io.circe.jawn.decode
 import io.circe.syntax.*
 import io.github.nremond.SecureHash
 import org.apache.pekko.http.scaladsl.model.headers.OAuth2BearerToken
 import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim}
 import persistence.users.Users
+import persistence.authentication.AuthUsers
 import play.api.mvc.Request
 import zio.ZIO
 import domain.filters.{Filters, StringFilter}
+import play.api.Configuration
 
 import java.time.{Clock, Instant}
 import java.util.UUID
 import scala.util.{Failure, Success}
 
 class AuthenticationInteractor @Inject() (
+    config: Configuration,
     userPersistence: Users,
+    authUserPersistence: AuthUsers
 ) {
-  private val secretKey = "secrets"
+  private lazy val secretKey = config.get[String]("auth.secretKey")
+  private lazy val pepper = config.get[String]("auth.pepper")
 
   def getMaybeUser(
       bearerToken: Option[String],
-  ): ZIO[ApiContext, Throwable, Option[User]] =
+  ): ZIO[ApiContext, Throwable, Option[User]] = {
     bearerToken match {
       case Some(token) if !TokenStore.isTokenBlacklisted(token) =>
         ZIO
           .fromTry(
             Jwt.decode(
               token.trim.stripPrefix("Bearer "),
-              "secrets",
+              secretKey,
               Seq(JwtAlgorithm.HS256)
             )
           )
@@ -40,22 +45,26 @@ class AuthenticationInteractor @Inject() (
             case claim if claim.isValid(Clock.systemUTC()) =>
               decode[User](claim.content) match {
                 case Right(user) => ZIO.succeed(Some(user))
-                case Left(error) =>
-                  ZIO.succeed(None)
+                case Left(error) => ZIO.succeed(None)
               }
             case _ => ZIO.succeed(None) // Token is expired
           }
           .catchAll(error => ZIO.succeed(None))
       case _ => ZIO.succeed(None)
     }
+  }
 
-  def signupAndLogin(user: User): ZIO[ApiContext, Throwable, String] = {
-    val hashedPassword = SecureHash.createHash(user.password)
-    val userWithHashedPassword = user.copy(password = hashedPassword)
+  def signupAndLogin(user: UserInput): ZIO[ApiContext, Throwable, String] = {
+    val realUser = UserAdapter.adapt(user)
+    val authUser = AuthUserAdapter.adapt(user)
+    val hashedPassword = SecureHash.createHash(authUser.passwordHash + pepper)
+    val userWithHashedPassword =
+      authUser.copy(passwordHash = hashedPassword, id = realUser.id)
     for {
-      newUserZio <- userPersistence.create(userWithHashedPassword)
+      _ <- authUserPersistence.create(userWithHashedPassword)
+      _ <- userPersistence.create(realUser)
       claim = JwtClaim(
-        content = userWithHashedPassword.asJson.noSpaces,
+        content = realUser.asJson.noSpaces,
         expiration = Some(Instant.now.plusSeconds(3600).getEpochSecond),
         issuedAt = Some(Instant.now.getEpochSecond)
       )
@@ -63,10 +72,16 @@ class AuthenticationInteractor @Inject() (
     } yield token
   }
 
-  def signup(user: User): ZIO[ApiContext, Throwable, User] = {
-    val hashedPassword = SecureHash.createHash(user.password)
-    val userWithHashedPassword = user.copy(password = hashedPassword)
-    userPersistence.create(userWithHashedPassword)
+  def signup(user: UserInput): ZIO[ApiContext, Throwable, User] = {
+    val realUser = UserAdapter.adapt(user)
+    val authUser = AuthUserAdapter.adapt(user)
+    val hashedPassword = SecureHash.createHash(authUser.passwordHash + pepper)
+    val userWithHashedPassword =
+      authUser.copy(passwordHash = hashedPassword, id = realUser.id)
+    for {
+      _ <- authUserPersistence.create(userWithHashedPassword)
+      createdUser <- userPersistence.create(realUser)
+    } yield createdUser
   }
 
   def login(
@@ -74,12 +89,22 @@ class AuthenticationInteractor @Inject() (
       password: String,
   ): ZIO[ApiContext, Throwable, Option[String]] = {
     for {
-      userList <- userPersistence.list(Filters.empty().copy(email = StringFilter.empty().copy(equals = Some(email))))
-      user <- if (userList.nonEmpty) ZIO.succeed(userList.head) else ZIO.fail(NoSuchEntityError(
-        s"${graph.nodeLabel} with email $email not found"
-      ))
+      userList <- userPersistence.list(
+        Filters
+          .empty()
+          .copy(email = Some(StringFilter.empty().copy(equals = Some(email))))
+      )
+      user <-
+        if (userList.nonEmpty) ZIO.succeed(userList.head)
+        else
+          ZIO.fail(
+            NoSuchEntityError(
+              s"User with email $email not found"
+            )
+          )
+      authUser <- authUserPersistence.getById(user.id)
       _ <- ZIO.cond(
-        SecureHash.validatePassword(password, user.password),
+        SecureHash.validatePassword(password + pepper, authUser.passwordHash),
         (),
         AuthenticationError("Incorrect Password")
       )
