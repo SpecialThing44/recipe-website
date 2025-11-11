@@ -134,40 +134,4 @@ class UsersPersistence @Inject() (database: Database) extends Users {
         }
       }
     )
-
-  override def authenticate(
-      email: String,
-  ): ZIO[ApiContext, Throwable, User] =
-    database.readTransaction(
-      s"""
-               |MATCH (${graph.nodeVar}:${graph.nodeLabel} {email: '$email'})
-               |${ReturnStatement.apply}
-               |""".stripMargin,
-      (result: Result) => {
-        if (result.hasNext) {
-          val userMap = result.next().get(graph.nodeVar).asMap()
-          UserConverter.toAuthDomain(userMap)
-        } else {
-          throw NoSuchEntityError(
-            s"${graph.nodeLabel} with email $email not found"
-          )
-        }
-      }
-    )
-
-  override def getByIdWithPassword(id: UUID): ZIO[ApiContext, Throwable, User] =
-    database.readTransaction(
-      s"""
-               |${MatchByIdStatement.apply(id)}
-               |${ReturnStatement.apply}
-               |""".stripMargin,
-      (result: Result) => {
-        if (result.hasNext) {
-          val userMap = result.next().get(graph.nodeVar).asMap()
-          UserConverter.toAuthDomain(userMap)
-        } else {
-          throw NoSuchEntityError(s"${graph.nodeLabel} with id $id not found")
-        }
-      }
-    )
 }

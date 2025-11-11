@@ -33,14 +33,4 @@ object UserConverter extends Converter[User] {
     createdOn = Instant.parse(record.get(createdOnField).toString),
     updatedOn = Instant.parse(record.get(updatedOnField).toString)
   )
-
-  def toAuthDomain(record: util.Map[String, AnyRef]): User = User(
-    id = UUID.fromString(record.get(idField).toString),
-    name = record.get(nameField).toString,
-    email = record.get(emailField).toString,
-    password = record.get(passwordField).toString,
-    countryOfOrigin = Option(record.get(countryOfOriginField).toString),
-    createdOn = Instant.parse(record.get(createdOnField).toString),
-    updatedOn = Instant.parse(record.get(updatedOnField).toString)
-  )
 }

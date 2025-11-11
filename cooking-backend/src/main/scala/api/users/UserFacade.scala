@@ -38,9 +38,6 @@ class UserFacade @Inject() (
   override def getById(id: UUID): ZIO[ApiContext, Throwable, User] =
     persistence.getById(id)
 
-  def getByIdWithPassword(id: UUID): ZIO[ApiContext, Throwable, User] =
-    persistence.getByIdWithPassword(id)
-
   override def authenticate(
       bearerToken: Option[String]
   ): ZIO[ApiContext, Throwable, Option[User]] =

@@ -2,7 +2,7 @@ package api.users
 
 import com.google.inject.Inject
 import context.ApiContext
-import domain.types.AuthenticationError
+import domain.types.{AuthenticationError, NoSuchEntityError}
 import domain.users.User
 import io.circe.jawn.decode
 import io.circe.syntax.*
@@ -12,6 +12,7 @@ import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim}
 import persistence.users.Users
 import play.api.mvc.Request
 import zio.ZIO
+import domain.filters.{Filters, StringFilter}
 
 import java.time.{Clock, Instant}
 import java.util.UUID
@@ -73,7 +74,10 @@ class AuthenticationInteractor @Inject() (
       password: String,
   ): ZIO[ApiContext, Throwable, Option[String]] = {
     for {
-      user <- userPersistence.authenticate(email)
+      userList <- userPersistence.list(Filters.empty().copy(email = StringFilter.empty().copy(equals = Some(email))))
+      user <- if (userList.nonEmpty) ZIO.succeed(userList.head) else ZIO.fail(NoSuchEntityError(
+        s"${graph.nodeLabel} with email $email not found"
+      ))
       _ <- ZIO.cond(
         SecureHash.validatePassword(password, user.password),
         (),
