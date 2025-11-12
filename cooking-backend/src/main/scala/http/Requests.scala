@@ -106,23 +106,11 @@ object Requests {
       ]
   )(implicit encoder: Encoder[Entity]): Result = {
     val maybeUser = extractUser(request, cookingApi)
-    println(maybeUser)
     val maybeUpdatedEntity: ZIO[ApiContext, Throwable, Entity] = for {
       newEntity <- ZIO.fromEither(
         decode[EntityUpdateInput](request.body.toString)
       )
-      originalEntity <- entityApi match {
-        case userApi: api.users.UserFacade =>
-          userApi
-            .getByIdWithPassword(id)
-            .asInstanceOf[ZIO[ApiContext, Throwable, Entity]]
-        case ingredientApi: api.ingredients.IngredientsFacade =>
-          ingredientApi
-            .getById(id)
-            .asInstanceOf[ZIO[ApiContext, Throwable, Entity]]
-        case _ =>
-          entityApi.getById(id)
-      }
+      originalEntity <- entityApi.getById(id)
       updatedEntity <- entityApi.update(newEntity, originalEntity)
     } yield updatedEntity
     val response = maybeUpdatedEntity.fold(

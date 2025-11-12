@@ -21,7 +21,7 @@ class UserFacade @Inject() (
   override def create(
       entity: UserInput
   ): ZIO[ApiContext, Throwable, User] =
-    authenticationInteractor.signup(UserAdapter.adapt(entity))
+    authenticationInteractor.signup(entity)
 
   override def update(
       entity: UserUpdateInput,
@@ -37,9 +37,6 @@ class UserFacade @Inject() (
 
   override def getById(id: UUID): ZIO[ApiContext, Throwable, User] =
     persistence.getById(id)
-
-  def getByIdWithPassword(id: UUID): ZIO[ApiContext, Throwable, User] =
-    persistence.getByIdWithPassword(id)
 
   override def authenticate(
       bearerToken: Option[String]
@@ -61,5 +58,5 @@ class UserFacade @Inject() (
   override def signup(
       user: UserInput,
   ): ZIO[ApiContext, Throwable, String] =
-    authenticationInteractor.signupAndLogin(UserAdapter.adapt(user))
+    authenticationInteractor.signupAndLogin(user)
 }

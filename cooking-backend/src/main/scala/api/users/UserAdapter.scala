@@ -11,7 +11,6 @@ object UserAdapter {
     User(
       user.name,
       user.email,
-      user.password,
       user.countryOfOrigin,
       now,
       now,
@@ -24,7 +23,6 @@ object UserAdapter {
     User(
       user.name.getOrElse(existingUser.name),
       user.email.getOrElse(existingUser.email),
-      existingUser.password,
       if (user.countryOfOrigin.isDefined) user.countryOfOrigin
       else existingUser.countryOfOrigin,
       existingUser.createdOn,

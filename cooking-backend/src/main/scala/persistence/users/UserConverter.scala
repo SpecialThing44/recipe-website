@@ -9,7 +9,6 @@ import java.util.UUID
 
 object UserConverter extends Converter[User] {
   val emailField = "email"
-  val passwordField = "password"
   val countryOfOriginField = "countryOfOrigin"
   override def toGraph(user: User): Map[String, Object] =
     Map(
@@ -18,7 +17,6 @@ object UserConverter extends Converter[User] {
       lowerPrefix + nameField -> user.name.toLowerCase,
       emailField -> user.email,
       lowerPrefix + emailField -> user.email.toLowerCase,
-      passwordField -> user.password,
       countryOfOriginField -> user.countryOfOrigin.getOrElse(""),
       createdOnField -> user.createdOn.toString,
       updatedOnField -> user.updatedOn.toString
@@ -28,17 +26,6 @@ object UserConverter extends Converter[User] {
     id = UUID.fromString(record.get(idField).toString),
     name = record.get(nameField).toString,
     email = record.get(emailField).toString,
-    password = "",
-    countryOfOrigin = Option(record.get(countryOfOriginField).toString),
-    createdOn = Instant.parse(record.get(createdOnField).toString),
-    updatedOn = Instant.parse(record.get(updatedOnField).toString)
-  )
-
-  def toAuthDomain(record: util.Map[String, AnyRef]): User = User(
-    id = UUID.fromString(record.get(idField).toString),
-    name = record.get(nameField).toString,
-    email = record.get(emailField).toString,
-    password = record.get(passwordField).toString,
     countryOfOrigin = Option(record.get(countryOfOriginField).toString),
     createdOn = Instant.parse(record.get(createdOnField).toString),
     updatedOn = Instant.parse(record.get(updatedOnField).toString)
