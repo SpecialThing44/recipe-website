@@ -25,6 +25,7 @@ case class Filters(
                     ingredientSimilarity: Option[SimilarityFilter],
                     coSaveSimilarity: Option[SimilarityFilter],
                     tagSimilarity: Option[SimilarityFilter],
+                    orderBy: Option[OrderBy],
                     limit: Option[Int],
                     page: Option[Int],
 ) {
@@ -37,6 +38,7 @@ object Filters {
   implicit val decoder: Decoder[Filters] = deriveDecoder[Filters]
 
   def empty(): Filters = Filters(
+    None,
     None,
     None,
     None,

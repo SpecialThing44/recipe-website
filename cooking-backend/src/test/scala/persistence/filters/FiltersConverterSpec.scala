@@ -1,6 +1,6 @@
 package persistence.filters
 
-import domain.filters.{Filters, NumberFilter, StringFilter}
+import domain.filters.{Filters, NumberFilter, OrderBy, StringFilter}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -185,4 +185,42 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
         include("n.vegetarian = 'true'")
     )
   }
+
+  it should "return empty string when no orderBy is specified" in {
+    val filters = Filters.empty()
+
+    val result = FiltersConverter.getOrderLine(filters, "n")
+
+    result shouldBe ""
+  }
+
+  it should "return ORDER BY name when orderBy.name is true" in {
+    val filters = Filters.empty().copy(orderBy = Some(OrderBy(name = Some(true))))
+
+    val result = FiltersConverter.getOrderLine(filters, "n")
+
+    result shouldBe "ORDER BY n.name"
+  }
+
+  it should "return ORDER BY name when orderBy.name is false" in {
+    val filters = Filters.empty().copy(orderBy = Some(OrderBy(name = Some(false))))
+
+    val result = FiltersConverter.getOrderLine(filters, "n")
+
+    result shouldBe "ORDER BY n.name"
+  }
+
+  it should "prioritize score ordering over name ordering when similarity is active" in {
+    val userId = UUID.randomUUID()
+    val filters = Filters.empty().copy(
+      analyzedEntity = Some(userId),
+      ingredientSimilarity = Some(domain.filters.SimilarityFilter(1.0, 0.0, 0.0, 0.0)),
+      orderBy = Some(OrderBy(name = Some(true)))
+    )
+
+    val result = FiltersConverter.getOrderLine(filters, "recipe")
+
+    result shouldBe "ORDER BY score DESC"
+  }
 }
+
