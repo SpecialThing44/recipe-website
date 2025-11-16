@@ -20,14 +20,17 @@ class IngredientsPersistence @Inject() (database: Database)
 
   override def list(
       query: Filters
-  ): ZIO[ApiContext, Throwable, Seq[Ingredient]] =
+  ): ZIO[ApiContext, Throwable, Seq[Ingredient]] = {
+    val orderLine = FiltersConverter.getOrderLine(query, graph.nodeVar)
+    val withLine = s"WITH ${graph.nodeVar}"
     database.readTransaction(
       s"""
          |${MatchStatement.apply}
          |${FiltersConverter.toCypher(query, graph.nodeVar)}
          |${MatchRelationship.outgoing("CREATED_BY", "user", "User")}
          |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
-         |${WithStatement.apply}, user, collect(DISTINCT tag.name) as tags
+         |${FiltersConverter.getWithScoreLine(query, withLine)}, user, collect(DISTINCT tag.name) as tags
+         |$orderLine
          |${query.limitAndSkipStatement}
          |${ReturnStatement.apply}, user as createdBy, tags
          |""".stripMargin,
@@ -38,6 +41,7 @@ class IngredientsPersistence @Inject() (database: Database)
           })
           .toSeq
     )
+  }
 
   private def attachUserAndTagsToRecord(
       record: org.neo4j.driver.Record

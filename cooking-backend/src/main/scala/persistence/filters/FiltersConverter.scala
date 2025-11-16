@@ -8,7 +8,13 @@ object FiltersConverter {
   def similarityActive(filters: Filters): Boolean =
     (filters.ingredientSimilarity.isDefined || filters.coSaveSimilarity.isDefined || filters.tagSimilarity.isDefined) && filters.analyzedEntity.isDefined
   def getOrderLine(filters: Filters, nodeVar: String): String = {
-    if (similarityActive(filters)) "ORDER BY score DESC" else ""
+    if (similarityActive(filters)) {
+      "ORDER BY score DESC"
+    } else if (filters.orderBy.isDefined && filters.orderBy.get.name.isDefined) {
+      s"ORDER BY $nodeVar.name"
+    } else {
+      ""
+    }
   }
   def getWithScoreLine(filters: Filters, withStatement: String): String =
     if (similarityActive(filters)) withStatement + ", score" else withStatement
