@@ -2,6 +2,7 @@ package api.users
 
 import com.google.inject.Inject
 import context.ApiContext
+import domain.authentication.{RefreshToken, TokenPair}
 import domain.types.{AuthenticationError, NoSuchEntityError}
 import domain.users.{User, UserInput}
 import io.circe.jawn.decode
@@ -10,7 +11,7 @@ import io.github.nremond.SecureHash
 import org.apache.pekko.http.scaladsl.model.headers.OAuth2BearerToken
 import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim}
 import persistence.users.Users
-import persistence.authentication.AuthUsers
+import persistence.authentication.{AuthUsers, RefreshTokens}
 import play.api.mvc.Request
 import zio.ZIO
 import domain.filters.{Filters, StringFilter}
@@ -18,15 +19,53 @@ import play.api.Configuration
 
 import java.time.{Clock, Instant}
 import java.util.UUID
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Random}
 
 class AuthenticationInteractor @Inject() (
     config: Configuration,
     userPersistence: Users,
-    authUserPersistence: AuthUsers
+    authUserPersistence: AuthUsers,
+    refreshTokenPersistence: RefreshTokens
 ) {
   private lazy val secretKey = config.get[String]("auth.secretKey")
   private lazy val pepper = config.get[String]("auth.pepper")
+  private val ACCESS_TOKEN_EXPIRY_SECONDS = 900 // 15 minutes
+  private val REFRESH_TOKEN_EXPIRY_SECONDS = 604800 // 7 days
+
+  private def generateAccessToken(user: User): String = {
+    val claim = JwtClaim(
+      content = user.asJson.noSpaces,
+      expiration = Some(Instant.now.plusSeconds(ACCESS_TOKEN_EXPIRY_SECONDS).getEpochSecond),
+      issuedAt = Some(Instant.now.getEpochSecond)
+    )
+    Jwt.encode(claim, secretKey, JwtAlgorithm.HS256)
+  }
+
+  private def generateRefreshTokenString(): String = {
+    val random = new Random()
+    val bytes = new Array[Byte](32)
+    random.nextBytes(bytes)
+    bytes.map("%02x".format(_)).mkString
+  }
+
+  private def createRefreshToken(userId: UUID): ZIO[ApiContext, Throwable, RefreshToken] = {
+    val token = RefreshToken(
+      id = UUID.randomUUID(),
+      userId = userId,
+      token = generateRefreshTokenString(),
+      expiresAt = Instant.now.plusSeconds(REFRESH_TOKEN_EXPIRY_SECONDS),
+      createdAt = Instant.now,
+      isRevoked = false
+    )
+    refreshTokenPersistence.create(token)
+  }
+
+  private def generateTokenPair(user: User): ZIO[ApiContext, Throwable, TokenPair] = {
+    for {
+      refreshToken <- createRefreshToken(user.id)
+      accessToken = generateAccessToken(user)
+    } yield TokenPair(accessToken, refreshToken.token)
+  }
 
   def getMaybeUser(
       bearerToken: Option[String],
@@ -54,7 +93,7 @@ class AuthenticationInteractor @Inject() (
     }
   }
 
-  def signupAndLogin(user: UserInput): ZIO[ApiContext, Throwable, String] = {
+  def signupAndLogin(user: UserInput): ZIO[ApiContext, Throwable, TokenPair] = {
     val realUser = UserAdapter.adapt(user)
     val authUser = AuthUserAdapter.adapt(user)
     val hashedPassword = SecureHash.createHash(authUser.passwordHash + pepper)
@@ -63,13 +102,8 @@ class AuthenticationInteractor @Inject() (
     for {
       _ <- authUserPersistence.create(userWithHashedPassword)
       _ <- userPersistence.create(realUser)
-      claim = JwtClaim(
-        content = realUser.asJson.noSpaces,
-        expiration = Some(Instant.now.plusSeconds(3600).getEpochSecond),
-        issuedAt = Some(Instant.now.getEpochSecond)
-      )
-      token: String = Jwt.encode(claim, secretKey, JwtAlgorithm.HS256)
-    } yield token
+      tokenPair <- generateTokenPair(realUser)
+    } yield tokenPair
   }
 
   def signup(user: UserInput): ZIO[ApiContext, Throwable, User] = {
@@ -87,7 +121,7 @@ class AuthenticationInteractor @Inject() (
   def login(
       email: String,
       password: String,
-  ): ZIO[ApiContext, Throwable, Option[String]] = {
+  ): ZIO[ApiContext, Throwable, Option[TokenPair]] = {
     for {
       userList <- userPersistence.list(
         Filters
@@ -108,15 +142,8 @@ class AuthenticationInteractor @Inject() (
         (),
         AuthenticationError("Incorrect Password")
       )
-      claim = JwtClaim(
-        content = user.asJson.noSpaces,
-        expiration = Some(Instant.now.plusSeconds(3600).getEpochSecond),
-        issuedAt = Some(Instant.now.getEpochSecond)
-      )
-      token <- ZIO.succeed(
-        Some(Jwt.encode(claim, secretKey, JwtAlgorithm.HS256))
-      )
-    } yield token
+      tokenPair <- generateTokenPair(user)
+    } yield Some(tokenPair)
   }
 
   def logout(
@@ -124,6 +151,7 @@ class AuthenticationInteractor @Inject() (
   ): ZIO[ApiContext, Throwable, Boolean] =
     for {
       authHeader <- ZIO.succeed(request.headers.get("Authorization"))
+      refreshTokenCookie <- ZIO.succeed(request.cookies.get("refresh_token"))
       result <- authHeader match {
         case Some(auth) =>
           val bearerToken = OAuth2BearerToken(auth)
@@ -136,12 +164,41 @@ class AuthenticationInteractor @Inject() (
                 token,
                 Instant.ofEpochSecond(expiration)
               )
-              ZIO.succeed(true)
+              // Also revoke refresh token if present
+              refreshTokenCookie match {
+                case Some(cookie) =>
+                  refreshTokenPersistence.getByToken(cookie.value).flatMap {
+                    case Some(refreshToken) =>
+                      refreshTokenPersistence.revokeToken(refreshToken.id).as(true)
+                    case None => ZIO.succeed(true)
+                  }
+                case None => ZIO.succeed(true)
+              }
             case Failure(_) => ZIO.succeed(false)
           }
         case None => ZIO.succeed(false)
       }
     } yield result
+
+  def refreshAccessToken(
+      refreshTokenString: String
+  ): ZIO[ApiContext, Throwable, Option[TokenPair]] = {
+    for {
+      maybeToken <- refreshTokenPersistence.getByToken(refreshTokenString)
+      result <- maybeToken match {
+        case Some(refreshToken) if !refreshToken.isRevoked && refreshToken.expiresAt.isAfter(Instant.now) =>
+          for {
+            user <- userPersistence.getById(refreshToken.userId)
+            _ <- refreshTokenPersistence.revokeToken(refreshToken.id)
+            newTokenPair <- generateTokenPair(user)
+          } yield Some(newTokenPair)
+        case Some(refreshToken) if refreshToken.isRevoked =>
+          refreshTokenPersistence.revokeAllForUser(refreshToken.userId).as(None)
+        case _ =>
+          ZIO.succeed(None)
+      }
+    } yield result
+  }
 
 }
 
@@ -151,7 +208,8 @@ object AuthenticationInteractor {
       originalUserId: UUID
   ): ZIO[Any, AuthenticationError, Unit] = for {
     user <- ensureIsLoggedIn(maybeUser)
-  } yield ensureUUIDMatch(originalUserId, user.id)
+    _ <- ensureUUIDMatch(originalUserId, user.id)
+  } yield ()
 
   private def ensureUUIDMatch(
       originalUserId: UUID,

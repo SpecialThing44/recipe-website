@@ -1,5 +1,7 @@
 package api.users
 
+import domain.authentication.TokenPair
+
 import com.google.inject.Inject
 import context.{ApiContext, CookingApi}
 import domain.filters.Filters
@@ -52,11 +54,16 @@ class UserFacade @Inject() (
   override def login(
       email: String,
       password: String,
-  ): ZIO[ApiContext, Throwable, Option[String]] =
+  ): ZIO[ApiContext, Throwable, Option[TokenPair]] =
     authenticationInteractor.login(email, password)
 
   override def signup(
       user: UserInput,
-  ): ZIO[ApiContext, Throwable, String] =
+  ): ZIO[ApiContext, Throwable, TokenPair] =
     authenticationInteractor.signupAndLogin(user)
+
+  override def refresh(
+      refreshToken: String
+  ): ZIO[ApiContext, Throwable, Option[TokenPair]] =
+    authenticationInteractor.refreshAccessToken(refreshToken)
 }

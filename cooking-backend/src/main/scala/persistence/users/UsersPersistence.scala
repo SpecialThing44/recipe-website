@@ -40,7 +40,6 @@ class UsersPersistence @Inject() (database: Database) extends Users {
         val withLine = s"WITH ${graph.nodeVar}"
         s"""
                |${MatchStatement.apply} WHERE NOT (user:DeletedUser)
-               |${MatchStatement.apply}
                |${FiltersConverter.toCypher(filters, graph.nodeVar)}
                |${FiltersConverter.getWithScoreLine(filters, withLine)}
                |$orderLine

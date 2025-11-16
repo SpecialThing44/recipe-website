@@ -4,7 +4,9 @@ GET           /health                 http.healthcheck.HealthCheckController.che
 POST          /signup                 http.authentication.AuthenticationController.signup()
 POST          /login                  http.authentication.AuthenticationController.login()
 POST          /logout                 http.authentication.AuthenticationController.logout()
+POST          /refresh                http.authentication.AuthenticationController.refresh()
 
+GET           /user                   http.users.UsersController.getCurrentUser()
 POST          /user/query             http.users.UsersController.list()
 GET           /user/:id               http.users.UsersController.get(id: java.util.UUID)
 PUT           /user/:id               http.users.UsersController.put(id: java.util.UUID)
