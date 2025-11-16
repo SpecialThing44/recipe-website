@@ -16,12 +16,12 @@ class UsersController @Inject() (
   import io.circe.syntax.EncoderOps
   import play.api.libs.json.Json
 
-  def getCurrentUser(): Action[AnyContent] = Action { request =>
+  def getCurrentUser: Action[AnyContent] = Action { request =>
     val authHeader = request.headers.get("Authorization")
     val maybeUser = cookingApi.users.authenticate(authHeader)
     val response = maybeUser.fold(
       error => ErrorMapping.mapCustomErrorsToHttp(error),
-      maybeUserResult => maybeUserResult match {
+      {
         case Some(user) => Ok(s"{ \"Body\": ${Json.parse(user.asJson.noSpaces)} }")
         case None => Unauthorized(Json.obj("error" -> "Invalid or missing token"))
       }

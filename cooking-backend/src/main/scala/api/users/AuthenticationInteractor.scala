@@ -164,7 +164,6 @@ class AuthenticationInteractor @Inject() (
                 token,
                 Instant.ofEpochSecond(expiration)
               )
-              // Also revoke refresh token if present
               refreshTokenCookie match {
                 case Some(cookie) =>
                   refreshTokenPersistence.getByToken(cookie.value).flatMap {

@@ -33,6 +33,8 @@ class UserFacade @Inject() (
 
   override def delete(id: UUID): ZIO[ApiContext, Throwable, User] =
     deleteInteractor.delete(id)
+    
+  override def deleteAll(): ZIO[ApiContext, Throwable, Unit] = deleteInteractor.deleteAll()
 
   override def list(filters: Filters): ZIO[ApiContext, Throwable, Seq[User]] =
     fetchInteractor.list(filters)

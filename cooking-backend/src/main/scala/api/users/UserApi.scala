@@ -32,4 +32,6 @@ trait UserApi
   def refresh(
       refreshToken: String
   ): ZIO[ApiContext, Throwable, Option[TokenPair]]
+
+  def deleteAll(): ZIO[ApiContext, Throwable, Unit]
 }

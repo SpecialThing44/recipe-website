@@ -30,7 +30,7 @@ class AuthenticationController @Inject() (
       value = tokenPair.refreshToken,
       maxAge = Some(REFRESH_TOKEN_MAX_AGE),
       httpOnly = true,
-      secure = false, // Set to true in production with HTTPS
+      secure = false, // set to true for https
       sameSite = Some(Cookie.SameSite.Strict)
     )
     

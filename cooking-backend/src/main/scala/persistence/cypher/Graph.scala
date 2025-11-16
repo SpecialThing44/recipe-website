@@ -9,6 +9,10 @@ import persistence.users.UserConverter.lowerPrefix
 
 import scala.reflect.ClassTag
 
+def className[A](classType: Class[A]): String =
+  classType.getSimpleName.replace("$", "")
+
+
 trait Graph[Domain: ClassTag] extends TagPathing {
   lazy val nodeLabel: String = implicitly[ClassTag[Domain]].runtimeClass.getSimpleName
   lazy val nodeVar: String = nodeLabel.toLowerCase
@@ -20,15 +24,13 @@ object Graph {
   val Indices: Seq[Index] = Vector(Index(Seq("name"), User.getClass.getSimpleName.replaceAll("$", ""), IndexType.Text))
 
   val Constraints: Seq[Constraint] = Vector(
-    Constraint("name", Ingredient.getClass.getSimpleName.replaceAll("$", ""), Unique),
-    Constraint(s"${lowerPrefix}name", Ingredient.getClass.getSimpleName.replaceAll("$", ""), Unique),
-    Constraint("wikiLink", Ingredient.getClass.getSimpleName.replaceAll("$", ""), Unique),
-    Constraint("id", Ingredient.getClass.getSimpleName.replaceAll("$", ""), Unique),
-    Constraint("email", User.getClass.getSimpleName.replaceAll("$", ""), Unique),
-    Constraint(s"${lowerPrefix}email", User.getClass.getSimpleName.replaceAll("$", ""), Unique),
-    Constraint("id", User.getClass.getSimpleName.replaceAll("$", ""), Unique),
-    Constraint("id", Recipe.getClass.getSimpleName.replaceAll("$", ""), Unique),
-
+    Constraint("name", className(Ingredient.getClass), Unique),
+    Constraint(s"${lowerPrefix}name", className(Ingredient.getClass), Unique),
+    Constraint("wikiLink", className(Ingredient.getClass), Unique),
+    Constraint("id", className(Ingredient.getClass), Unique),
+    Constraint("email", className(User.getClass), Unique),
+    Constraint(s"${lowerPrefix}email", className(User.getClass), Unique),
+    Constraint("id", className(User.getClass), Unique),
+    Constraint("id", className(Recipe.getClass), Unique),
   )
-
 }
