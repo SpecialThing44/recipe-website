@@ -15,8 +15,10 @@ logback
 loweremail
 lowername
 mockito
+mserver
 mvc
 outsource
+pagecache
 Pathing
 pekko
 SAMEORIGIN
@@ -28,6 +30,7 @@ sbt
 scalafmt
 scalatest
 Scoverage
+seaweedfs
 slf
 sttp
 tagcanda
