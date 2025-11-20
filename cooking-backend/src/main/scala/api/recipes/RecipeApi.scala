@@ -11,4 +11,5 @@ trait RecipeApi
     extends Persisting[Recipe, RecipeInput, RecipeUpdateInput]
     with Querying[Recipe] {
   def save(recipeId: UUID): ZIO[ApiContext, Throwable, Recipe]
+  def deleteAll(): ZIO[ApiContext, Throwable, Unit]
 }
