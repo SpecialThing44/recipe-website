@@ -10,6 +10,7 @@ GET           /user                   http.users.UsersController.getCurrentUser(
 POST          /user/query             http.users.UsersController.list()
 GET           /user/:id               http.users.UsersController.get(id: java.util.UUID)
 PUT           /user/:id               http.users.UsersController.put(id: java.util.UUID)
+PUT           /user/:id/avatar        http.users.UsersController.uploadAvatar(id: java.util.UUID)
 DELETE        /user/:id               http.users.UsersController.delete(id: java.util.UUID)
 
 

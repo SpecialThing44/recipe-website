@@ -12,6 +12,7 @@ object UserAdapter {
       user.name,
       user.email,
       user.countryOfOrigin,
+      None,
       now,
       now,
       UUID.randomUUID()
@@ -25,6 +26,8 @@ object UserAdapter {
       user.email.getOrElse(existingUser.email),
       if (user.countryOfOrigin.isDefined) user.countryOfOrigin
       else existingUser.countryOfOrigin,
+      if (user.avatarUrl.isDefined) user.avatarUrl
+      else existingUser.avatarUrl,
       existingUser.createdOn,
       now,
       existingUser.id

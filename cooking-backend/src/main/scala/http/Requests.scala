@@ -15,6 +15,22 @@ import zio.ZIO
 import java.util.UUID
 
 object Requests {
+  def extractUser(
+      request: Request[Any],
+      cookingApi: CookingApi
+  ): Option[User] = {
+    val authHeader = request.headers.get("Authorization")
+    try {
+      ApiRunner.runResponse[ApiContext, Throwable, Option[User]](
+        cookingApi.users.authenticate(authHeader),
+        cookingApi,
+        None
+      )
+    } catch {
+      case e: Throwable => None
+    }
+  }
+
   def list[Entity](
       request: Request[JsValue],
       cookingApi: CookingApi,
@@ -34,22 +50,6 @@ object Requests {
       cookingApi,
       maybeUser
     )
-  }
-
-  private def extractUser(
-      request: Request[Any],
-      cookingApi: CookingApi
-  ): Option[User] = {
-    val authHeader = request.headers.get("Authorization")
-    try {
-      ApiRunner.runResponse[ApiContext, Throwable, Option[User]](
-        cookingApi.users.authenticate(authHeader),
-        cookingApi,
-        None
-      )
-    } catch {
-      case e: Throwable => None
-    }
   }
 
   def get[Entity](
