@@ -1,0 +1,137 @@
+version: "3.8"
+
+services:
+  neo4j:
+    image: neo4j:5.26.10-community-ubi9
+    container_name: recipe-neo4j
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=neo4j/Password!1
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+      - NEO4J_dbms_memory_pagecache_size=1G
+      - NEO4J_dbms_memory_heap_initial__size=1G
+      - NEO4J_dbms_memory_heap_max__size=1G
+    volumes:
+      - neo4j-data:/data
+      - neo4j-logs:/logs
+    networks:
+      - recipe-network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  seaweedfs-master:
+    image: chrislusf/seaweedfs:latest
+    container_name: recipe-seaweedfs-master
+    ports:
+      - "9333:9333" # Master HTTP
+      - "19333:19333" # Master gRPC
+    command: "master -ip=seaweedfs-master -ip.bind=0.0.0.0"
+    networks:
+      - recipe-network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:9333/cluster/status || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  seaweedfs-volume:
+    image: chrislusf/seaweedfs:latest
+    container_name: recipe-seaweedfs-volume
+    ports:
+      - "8080:8080" # Volume HTTP
+      - "18080:18080" # Volume gRPC
+    command: "volume -mserver=seaweedfs-master:9333 -ip=seaweedfs-volume -ip.bind=0.0.0.0 -max=5"
+    volumes:
+      - seaweedfs-volume-data:/data
+    networks:
+      - recipe-network
+    depends_on:
+      seaweedfs-master:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:8080/status || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  seaweedfs-filer:
+    image: chrislusf/seaweedfs:latest
+    container_name: recipe-seaweedfs-filer
+    ports:
+      - "8888:8888" # Filer HTTP
+      - "18888:18888" # Filer gRPC
+    command: "filer -master=seaweedfs-master:9333 -ip=seaweedfs-filer -ip.bind=0.0.0.0"
+    volumes:
+      - seaweedfs-filer-data:/data
+    networks:
+      - recipe-network
+    depends_on:
+      seaweedfs-master:
+        condition: service_healthy
+      seaweedfs-volume:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:8888/ || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # backend:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: recipe-backend
+  #   ports:
+  #     - "9000:9000"
+  #   environment:
+  #     - NEO4J_URI=bolt://neo4j:7687
+  #     - NEO4J_USERNAME=neo4j
+  #     - NEO4J_PASSWORD=Password!1
+  #     - NEO4J_IS_EMBEDDED=false
+  #     - SEAWEEDFS_MASTER_URL=http://seaweedfs-master:9333
+  #     - SEAWEEDFS_FILER_URL=http://seaweedfs-filer:8888
+  #     - SECRET_KEY=your-secret-key-here
+  #     - PEPPER=your-pepper-here
+  #   networks:
+  #     - recipe-network
+  #   depends_on:
+  #     neo4j:
+  #       condition: service_healthy
+  #     seaweedfs-filer:
+  #       condition: service_healthy
+
+networks:
+  recipe-network:
+    driver: bridge
+
+volumes:
+  neo4j-data:
+    driver: local
+  neo4j-logs:
+    driver: local
+  seaweedfs-volume-data:
+    driver: local
+  seaweedfs-filer-data:
+    driver: local

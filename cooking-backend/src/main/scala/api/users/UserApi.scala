@@ -5,8 +5,11 @@ import com.google.inject.ImplementedBy
 import context.{ApiContext, CookingApi}
 import domain.authentication.TokenPair
 import domain.users.{User, UserInput, UserUpdateInput}
+import org.apache.pekko.util.ByteString
 import play.api.mvc.Request
 import zio.ZIO
+
+import java.util.UUID
 
 @ImplementedBy(classOf[UserFacade])
 trait UserApi
@@ -34,4 +37,12 @@ trait UserApi
   ): ZIO[ApiContext, Throwable, Option[TokenPair]]
 
   def deleteAll(): ZIO[ApiContext, Throwable, Unit]
+
+  def uploadAvatar(
+      userId: UUID,
+      fileBytes: ByteString,
+      contentType: String
+  ): ZIO[ApiContext, Throwable, User]
+
+  def deleteAvatar(userId: UUID): ZIO[ApiContext, Throwable, User]
 }

@@ -1,11 +1,11 @@
 package api.users
 
 import domain.authentication.TokenPair
-
 import com.google.inject.Inject
 import context.{ApiContext, CookingApi}
 import domain.filters.Filters
 import domain.users.{User, UserInput, UserUpdateInput}
+import org.apache.pekko.util.ByteString
 import persistence.users.Users
 import play.api.mvc.Request
 import zio.ZIO
@@ -17,7 +17,8 @@ class UserFacade @Inject() (
     authenticationInteractor: AuthenticationInteractor,
     deleteInteractor: UserDeleteInteractor,
     updateInteractor: UserUpdateInteractor,
-    fetchInteractor: UserFetchInteractor
+    fetchInteractor: UserFetchInteractor,
+    avatarInteractor: UserAvatarInteractor
 ) extends UserApi {
 
   override def create(
@@ -68,4 +69,14 @@ class UserFacade @Inject() (
       refreshToken: String
   ): ZIO[ApiContext, Throwable, Option[TokenPair]] =
     authenticationInteractor.refreshAccessToken(refreshToken)
+
+  override def uploadAvatar(
+      userId: UUID,
+      fileBytes: ByteString,
+      contentType: String
+  ): ZIO[ApiContext, Throwable, User] =
+    avatarInteractor.uploadAvatar(userId, fileBytes, contentType)
+
+  override def deleteAvatar(userId: UUID): ZIO[ApiContext, Throwable, User] =
+    avatarInteractor.deleteAvatar(userId)
 }

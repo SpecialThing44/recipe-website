@@ -22,7 +22,9 @@ private[persistence] case class Neo4jIndices()(implicit
   def applySchema(): ZIO[Any, Throwable, Unit] = {
     for {
       indicesInDatabase <- Neo4jIndices.indicesInDatabase
-
+      _ <- ZIO.succeed(
+        indicesInDatabase.foreach(index => println(index.toString))
+      )
       constraintsInDatabase <- Neo4jIndices.constraintsInDatabase
 
       _ <- ZIO.collectAll(
@@ -84,7 +86,7 @@ object Neo4jIndices {
   private def convert(result: AnyRef): Seq[String] = if (result != null) {
     result match {
       case list: util.AbstractList[String] => list.asScala.toSeq
-      case _                                 => Seq.empty
+      case _                               => Seq.empty
     }
   } else Seq.empty
 
