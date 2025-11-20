@@ -23,7 +23,7 @@ class AuthenticationIntegrationTest extends IntegrationTestFramework {
     tokenOption shouldBe defined
     val token = tokenOption.get
 
-    val authenticatedUser = authenticateUser(token)
+    val authenticatedUser = authenticateUser(token.accessToken)
 
     authenticatedUser shouldBe defined
     authenticatedUser.get.id shouldBe user.id
@@ -39,11 +39,11 @@ class AuthenticationIntegrationTest extends IntegrationTestFramework {
     tokenOption shouldBe defined
     val token = tokenOption.get
 
-    val logoutResult = logoutUser(token)
+    val logoutResult = logoutUser(token.accessToken)
 
     logoutResult shouldBe true
 
-    val authenticatedUser = authenticateUser(token)
+    val authenticatedUser = authenticateUser(token.accessToken)
 
     authenticatedUser shouldBe None
   }
@@ -51,10 +51,9 @@ class AuthenticationIntegrationTest extends IntegrationTestFramework {
   it should "signup a new user and return a valid token" in {
     val token = signupUser(standardUserInput)
 
-    token shouldBe a[String]
-    token.nonEmpty shouldBe true
+    token.accessToken shouldBe a[String]
 
-    val authenticatedUser = authenticateUser(token)
+    val authenticatedUser = authenticateUser(token.accessToken)
 
     authenticatedUser shouldBe defined
     authenticatedUser.get.name shouldBe standardUserInput.name

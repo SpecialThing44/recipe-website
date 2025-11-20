@@ -2,6 +2,7 @@ package integration.support
 
 import api.users.UserFacade
 import context.ApiContext
+import domain.authentication.TokenPair
 import domain.filters.Filters
 import domain.users.{User, UserInput, UserUpdateInput}
 import play.api.mvc.Headers
@@ -94,7 +95,7 @@ trait IntegrationUserSupport {
     }
   }
 
-  def loginUser(email: String, password: String): Option[String] = {
+  def loginUser(email: String, password: String): Option[TokenPair] = {
     Unsafe.unsafe { implicit unsafe =>
       Runtime.default.unsafe
         .run(
@@ -134,7 +135,7 @@ trait IntegrationUserSupport {
     }
   }
 
-  protected def signupUser(userInput: UserInput): String = {
+  protected def signupUser(userInput: UserInput): TokenPair = {
     val token = Unsafe.unsafe { implicit unsafe =>
       Runtime.default.unsafe
         .run(
@@ -147,7 +148,9 @@ trait IntegrationUserSupport {
     val user = Unsafe.unsafe { implicit unsafe =>
       Runtime.default.unsafe
         .run(
-          userFacade.authenticate(Some(token)).provideLayer(createApiContext())
+          userFacade
+            .authenticate(Some(token.accessToken))
+            .provideLayer(createApiContext())
         )
         .getOrThrow()
     }

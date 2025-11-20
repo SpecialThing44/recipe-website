@@ -217,4 +217,14 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
     recipeMap.put("ingredientQuantities", iqList)
     RecipeConverter.toDomain(recipeMap)
   }
+
+  override def deleteAll(): ZIO[ApiContext, Throwable, scala.Unit] = for {
+    _ <- database.writeTransaction(
+      s"""
+       |${MatchStatement.apply}
+       |DETACH DELETE ${graph.nodeVar}
+       |""".stripMargin,
+      (_: org.neo4j.driver.Result) => ()
+    )
+  } yield ()
 }

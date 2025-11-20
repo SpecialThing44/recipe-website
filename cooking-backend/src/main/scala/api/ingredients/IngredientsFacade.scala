@@ -43,4 +43,8 @@ class IngredientsFacade @Inject() (
   override def getById(id: UUID): ZIO[ApiContext, Throwable, Ingredient] = {
     persistence.getById(id)
   }
+
+  override def deleteAll(): ZIO[ApiContext, Throwable, Unit] = {
+    persistence.deleteAll()
+  }
 }

@@ -90,6 +90,28 @@ class IntegrationTestFramework
           .fold(_ => (), _ => ())
       }
     }
+    
+    Unsafe.unsafe { implicit unsafe =>
+      Runtime.default.unsafe
+        .run(
+          recipeFacade.deleteAll().provideLayer(createApiContext())
+        )
+        .fold(_ => (), _ => ())
+    }
+    Unsafe.unsafe { implicit unsafe =>
+      Runtime.default.unsafe
+        .run(
+          ingredientsFacade.deleteAll().provideLayer(createApiContext())
+        )
+        .fold(_ => (), _ => ())
+    }
+    Unsafe.unsafe { implicit unsafe =>
+      Runtime.default.unsafe
+        .run(
+          userFacade.deleteAll().provideLayer(createApiContext())
+        )
+        .fold(_ => (), _ => ())
+    }
   }
 
   override def createApiContext(): ZLayer[Any, Nothing, ApiContext] = {

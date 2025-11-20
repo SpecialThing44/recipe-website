@@ -157,4 +157,14 @@ class IngredientsPersistence @Inject() (database: Database)
         }
       }
     )
+
+  override def deleteAll(): ZIO[ApiContext, Throwable, Unit] = for {
+    _ <- database.writeTransaction(
+      s"""
+       |${MatchStatement.apply}
+       |DETACH DELETE ${graph.nodeVar}
+       |""".stripMargin,
+      (_: Result) => ()
+    )
+  } yield ()
 }

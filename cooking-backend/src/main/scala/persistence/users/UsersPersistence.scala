@@ -39,14 +39,14 @@ class UsersPersistence @Inject() (database: Database) extends Users {
         val orderLine = FiltersConverter.getOrderLine(filters, graph.nodeVar)
         val withLine = s"WITH ${graph.nodeVar}"
         s"""
-               |${MatchStatement.apply} WHERE NOT (user:DeletedUser)
-               |${MatchStatement.apply}
-               |${FiltersConverter.toCypher(filters, graph.nodeVar)}
-               |${FiltersConverter.getWithScoreLine(filters, withLine)}
-               |$orderLine
-               |${filters.limitAndSkipStatement}
-               |${ReturnStatement.apply}
-               |""".stripMargin
+           |${MatchStatement.apply} WHERE NOT (user:DeletedUser)
+           |${MatchStatement.apply}
+           |${FiltersConverter.toCypher(filters, graph.nodeVar)}
+           |${FiltersConverter.getWithScoreLine(filters, withLine)}
+           |$orderLine
+           |${filters.limitAndSkipStatement}
+           |${ReturnStatement.apply}
+           |""".stripMargin
       },
       (result: Result) =>
         result.asScala
@@ -60,11 +60,11 @@ class UsersPersistence @Inject() (database: Database) extends Users {
     for {
       dbResult <- database.writeTransaction(
         s"""
-               |CREATE (${graph.nodeVar}:${graph.nodeLabel} {
-               |$properties
-               |})
-               |${ReturnStatement.apply}
-               |""".stripMargin,
+           |CREATE (${graph.nodeVar}:${graph.nodeLabel} {
+           |$properties
+           |})
+           |${ReturnStatement.apply}
+           |""".stripMargin,
         (_: Result) => ()
       )
     } yield entity
@@ -78,10 +78,10 @@ class UsersPersistence @Inject() (database: Database) extends Users {
       .convertForUpdate(graph.nodeVar, entity)
     database.writeTransaction(
       s"""
-               |${MatchByIdStatement.apply(entity.id)}
-               |SET $properties
-               |${ReturnStatement.apply}
-               |""".stripMargin,
+         |${MatchByIdStatement.apply(entity.id)}
+         |SET $properties
+         |${ReturnStatement.apply}
+         |""".stripMargin,
       (result: Result) => {
         if (result.hasNext) {
           recordToUser(result.next())
@@ -104,18 +104,18 @@ class UsersPersistence @Inject() (database: Database) extends Users {
       user <- getById(id)
       dbResult <- database.writeTransaction(
         s"""
-               |${MatchByIdStatement.apply(id)}
-               |$deletePrivateRecipesForUser
-               |WITH DISTINCT user
-               |$deleteUnusedRecipesCreatedByUser
-               |WITH DISTINCT user
-               |$deleteUnusedIngredientsCreatedByUser
-               |WITH DISTINCT user
-               |SET user.email = ""
-               |SET user.name = "Deleted User"
-               |SET user.updatedOn = "${Instant.now.toString}"
-               |SET user:DeletedUser
-               |""".stripMargin,
+           |${MatchByIdStatement.apply(id)}
+           |$deletePrivateRecipesForUser
+           |WITH DISTINCT user
+           |$deleteUnusedRecipesCreatedByUser
+           |WITH DISTINCT user
+           |$deleteUnusedIngredientsCreatedByUser
+           |WITH DISTINCT user
+           |SET user.email = ""
+           |SET user.name = "Deleted User"
+           |SET user.updatedOn = "${Instant.now.toString}"
+           |SET user:DeletedUser
+           |""".stripMargin,
         (_: Result) => ()
       )
     } yield user
@@ -123,9 +123,9 @@ class UsersPersistence @Inject() (database: Database) extends Users {
   override def getById(id: UUID): ZIO[ApiContext, Throwable, User] =
     database.readTransaction(
       s"""
-               |${MatchByIdStatement.apply(id)}
-               |${ReturnStatement.apply}
-               |""".stripMargin,
+         |${MatchByIdStatement.apply(id)}
+         |${ReturnStatement.apply}
+         |""".stripMargin,
       (result: Result) => {
         if (result.hasNext) {
           recordToUser(result.next())
@@ -134,4 +134,14 @@ class UsersPersistence @Inject() (database: Database) extends Users {
         }
       }
     )
+
+  override def deleteAll(): ZIO[ApiContext, Throwable, Unit] = for {
+    _ <- database.writeTransaction(
+      s"""
+       |${MatchStatement.apply()}
+       |DETACH DELETE user
+       |""".stripMargin,
+      (_: Result) => ()
+    )
+  } yield ()
 }

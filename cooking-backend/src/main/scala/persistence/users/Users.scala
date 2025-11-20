@@ -7,4 +7,6 @@ import persistence.{DbPersisting, DbQuerying}
 import zio.ZIO
 
 @ImplementedBy(classOf[UsersPersistence])
-trait Users extends DbPersisting[User] with DbQuerying[User] {}
+trait Users extends DbPersisting[User] with DbQuerying[User] {
+  def deleteAll(): ZIO[ApiContext, Throwable, Unit]
+}

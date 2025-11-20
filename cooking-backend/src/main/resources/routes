@@ -4,25 +4,27 @@ GET           /health                 http.healthcheck.HealthCheckController.che
 POST          /signup                 http.authentication.AuthenticationController.signup()
 POST          /login                  http.authentication.AuthenticationController.login()
 POST          /logout                 http.authentication.AuthenticationController.logout()
+POST          /refresh                http.authentication.AuthenticationController.refresh()
 
-GET           /user                   http.users.UsersController.list()
+GET           /user                   http.users.UsersController.getCurrentUser()
+POST          /user/query             http.users.UsersController.list()
 GET           /user/:id               http.users.UsersController.get(id: java.util.UUID)
 PUT           /user/:id               http.users.UsersController.put(id: java.util.UUID)
 DELETE        /user/:id               http.users.UsersController.delete(id: java.util.UUID)
 
 
-GET           /recipes                http.recipes.RecipesController.list()
+POST          /recipes/query          http.recipes.RecipesController.list()
 POST          /recipes                http.recipes.RecipesController.post()
 
 GET           /recipes/:id            http.recipes.RecipesController.get(id: java.util.UUID)
 PUT           /recipes/:id            http.recipes.RecipesController.put(id: java.util.UUID)
 
 
-GET           /ingredients            http.ingredients.IngredientsController.list()
+POST          /ingredients/query      http.ingredients.IngredientsController.list()
 POST          /ingredients            http.ingredients.IngredientsController.post()
 
 GET           /ingredients/:id        http.ingredients.IngredientsController.get(id: java.util.UUID)
 PUT           /ingredients/:id        http.ingredients.IngredientsController.put(id: java.util.UUID)
 DELETE        /ingredients/:id        http.ingredients.IngredientsController.delete(id: java.util.UUID)
 
-GET           /tags                   http.tags.TagsController.list()
+POST          /tags/query             http.tags.TagsController.list()
