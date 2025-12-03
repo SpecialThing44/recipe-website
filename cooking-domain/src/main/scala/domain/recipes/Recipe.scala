@@ -24,7 +24,8 @@ case class Recipe(
     countryOfOrigin: Option[String],
     public: Boolean,
     wikiLink: Option[String],
-    instructions: String,
+    instructions: String, // Quill Delta JSON format
+    instructionImages: Seq[String] = Seq.empty, // URLs of images embedded in instructions
     image: Option[ImageUrls] = None,
     createdOn: Instant,
     updatedOn: Instant,
@@ -56,7 +57,8 @@ case class RecipeUpdateInput(
     countryOfOrigin: Option[String] = None,
     public: Option[Boolean] = None,
     wikiLink: Option[String] = None,
-    instructions: Option[String] = None,
+    instructions: Option[String] = None, // Quill Delta JSON format
+    instructionImages: Option[Seq[String]] = None,
     image: Option[ImageUrls] = None,
 )
 

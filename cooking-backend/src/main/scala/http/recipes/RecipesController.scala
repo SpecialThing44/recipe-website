@@ -93,4 +93,27 @@ class RecipesController @Inject() (
     )
     ApiRunner.runResponseSafely(response, cookingApi, maybeUser)
   }
+
+  def uploadInstructionImage(id: java.util.UUID): Action[AnyContent] = Action { request =>
+    val maybeUser = extractUser(request, cookingApi)
+
+    request.body.asRaw match {
+      case Some(raw) =>
+        val fileBytes = raw.asBytes().getOrElse(ByteString.empty)
+        val contentType = request.contentType.getOrElse("image/jpeg")
+
+        if (fileBytes.isEmpty) {
+          BadRequest(play.api.libs.json.Json.obj("error" -> "No file data provided"))
+        } else {
+          val result = cookingApi.recipes.uploadInstructionImage(id, fileBytes, contentType)
+          val response = result.fold(
+            error => ErrorMapping.mapCustomErrorsToHttp(error),
+            imageUrl => Ok(play.api.libs.json.Json.obj("url" -> imageUrl))
+          )
+          ApiRunner.runResponseSafely(response, cookingApi, maybeUser)
+        }
+      case None =>
+        BadRequest(play.api.libs.json.Json.obj("error" -> "No file uploaded"))
+    }
+  }
 }

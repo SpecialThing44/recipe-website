@@ -133,7 +133,7 @@ class SeaweedFSClient @Inject() (config: Configuration) {
     } yield StorageAvatarUrls(thumbnailUrl, mediumUrl, largeUrl)
   }
 
-  private def uploadFileToPath(
+  def uploadFileToPath(
       fileBytes: ByteString,
       contentType: String,
       uploadPath: String

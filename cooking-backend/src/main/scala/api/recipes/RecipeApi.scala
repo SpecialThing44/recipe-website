@@ -15,4 +15,5 @@ trait RecipeApi
   def deleteAll(): ZIO[ApiContext, Throwable, Unit]
   def uploadImage(recipeId: UUID, fileBytes: ByteString, contentType: String): ZIO[ApiContext, Throwable, Recipe]
   def deleteImage(recipeId: UUID): ZIO[ApiContext, Throwable, Recipe]
+  def uploadInstructionImage(recipeId: UUID, fileBytes: ByteString, contentType: String): ZIO[ApiContext, Throwable, String]
 }

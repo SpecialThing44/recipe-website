@@ -21,6 +21,7 @@ GET           /recipes/:id            http.recipes.RecipesController.get(id: jav
 PUT           /recipes/:id            http.recipes.RecipesController.put(id: java.util.UUID)
 PUT           /recipes/:id/image      http.recipes.RecipesController.uploadImage(id: java.util.UUID)
 DELETE        /recipes/:id/image      http.recipes.RecipesController.deleteImage(id: java.util.UUID)
+POST          /recipes/:id/instruction-image  http.recipes.RecipesController.uploadInstructionImage(id: java.util.UUID)
 POST          /recipes/:id/save       http.recipes.RecipesController.save(id: java.util.UUID)
 
 

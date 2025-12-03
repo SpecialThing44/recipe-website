@@ -25,6 +25,19 @@ class RecipeUpdateInteractor @Inject() (
         context.applicationContext.user,
         originalRecipe.createdBy.id
       )
+      
+      // Validate and sanitize instructions if updated
+      sanitizedInstructions <- input.instructions match {
+        case Some(instructions) => 
+          RichTextSanitizer.validateAndSanitize(instructions).map(Some(_))
+        case None => ZIO.succeed(None)
+      }
+      extractedImageUrls <- sanitizedInstructions match {
+        case Some(instructions) => 
+          RichTextSanitizer.extractImageUrls(instructions).map(Some(_))
+        case None => ZIO.succeed(None)
+      }
+      
       _ <-
         if (input.wikiLink.isDefined)
           wikipediaCheck.validateWikiLink(input.wikiLink.get)
@@ -74,7 +87,11 @@ class RecipeUpdateInteractor @Inject() (
           ZIO.fail(domain.types.InputError("Recipe includes ingredient(s) with non-predefined unit"))
         else ZIO.unit
       }
-      updated = RecipeAdapter.adaptUpdate(input, originalRecipe, resolved)
+      inputWithSanitized = input.copy(
+        instructions = sanitizedInstructions.orElse(input.instructions),
+        instructionImages = extractedImageUrls.orElse(input.instructionImages)
+      )
+      updated = RecipeAdapter.adaptUpdate(inputWithSanitized, originalRecipe, resolved)
       result <- persistence.update(updated, originalRecipe)
     } yield result
   }
