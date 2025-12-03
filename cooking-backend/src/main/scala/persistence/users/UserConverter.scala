@@ -13,6 +13,7 @@ object UserConverter extends Converter[User] {
   val avatarUrlField = "avatarUrl"
   val avatarThumbnailUrlField = "avatarThumbnailUrl"
   val avatarMediumUrlField = "avatarMediumUrl"
+  val adminField = "admin"
   
   override def toGraph(user: User): Map[String, Object] =
     Map(
@@ -25,6 +26,7 @@ object UserConverter extends Converter[User] {
       avatarUrlField -> user.avatar.map(_.large).getOrElse(""),
       avatarThumbnailUrlField -> user.avatar.map(_.thumbnail).getOrElse(""),
       avatarMediumUrlField -> user.avatar.map(_.medium).getOrElse(""),
+      adminField -> Boolean.box(user.admin),
       createdOnField -> user.createdOn.toString,
       updatedOnField -> user.updatedOn.toString
     )
@@ -45,6 +47,7 @@ object UserConverter extends Converter[User] {
       email = record.get(emailField).toString,
       countryOfOrigin = Option(record.get(countryOfOriginField).toString).filter(_.nonEmpty),
       avatar = avatar,
+      admin = Option(record.get(adminField)).map(_.toString.toBoolean).getOrElse(false),
       createdOn = Instant.parse(record.get(createdOnField).toString),
       updatedOn = Instant.parse(record.get(updatedOnField).toString)
     )

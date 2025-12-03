@@ -18,12 +18,10 @@ class IngredientDeleteInteractor @Inject() (
 ) {
   def delete(id: UUID): ZIO[ApiContext, Throwable, Ingredient] = {
     for {
-      user <- ZIO.service[ApiContext].map(_.applicationContext.user)
+      maybeUser <- ZIO.service[ApiContext].map(_.applicationContext.user)
+      user <- AuthenticationInteractor.ensureIsLoggedIn(maybeUser)
+      _ <- AuthenticationInteractor.ensureIsAdmin(user)
       ingredient <- persistence.getById(id)
-      _ <- AuthenticationInteractor.ensureAuthenticatedAndMatchingUser(
-        user,
-        ingredient.createdBy.id
-      )
       _ <- validateNoRecipeLinks(ingredient)
       deletedIngredient <- persistence.delete(id)
     } yield deletedIngredient

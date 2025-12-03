@@ -18,7 +18,7 @@ class TagsPersistence @Inject() (database: Database) extends Tags {
       s"""
          |MATCH (tag:Tag)
          |${FiltersConverter.toCypher(query, "tag")}
-         |WITH collect(tag.name[1]) as tags
+         |WITH collect(tag.name) as tags
          |RETURN DISTINCT tags
          |""".stripMargin,
       (result: Result) =>

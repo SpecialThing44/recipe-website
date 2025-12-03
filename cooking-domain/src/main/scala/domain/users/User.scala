@@ -18,6 +18,7 @@ case class User(
     email: String,
     countryOfOrigin: Option[String] = None,
     avatar: Option[AvatarUrls] = None,
+    admin: Boolean = false,
     createdOn: Instant,
     updatedOn: Instant,
     id: UUID
@@ -50,7 +51,7 @@ object User {
 
   def empty(): User = {
     val now = Instant.now
-    User("", "", None, None, now, now, UUID.randomUUID())
+    User("", "", None, None, false, now, now, UUID.randomUUID())
   }
 }
 

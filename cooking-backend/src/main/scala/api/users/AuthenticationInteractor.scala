@@ -232,4 +232,16 @@ object AuthenticationInteractor {
     case None =>
       ZIO.fail(AuthenticationError("Cannot update if not logged in"))
   }
+
+  def ensureIsAdmin(
+      user: User
+  ): ZIO[Any, AuthenticationError, Unit] = {
+    if (user.admin) {
+      ZIO.unit
+    } else {
+      ZIO.fail(
+        AuthenticationError("Admin privileges required for this operation")
+      )
+    }
+  }
 }
