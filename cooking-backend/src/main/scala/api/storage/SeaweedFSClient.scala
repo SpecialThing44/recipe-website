@@ -8,6 +8,12 @@ import zio.{Task, ZIO}
 
 import java.util.UUID
 
+case class StorageAvatarUrls(
+    thumbnailUrl: String,
+    mediumUrl: String,
+    largeUrl: String
+)
+
 @Singleton
 class SeaweedFSClient @Inject() (config: Configuration) {
   private val masterUrl = config.get[String]("seaweedfs.masterUrl")
@@ -67,20 +73,107 @@ class SeaweedFSClient @Inject() (config: Configuration) {
   }
 
   def uploadAvatar(
+      processedImage: ProcessedImage,
+      userId: UUID
+  ): Task[StorageAvatarUrls] = {
+    val extension = processedImage.extension
+    
+    for {
+      thumbnailUrl <- uploadFile(
+        processedImage.thumbnail,
+        s"image/$extension",
+        userId,
+        s"avatar-thumbnail.$extension"
+      )
+      mediumUrl <- uploadFile(
+        processedImage.medium,
+        s"image/$extension",
+        userId,
+        s"avatar-medium.$extension"
+      )
+      largeUrl <- uploadFile(
+        processedImage.large,
+        s"image/$extension",
+        userId,
+        s"avatar.$extension"
+      )
+    } yield StorageAvatarUrls(thumbnailUrl, mediumUrl, largeUrl)
+  }
+  
+  def deleteAllAvatarSizes(userId: UUID, extension: String = "jpg"): Task[Unit] = {
+    for {
+      _ <- deleteFile(s"$filerUrl/avatars/$userId/avatar-thumbnail.$extension").catchAll(_ => ZIO.unit)
+      _ <- deleteFile(s"$filerUrl/avatars/$userId/avatar-medium.$extension").catchAll(_ => ZIO.unit)
+      _ <- deleteFile(s"$filerUrl/avatars/$userId/avatar.$extension").catchAll(_ => ZIO.unit)
+    } yield ()
+  }
+
+  def uploadRecipeImage(
+      processedImage: ProcessedImage,
+      recipeId: UUID
+  ): Task[StorageAvatarUrls] = {
+    val extension = processedImage.extension
+    
+    for {
+      thumbnailUrl <- uploadFileToPath(
+        processedImage.thumbnail,
+        s"image/$extension",
+        s"/recipes/$recipeId/recipe-thumbnail.$extension"
+      )
+      mediumUrl <- uploadFileToPath(
+        processedImage.medium,
+        s"image/$extension",
+        s"/recipes/$recipeId/recipe-medium.$extension"
+      )
+      largeUrl <- uploadFileToPath(
+        processedImage.large,
+        s"image/$extension",
+        s"/recipes/$recipeId/recipe.$extension"
+      )
+    } yield StorageAvatarUrls(thumbnailUrl, mediumUrl, largeUrl)
+  }
+
+  private def uploadFileToPath(
       fileBytes: ByteString,
       contentType: String,
-      userId: UUID
-  ): Task[String] = {
-    if (!contentType.startsWith("image/")) {
-      ZIO.fail(new IllegalArgumentException("File must be an image"))
-    } else {
-      val extension = contentType.split("/").lastOption.getOrElse("jpg")
-      val fileName = s"avatar.$extension"
-      uploadFile(fileBytes, contentType, userId, fileName)
+      uploadPath: String
+  ): Task[String] = ZIO.attempt {
+    val assignResponse = basicRequest
+      .get(uri"$masterUrl/dir/assign")
+      .response(asString)
+      .send(backend)
+
+    val fileId = assignResponse.body match {
+      case Right(body) =>
+        val fidPattern = """"fid":"([^"]+)"""".r
+        fidPattern.findFirstMatchIn(body) match {
+          case Some(m) => m.group(1)
+          case None => throw new Exception("Failed to get file ID from master")
+        }
+      case Left(error) =>
+        throw new Exception(s"Failed to assign file ID: $error")
+    }
+
+    val fullUrl = s"$filerUrl$uploadPath"
+    val uploadResponse = basicRequest
+      .put(uri"$fullUrl")
+      .body(fileBytes.toArray)
+      .contentType(contentType)
+      .response(asString)
+      .send(backend)
+
+    uploadResponse.body match {
+      case Right(_)    => fullUrl
+      case Left(error) => throw new Exception(s"Failed to upload file: $error")
     }
   }
 
-  def deleteAvatar(avatarUrl: String): Task[Unit] = {
-    deleteFile(avatarUrl)
+  def deleteAllImageSizes(recipeId: UUID, extension: String = "jpg"): Task[Unit] = {
+    for {
+      _ <- deleteFile(s"$filerUrl/recipes/$recipeId/recipe-thumbnail.$extension").catchAll(_ => ZIO.unit)
+      _ <- deleteFile(s"$filerUrl/recipes/$recipeId/recipe-medium.$extension").catchAll(_ => ZIO.unit)
+      _ <- deleteFile(s"$filerUrl/recipes/$recipeId/recipe.$extension").catchAll(_ => ZIO.unit)
+    } yield ()
   }
 }
+

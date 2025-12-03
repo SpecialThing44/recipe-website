@@ -1,6 +1,6 @@
 package api.users
 
-import api.storage.SeaweedFSClient
+import api.storage.{SeaweedFSClient, ImageProcessor, StorageAvatarUrls}
 import com.google.inject.Inject
 import context.ApiContext
 import domain.users.{User, UserUpdateInput}
@@ -33,15 +33,30 @@ class UserAvatarInteractor @Inject() (
       userId
     )
 
-    _ <- user.avatarUrl match {
-      case Some(oldUrl) =>
-        seaweedFSClient.deleteAvatar(oldUrl).catchAll(_ => ZIO.unit)
+    // Delete old avatars if they exist
+    _ <- user.avatar match {
+      case Some(avatar) =>
+        // Extract extension from old URL or default to jpg
+        val extension = avatar.large.split("\\.").lastOption.getOrElse("jpg")
+        seaweedFSClient.deleteAllAvatarSizes(userId, extension).catchAll(_ => ZIO.unit)
       case None => ZIO.unit
     }
 
-    avatarUrl <- seaweedFSClient.uploadAvatar(fileBytes, contentType, userId)
+    // Process the image into three sizes
+    processedImage <- ImageProcessor.processImage(fileBytes, contentType)
+    
+    // Upload all three sizes
+    seaweedUrls <- seaweedFSClient.uploadAvatar(processedImage, userId)
 
-    updateInput = UserUpdateInput(avatarUrl = Some(avatarUrl))
+    // Create AvatarUrls object
+    avatarUrls = domain.users.AvatarUrls(
+      thumbnail = seaweedUrls.thumbnailUrl,
+      medium = seaweedUrls.mediumUrl,
+      large = seaweedUrls.largeUrl
+    )
+
+    // Update user with avatar URLs
+    updateInput = UserUpdateInput(avatar = Some(avatarUrls))
     updatedUser <- updateInteractor.update(updateInput, user)
   } yield updatedUser
 
@@ -54,12 +69,15 @@ class UserAvatarInteractor @Inject() (
       userId
     )
 
-    _ <- user.avatarUrl match {
-      case Some(url) => seaweedFSClient.deleteAvatar(url)
-      case None      => ZIO.unit
+    // Delete all avatar sizes if they exist
+    _ <- user.avatar match {
+      case Some(avatar) =>
+        val extension = avatar.large.split("\\.").lastOption.getOrElse("jpg")
+        seaweedFSClient.deleteAllAvatarSizes(userId, extension)
+      case None => ZIO.unit
     }
 
-    updateInput = UserUpdateInput(avatarUrl = Some(null))
+    updateInput = UserUpdateInput(avatar = None)
     updatedUser <- updateInteractor.update(updateInput, user)
   } yield updatedUser
 }

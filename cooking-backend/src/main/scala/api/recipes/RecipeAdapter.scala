@@ -21,6 +21,7 @@ object RecipeAdapter {
       public = recipe.public,
       wikiLink = recipe.wikiLink,
       instructions = recipe.instructions,
+      image = None,
       createdOn = now,
       updatedOn = now,
       id = UUID.randomUUID()
@@ -42,6 +43,7 @@ object RecipeAdapter {
       public = input.public.getOrElse(original.public),
       wikiLink = input.wikiLink.orElse(original.wikiLink),
       instructions = input.instructions.getOrElse(original.instructions),
+      image = if (input.image.isDefined) input.image else original.image,
       createdOn = original.createdOn,
       updatedOn = now,
       id = original.id

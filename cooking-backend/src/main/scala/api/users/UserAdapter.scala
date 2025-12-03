@@ -26,8 +26,8 @@ object UserAdapter {
       user.email.getOrElse(existingUser.email),
       if (user.countryOfOrigin.isDefined) user.countryOfOrigin
       else existingUser.countryOfOrigin,
-      if (user.avatarUrl.isDefined) user.avatarUrl
-      else existingUser.avatarUrl,
+      if (user.avatar.isDefined) user.avatar
+      else existingUser.avatar,
       existingUser.createdOn,
       now,
       existingUser.id

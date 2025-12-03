@@ -9,6 +9,9 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import java.time.Instant
 import java.util.UUID
 
+// Reuse AvatarUrls structure for recipe images
+type ImageUrls = domain.users.AvatarUrls
+
 case class Recipe(
     name: String,
     createdBy: User,
@@ -22,6 +25,7 @@ case class Recipe(
     public: Boolean,
     wikiLink: Option[String],
     instructions: String,
+    image: Option[ImageUrls] = None,
     createdOn: Instant,
     updatedOn: Instant,
     id: UUID
@@ -53,6 +57,7 @@ case class RecipeUpdateInput(
     public: Option[Boolean] = None,
     wikiLink: Option[String] = None,
     instructions: Option[String] = None,
+    image: Option[ImageUrls] = None,
 )
 
 object Recipe {

@@ -15,6 +15,7 @@ object Libraries {
     val slf4jVersion = "2.0.17"
     val logbackVersion = "1.5.18"
     val sttpVersion = "3.11.0"
+    val scrimageVersion = "4.1.3"
 
     val scalaTestVersion = "3.2.19"
     val mockitoVersion = "5.18.0"
@@ -58,6 +59,9 @@ object Libraries {
   val logback = "ch.qos.logback" % "logback-classic" % logbackVersion
 
   val sttp = "com.softwaremill.sttp.client3" %% "core" % sttpVersion
+
+  val scrimageCore = "com.sksamuel.scrimage" % "scrimage-core" % scrimageVersion
+  val scrimageWebp = "com.sksamuel.scrimage" % "scrimage-webp" % scrimageVersion
 
   // Test dependencies
   val scalaTest = "org.scalatest" %% "scalatest" % scalaTestVersion % Test
