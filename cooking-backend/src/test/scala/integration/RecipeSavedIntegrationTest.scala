@@ -13,7 +13,7 @@ class RecipeSavedIntegrationTest extends IntegrationTestFramework {
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    creator = createTestUser(standardUserInput.copy(email = "creator@example.com"))
+    creator = createTestAdminUser(standardUserInput.copy(email = "creator@example.com"))
     login(creator.id)
     tomato = createTestIngredient(IngredientInput(
       name = "Tomato",
@@ -46,7 +46,7 @@ class RecipeSavedIntegrationTest extends IntegrationTestFramework {
       countryOfOrigin = Some("USA"),
       public = public,
       wikiLink = Some("https://en.wikipedia.org/wiki/Recipe"),
-      instructions = "Mix and cook"
+      instructions = quillDelta("Mix and cook")
     )
   }
 

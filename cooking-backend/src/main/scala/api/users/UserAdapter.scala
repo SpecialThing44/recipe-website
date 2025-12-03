@@ -13,6 +13,7 @@ object UserAdapter {
       user.email,
       user.countryOfOrigin,
       None,
+      false, // admin defaults to false for new users
       now,
       now,
       UUID.randomUUID()
@@ -28,6 +29,7 @@ object UserAdapter {
       else existingUser.countryOfOrigin,
       if (user.avatar.isDefined) user.avatar
       else existingUser.avatar,
+      existingUser.admin, // preserve admin status
       existingUser.createdOn,
       now,
       existingUser.id

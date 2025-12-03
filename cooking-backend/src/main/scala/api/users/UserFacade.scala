@@ -79,4 +79,7 @@ class UserFacade @Inject() (
 
   override def deleteAvatar(userId: UUID): ZIO[ApiContext, Throwable, User] =
     avatarInteractor.deleteAvatar(userId)
+
+  def makeAdmin(userId: UUID): ZIO[ApiContext, Throwable, User] =
+    persistence.makeAdmin(userId)
 }

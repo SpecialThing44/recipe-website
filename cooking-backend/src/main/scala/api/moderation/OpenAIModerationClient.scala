@@ -79,6 +79,7 @@ object ModerationResponse {
 @Singleton
 class OpenAIModerationClient @Inject() (config: Configuration) {
   private val apiKey = config.get[String]("openai.apiKey")
+  private val skipModeration = config.get[Boolean]("openai.skipModeration")
   private val apiUrl = "https://api.openai.com/v1/moderations"
   private val backend = HttpClientSyncBackend()
 
@@ -87,7 +88,7 @@ class OpenAIModerationClient @Inject() (config: Configuration) {
    * Returns None if content is acceptable, or Some(ModerationViolation) if flagged.
    */
   def moderateText(text: String): Task[Option[ModerationViolation]] = ZIO.attempt {
-    if (text.trim.isEmpty) {
+    if (skipModeration || text.trim.isEmpty) {
       None
     } else {
       val requestBody = ModerationRequest(text).asJson.noSpaces

@@ -78,7 +78,7 @@ class IngredientsIntegrationTest extends IntegrationTestFramework {
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    user = createTestUser(standardUserInput)
+    user = createTestAdminUser(standardUserInput)
     login(user.id)
   }
 
