@@ -13,7 +13,8 @@ import domain.ingredients.Unit
 class RecipeCreateInteractor @Inject() (
     persistence: Recipes,
     wikipediaCheck: WikipediaCheck,
-    ingredientPersistence: Ingredients
+    ingredientPersistence: Ingredients,
+    richTextSanitizer: RichTextSanitizer
 ) {
   def create(input: RecipeInput): ZIO[ApiContext, Throwable, Recipe] = {
     for {
@@ -21,8 +22,8 @@ class RecipeCreateInteractor @Inject() (
       user <- AuthenticationInteractor.ensureIsLoggedIn(maybeUser)
       _ <- input.wikiLink.map(wikipediaCheck.validateWikiLink).getOrElse(ZIO.unit)
       
-      sanitizedInstructions <- RichTextSanitizer.validateAndSanitize(input.instructions)
-      extractedImageUrls <- RichTextSanitizer.extractImageUrls(sanitizedInstructions)
+      sanitizedInstructions <- richTextSanitizer.validateAndSanitize(input.instructions)
+      extractedImageUrls <- richTextSanitizer.extractImageUrls(sanitizedInstructions)
       
       ingredients <- zio.ZIO.foreach(input.ingredients) { ii =>
         for {

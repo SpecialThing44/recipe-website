@@ -13,7 +13,8 @@ import domain.ingredients.Unit
 class RecipeUpdateInteractor @Inject() (
     persistence: Recipes,
     wikipediaCheck: WikipediaCheck,
-    ingredientPersistence: Ingredients
+    ingredientPersistence: Ingredients,
+    richTextSanitizer: RichTextSanitizer
 ) {
   def update(
       input: RecipeUpdateInput,
@@ -29,12 +30,12 @@ class RecipeUpdateInteractor @Inject() (
       // Validate and sanitize instructions if updated
       sanitizedInstructions <- input.instructions match {
         case Some(instructions) => 
-          RichTextSanitizer.validateAndSanitize(instructions).map(Some(_))
+          richTextSanitizer.validateAndSanitize(instructions).map(Some(_))
         case None => ZIO.succeed(None)
       }
       extractedImageUrls <- sanitizedInstructions match {
         case Some(instructions) => 
-          RichTextSanitizer.extractImageUrls(instructions).map(Some(_))
+          richTextSanitizer.extractImageUrls(instructions).map(Some(_))
         case None => ZIO.succeed(None)
       }
       
