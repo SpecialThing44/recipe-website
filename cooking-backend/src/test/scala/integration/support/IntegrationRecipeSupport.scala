@@ -14,6 +14,10 @@ trait IntegrationRecipeSupport {
   protected def createApiContext(): ZLayer[Any, Nothing, ApiContext]
   protected val createdRecipes: ListBuffer[UUID] = collection.mutable.ListBuffer.empty[UUID]
 
+  protected def quillDelta(text: String): String = {
+    s"""{"ops":[{"insert":"$text\\n"}]}"""
+  }
+
   protected def createTestRecipe(input: RecipeInput): Recipe = {
     val recipe = Unsafe.unsafe { implicit unsafe =>
       Runtime.default.unsafe

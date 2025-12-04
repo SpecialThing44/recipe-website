@@ -13,13 +13,18 @@ import domain.ingredients.Unit
 class RecipeCreateInteractor @Inject() (
     persistence: Recipes,
     wikipediaCheck: WikipediaCheck,
-    ingredientPersistence: Ingredients
+    ingredientPersistence: Ingredients,
+    richTextSanitizer: RichTextSanitizer
 ) {
   def create(input: RecipeInput): ZIO[ApiContext, Throwable, Recipe] = {
     for {
       maybeUser <- ZIO.service[ApiContext].map(_.applicationContext.user)
       user <- AuthenticationInteractor.ensureIsLoggedIn(maybeUser)
       _ <- input.wikiLink.map(wikipediaCheck.validateWikiLink).getOrElse(ZIO.unit)
+      
+      sanitizedInstructions <- richTextSanitizer.validateAndSanitize(input.instructions)
+      extractedImageUrls <- richTextSanitizer.extractImageUrls(sanitizedInstructions)
+      
       ingredients <- zio.ZIO.foreach(input.ingredients) { ii =>
         for {
           ingredient <- ingredientPersistence.getById(ii.ingredientId)
@@ -40,8 +45,10 @@ class RecipeCreateInteractor @Inject() (
           zio.ZIO.fail(domain.types.InputError("Recipe includes ingredient(s) with non-predefined unit"))
         else ZIO.unit
       }
-      recipe = RecipeAdapter.adapt(input, ingredients, user)
-      result <- persistence.create(recipe)
+      recipeWithSanitized = input.copy(instructions = sanitizedInstructions)
+      recipe = RecipeAdapter.adapt(recipeWithSanitized, ingredients, user)
+      recipeWithImages = recipe.copy(instructionImages = extractedImageUrls)
+      result <- persistence.create(recipeWithImages)
     } yield result
   }
 }

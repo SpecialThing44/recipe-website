@@ -17,6 +17,8 @@ class RecipeFacade @Inject() (
     fetchInteractor: RecipeFetchInteractor,
     saveInteractor: RecipeSaveInteractor,
     getInteractor: RecipeGetInteractor,
+    imageInteractor: RecipeImageInteractor,
+    instructionImageInteractor: RecipeInstructionImageInteractor,
 ) extends RecipeApi {
 
   override def create(
@@ -44,4 +46,21 @@ class RecipeFacade @Inject() (
 
   override def deleteAll(): ZIO[ApiContext, Throwable, Unit] =
     persistence.deleteAll()
+
+  override def uploadImage(
+      recipeId: UUID,
+      fileBytes: org.apache.pekko.util.ByteString,
+      contentType: String
+  ): ZIO[ApiContext, Throwable, Recipe] =
+    imageInteractor.uploadImage(recipeId, fileBytes, contentType)
+
+  override def deleteImage(recipeId: UUID): ZIO[ApiContext, Throwable, Recipe] =
+    imageInteractor.deleteImage(recipeId)
+
+  override def uploadInstructionImage(
+      recipeId: UUID,
+      fileBytes: org.apache.pekko.util.ByteString,
+      contentType: String
+  ): ZIO[ApiContext, Throwable, String] =
+    instructionImageInteractor.uploadInstructionImage(recipeId, fileBytes, contentType)
 }

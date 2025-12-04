@@ -10,6 +10,7 @@ GET           /user                   http.users.UsersController.getCurrentUser(
 POST          /user/query             http.users.UsersController.list()
 GET           /user/:id               http.users.UsersController.get(id: java.util.UUID)
 PUT           /user/:id               http.users.UsersController.put(id: java.util.UUID)
+PUT           /user/:id/avatar        http.users.UsersController.uploadAvatar(id: java.util.UUID)
 DELETE        /user/:id               http.users.UsersController.delete(id: java.util.UUID)
 
 
@@ -18,6 +19,10 @@ POST          /recipes                http.recipes.RecipesController.post()
 
 GET           /recipes/:id            http.recipes.RecipesController.get(id: java.util.UUID)
 PUT           /recipes/:id            http.recipes.RecipesController.put(id: java.util.UUID)
+PUT           /recipes/:id/image      http.recipes.RecipesController.uploadImage(id: java.util.UUID)
+DELETE        /recipes/:id/image      http.recipes.RecipesController.deleteImage(id: java.util.UUID)
+POST          /recipes/:id/instruction-image  http.recipes.RecipesController.uploadInstructionImage(id: java.util.UUID)
+POST          /recipes/:id/save       http.recipes.RecipesController.save(id: java.util.UUID)
 
 
 POST          /ingredients/query      http.ingredients.IngredientsController.list()

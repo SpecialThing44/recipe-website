@@ -1,7 +1,7 @@
 package persistence.recipes
 
 import domain.ingredients.{InstructionIngredient, Quantity, Unit}
-import domain.recipes.Recipe
+import domain.recipes.{Recipe, ImageUrls}
 import persistence.Converter
 import persistence.ingredients.IngredientConverter
 import persistence.users.UserConverter
@@ -19,6 +19,10 @@ object RecipeConverter extends Converter[Recipe] {
   val countryOfOriginField = "countryOfOrigin"
   val publicField = "public"
   val instructionsField = "instructions"
+  val instructionImagesField = "instructionImages"
+  val imageUrlField = "imageUrl"
+  val imageThumbnailUrlField = "imageThumbnailUrl"
+  val imageMediumUrlField = "imageMediumUrl"
 
   override def toGraph(recipe: Recipe): Map[String, Object] =
     Map(
@@ -33,6 +37,10 @@ object RecipeConverter extends Converter[Recipe] {
       publicField -> Boolean.box(recipe.public),
       wikiLinkField -> recipe.wikiLink.getOrElse(""),
       instructionsField -> recipe.instructions,
+      instructionImagesField -> recipe.instructionImages.mkString(","),
+      imageUrlField -> recipe.image.map(_.large).getOrElse(""),
+      imageThumbnailUrlField -> recipe.image.map(_.thumbnail).getOrElse(""),
+      imageMediumUrlField -> recipe.image.map(_.medium).getOrElse(""),
       createdOnField -> recipe.createdOn.toString,
       updatedOnField -> recipe.updatedOn.toString
     )
@@ -73,6 +81,21 @@ object RecipeConverter extends Converter[Recipe] {
         InstructionIngredient(ingredient, Quantity(unit, amount), description)
       }
 
+    val thumbnail = Option(record.get(imageThumbnailUrlField)).map(_.toString).filter(_.nonEmpty)
+    val medium = Option(record.get(imageMediumUrlField)).map(_.toString).filter(_.nonEmpty)
+    val large = Option(record.get(imageUrlField)).map(_.toString).filter(_.nonEmpty)
+    
+    val image = (thumbnail, medium, large) match {
+      case (Some(t), Some(m), Some(l)) => Some(domain.users.AvatarUrls(t, m, l))
+      case _ => None
+    }
+
+    val instructionImages = Option(record.get(instructionImagesField))
+      .map(_.toString)
+      .filter(_.nonEmpty)
+      .map(_.split(",").toSeq.filter(_.nonEmpty))
+      .getOrElse(Seq.empty)
+
     Recipe(
       id = UUID.fromString(record.get(idField).toString),
       name = record.get(nameField).toString,
@@ -88,6 +111,8 @@ object RecipeConverter extends Converter[Recipe] {
       public = record.get(publicField).toString.toBoolean,
       wikiLink = Option(record.get(wikiLinkField).toString).filter(_.nonEmpty),
       instructions = record.get(instructionsField).toString,
+      instructionImages = instructionImages,
+      image = image,
       createdOn = Instant.parse(record.get(createdOnField).toString),
       updatedOn = Instant.parse(record.get(updatedOnField).toString)
     )

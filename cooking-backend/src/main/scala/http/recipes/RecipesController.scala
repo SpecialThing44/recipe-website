@@ -4,7 +4,9 @@ import context.CookingApi
 import domain.ingredients.Ingredient
 import domain.recipes.{Recipe, RecipeInput, RecipeUpdateInput}
 import http.Requests
+import http.Requests.extractUser
 import io.circe.Decoder
+import org.apache.pekko.util.ByteString
 import play.api.libs.json.*
 import play.api.mvc.*
 
@@ -57,5 +59,61 @@ class RecipesController @Inject() (
       saved => Results.Created(s"{ \"Body\": ${play.api.libs.json.Json.parse(saved.asJson.noSpaces)} }")
     )
     ApiRunner.runResponseSafely[ApiContext](response, cookingApi, None)
+  }
+
+  def uploadImage(id: java.util.UUID): Action[AnyContent] = Action { request =>
+    val maybeUser = extractUser(request, cookingApi)
+
+    request.body.asRaw match {
+      case Some(raw) =>
+        val fileBytes = raw.asBytes().getOrElse(ByteString.empty)
+        val contentType = request.contentType.getOrElse("image/jpeg")
+
+        if (fileBytes.isEmpty) {
+          BadRequest(play.api.libs.json.Json.obj("error" -> "No file data provided"))
+        } else {
+          val result = cookingApi.recipes.uploadImage(id, fileBytes, contentType)
+          val response = result.fold(
+            error => ErrorMapping.mapCustomErrorsToHttp(error),
+            recipe => Ok(s"{ \"Body\": ${play.api.libs.json.Json.parse(recipe.asJson.noSpaces)} }")
+          )
+          ApiRunner.runResponseSafely(response, cookingApi, maybeUser)
+        }
+      case None =>
+        BadRequest(play.api.libs.json.Json.obj("error" -> "No file uploaded"))
+    }
+  }
+
+  def deleteImage(id: java.util.UUID): Action[AnyContent] = Action { request =>
+    val maybeUser = extractUser(request, cookingApi)
+    val result = cookingApi.recipes.deleteImage(id)
+    val response = result.fold(
+      error => ErrorMapping.mapCustomErrorsToHttp(error),
+      recipe => Ok(s"{ \"Body\": ${play.api.libs.json.Json.parse(recipe.asJson.noSpaces)} }")
+    )
+    ApiRunner.runResponseSafely(response, cookingApi, maybeUser)
+  }
+
+  def uploadInstructionImage(id: java.util.UUID): Action[AnyContent] = Action { request =>
+    val maybeUser = extractUser(request, cookingApi)
+
+    request.body.asRaw match {
+      case Some(raw) =>
+        val fileBytes = raw.asBytes().getOrElse(ByteString.empty)
+        val contentType = request.contentType.getOrElse("image/jpeg")
+
+        if (fileBytes.isEmpty) {
+          BadRequest(play.api.libs.json.Json.obj("error" -> "No file data provided"))
+        } else {
+          val result = cookingApi.recipes.uploadInstructionImage(id, fileBytes, contentType)
+          val response = result.fold(
+            error => ErrorMapping.mapCustomErrorsToHttp(error),
+            imageUrl => Ok(play.api.libs.json.Json.obj("url" -> imageUrl))
+          )
+          ApiRunner.runResponseSafely(response, cookingApi, maybeUser)
+        }
+      case None =>
+        BadRequest(play.api.libs.json.Json.obj("error" -> "No file uploaded"))
+    }
   }
 }

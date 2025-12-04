@@ -7,10 +7,18 @@ import io.circe.{Decoder, Encoder}
 import java.time.Instant
 import java.util.UUID
 
+case class AvatarUrls(
+    thumbnail: String,
+    medium: String,
+    large: String
+)
+
 case class User(
     name: String,
     email: String,
     countryOfOrigin: Option[String] = None,
+    avatar: Option[AvatarUrls] = None,
+    admin: Boolean = false,
     createdOn: Instant,
     updatedOn: Instant,
     id: UUID
@@ -27,9 +35,15 @@ case class UserUpdateInput(
     name: Option[String] = None,
     email: Option[String] = None,
     countryOfOrigin: Option[String] = None,
+    avatar: Option[AvatarUrls] = None,
 )
 
 case class LoginInput(email: String, password: String)
+
+object AvatarUrls {
+  implicit val encoder: Encoder[AvatarUrls] = deriveEncoder[AvatarUrls]
+  implicit val decoder: Decoder[AvatarUrls] = deriveDecoder[AvatarUrls]
+}
 
 object User {
   implicit val encoder: Encoder[User] = deriveEncoder[User]
@@ -37,7 +51,7 @@ object User {
 
   def empty(): User = {
     val now = Instant.now
-    User("", "", None, now, now, UUID.randomUUID())
+    User("", "", None, None, false, now, now, UUID.randomUUID())
   }
 }
 

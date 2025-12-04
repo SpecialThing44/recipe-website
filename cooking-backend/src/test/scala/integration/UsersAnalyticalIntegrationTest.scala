@@ -47,14 +47,14 @@ class UsersAnalyticalIntegrationTest extends IntegrationTestFramework {
       countryOfOrigin = Some("USA"),
       public = true,
       wikiLink = Some("https://en.wikipedia.org/wiki/Recipe"),
-      instructions = "Cook"
+      instructions = quillDelta("Cook")
     )
 
   it should "rank users by ingredient similarity and apply minScore, excluding the analyzed user" in {
-    val target = createTestUser(UserInput("Target User", "target@example.com", "password"))
-    val candidateA = createTestUser(UserInput("Candidate A", "candA@example.com", "password"))
-    val candidateB = createTestUser(UserInput("Candidate B", "candB@example.com", "password"))
-    val candidateD = createTestUser(UserInput("Candidate D", "candD@example.com", "password"))
+    val target = createTestAdminUser(UserInput("Target User", "target@example.com", "password"))
+    val candidateA = createTestAdminUser(UserInput("Candidate A", "candA@example.com", "password"))
+    val candidateB = createTestAdminUser(UserInput("Candidate B", "candB@example.com", "password"))
+    val candidateD = createTestAdminUser(UserInput("Candidate D", "candD@example.com", "password"))
     login(target.id)
     val tomato = createTestIngredient(ingredientInputTomato)
     val onion = createTestIngredient(ingredientInputOnion)
@@ -86,9 +86,9 @@ class UsersAnalyticalIntegrationTest extends IntegrationTestFramework {
   }
 
   it should "rank users by tag similarity" in {
-    val target = createTestUser(UserInput("Tag Target", "tagtarget@example.com", "password"))
-    val candidateA = createTestUser(UserInput("Tag Candidate A", "tagcanda@example.com", "password"))
-    val candidateB = createTestUser(UserInput("Tag Candidate B", "tagcandb@example.com", "password"))
+    val target = createTestAdminUser(UserInput("Tag Target", "tagtarget@example.com", "password"))
+    val candidateA = createTestAdminUser(UserInput("Tag Candidate A", "tagcanda@example.com", "password"))
+    val candidateB = createTestAdminUser(UserInput("Tag Candidate B", "tagcandb@example.com", "password"))
     login(target.id)
     val tomato = createTestIngredient(ingredientInputTomato)
     val onion = createTestIngredient(ingredientInputOnion)
@@ -113,9 +113,9 @@ class UsersAnalyticalIntegrationTest extends IntegrationTestFramework {
   }
 
   it should "rank users by co-save similarity and respect minScore" in {
-    val target = createTestUser(UserInput("Save Target", "savetarget@example.com", "password"))
-    val candidateA = createTestUser(UserInput("Save Candidate A", "savecanda@example.com", "password"))
-    val candidateB = createTestUser(UserInput("Save Candidate B", "savecandb@example.com", "password"))
+    val target = createTestAdminUser(UserInput("Save Target", "savetarget@example.com", "password"))
+    val candidateA = createTestAdminUser(UserInput("Save Candidate A", "savecanda@example.com", "password"))
+    val candidateB = createTestAdminUser(UserInput("Save Candidate B", "savecandb@example.com", "password"))
     login(target.id)
 
     val tomato = createTestIngredient(ingredientInputTomato)
@@ -146,9 +146,9 @@ class UsersAnalyticalIntegrationTest extends IntegrationTestFramework {
   }
 
   it should "rank users by combined ingredient, tag, and co-save similarity" in {
-    val target = createTestUser(UserInput("Combo Target", "combotarget@example.com", "password"))
-    val candidateA = createTestUser(UserInput("Combo Candidate A", "combocanda@example.com", "password"))
-    val candidateB = createTestUser(UserInput("Combo Candidate B", "combocandb@example.com", "password"))
+    val target = createTestAdminUser(UserInput("Combo Target", "combotarget@example.com", "password"))
+    val candidateA = createTestAdminUser(UserInput("Combo Candidate A", "combocanda@example.com", "password"))
+    val candidateB = createTestAdminUser(UserInput("Combo Candidate B", "combocandb@example.com", "password"))
     login(target.id)
     val tomato = createTestIngredient(ingredientInputTomato)
     val onion = createTestIngredient(ingredientInputOnion)

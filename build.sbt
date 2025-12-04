@@ -55,6 +55,8 @@ lazy val backend =
         neo4jDriver,
         jwtScala,
         pbkdf2,
+        scrimageCore,
+        scrimageWebp,
         scalaTest,
         mockito,
         testContainers,

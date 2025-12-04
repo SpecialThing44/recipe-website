@@ -62,9 +62,20 @@ object Unit:
   )
 
   implicit val decoder: Decoder[Unit] = Decoder.instance((cursor: HCursor) =>
-    for
-      name <- cursor.downField("name").as[String]
-      volume <- cursor.downField("volume").as[Boolean]
-      wiki <- cursor.downField("wikiLink").as[String]
-    yield apply(name, volume, wiki)
+    // Try to decode as a string first (for simple "piece" format)
+    cursor.as[String].flatMap { name =>
+      fromName(name) match {
+        case Some(unit) => Right(unit)
+        case None => Left(io.circe.DecodingFailure(s"Unknown unit: $name", cursor.history))
+      }
+    }.orElse {
+      // Fall back to object format
+      for
+        name <- cursor.downField("name").as[String]
+        unit <- fromName(name) match {
+          case Some(u) => Right(u)
+          case None => Left(io.circe.DecodingFailure(s"Unknown unit: $name", cursor.history))
+        }
+      yield unit
+    }
   )

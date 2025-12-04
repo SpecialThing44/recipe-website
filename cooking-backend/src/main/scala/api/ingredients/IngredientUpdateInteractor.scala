@@ -22,10 +22,8 @@ class IngredientUpdateInteractor @Inject() (
   ): ZIO[ApiContext, Throwable, Ingredient] = {
     for {
       context <- ZIO.service[ApiContext]
-      _ <- AuthenticationInteractor.ensureAuthenticatedAndMatchingUser(
-        context.applicationContext.user,
-        originalIngredient.createdBy.id
-      )
+      user <- AuthenticationInteractor.ensureIsLoggedIn(context.applicationContext.user)
+      _ <- AuthenticationInteractor.ensureIsAdmin(user)
       _ <-
         if (
           Seq(input.name, input.wikiLink, input.vegan, input.vegetarian).exists(

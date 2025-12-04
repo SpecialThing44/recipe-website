@@ -31,7 +31,7 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
     r1.countryOfOrigin shouldBe r2.countryOfOrigin
     r1.public shouldBe r2.public
     r1.wikiLink shouldBe r2.wikiLink
-    r1.instructions shouldBe r2.instructions
+    r1.instructions shouldBe r2.instructions.replace("\\n", "\n")
     r1.createdBy.id shouldBe r2.createdBy.id
   }
 
@@ -51,7 +51,7 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
     created.wikiLink.map(_.toLowerCase) shouldBe input.wikiLink.map(
       _.toLowerCase
     )
-    created.instructions shouldBe input.instructions
+    created.instructions shouldBe input.instructions.replace("\\n", "\n")
     created.ingredients.map(_.ingredient.id).toSet shouldBe ingredientIds.toSet
     created.ingredients.map(_.quantity.amount) shouldBe input.ingredients.map(
       _.quantity.amount
@@ -69,7 +69,7 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    user = createTestUser(standardUserInput)
+    user = createTestAdminUser(standardUserInput)
     login(user.id)
     tomato = createTestIngredient(IngredientsIntegrationTestData.tomato)
     onion = createTestIngredient(IngredientsIntegrationTestData.onion)
@@ -108,7 +108,7 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
       countryOfOrigin = Some("Italy"),
       public = Some(true),
       wikiLink = Some("https://en.wikipedia.org/wiki/Soup"),
-      instructions = Some("Chop and cook")
+      instructions = Some(quillDelta("Chop and cook"))
     )
 
     val updated = updateRecipe(created, update)
@@ -128,7 +128,7 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
     updated.wikiLink.map(_.toLowerCase()) shouldBe Some(
       "https://en.wikipedia.org/wiki/soup"
     )
-    updated.instructions shouldBe "Chop and cook"
+    updated.instructions shouldBe quillDelta("Chop and cook").replace("\\n", "\n")
     updated.ingredients.head.description shouldBe Some("about one onion")
 
     val fetched = getRecipeById(created.id)
@@ -186,7 +186,7 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
         countryOfOrigin = Some("USA"),
         public = true,
         wikiLink = Some("https://en.wikipedia.org/wiki/Recipe"),
-        instructions = "Cook"
+        instructions = quillDelta("Cook")
       )
     )
 
@@ -205,7 +205,7 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
         countryOfOrigin = Some("USA"),
         public = true,
         wikiLink = Some("https://en.wikipedia.org/wiki/Recipe"),
-        instructions = "Cook"
+        instructions = quillDelta("Cook")
       )
     )
 
@@ -223,7 +223,7 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
         countryOfOrigin = Some("USA"),
         public = true,
         wikiLink = Some("https://en.wikipedia.org/wiki/Recipe"),
-        instructions = "Cook"
+        instructions = quillDelta("Cook")
       )
     )
 
@@ -241,7 +241,7 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
         countryOfOrigin = Some("USA"),
         public = true,
         wikiLink = Some("https://en.wikipedia.org/wiki/Recipe"),
-        instructions = "Cook"
+        instructions = quillDelta("Cook")
       )
     )
 
@@ -303,7 +303,7 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
       countryOfOrigin = Some("USA"),
       public = true,
       wikiLink = Some("https://en.wikipedia.org/wiki/Recipe"),
-      instructions = "Mix and cook"
+      instructions = quillDelta("Mix and cook")
     )
   }
 }

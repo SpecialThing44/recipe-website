@@ -12,6 +12,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 object TestAppHolder {
   lazy val application = new GuiceApplicationBuilder()
     .configure("neo4j.isEmbedded" -> true)
+    .configure("openai.skipModeration" -> true)
     .overrides(bind[WikipediaCheck].to[integration.stubs.FakeWikipediaCheck])
     .build()
 

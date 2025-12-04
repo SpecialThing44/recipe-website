@@ -25,12 +25,16 @@ class DefaultWikipediaCheck extends WikipediaCheck {
   override def validateWikiLink(link: String): ZIO[Any, Throwable, Unit] = {
     val processedLink = processWikiLink(link)
     val wellFormedLink = wikiLinkIsWellFormed(processedLink)
-    val realLink = wikiLinkIsReal(processedLink)
-    (wellFormedLink, realLink) match {
-      case (false, _) => ZIO.fail(InputError("Link is not well formed"))
-      case (_, false) =>
-        ZIO.fail(InputError("Link does not reach a real wiki page"))
-      case _ => ZIO.unit
+    
+    if (!wellFormedLink) {
+      ZIO.fail(InputError("Link is not well formed"))
+    } else {
+      ZIO.attempt {
+        wikiLinkIsReal(processedLink)
+      }.flatMap {
+        case true => ZIO.unit
+        case false => ZIO.fail(InputError("Link does not reach a real wiki page"))
+      }
     }
   }
 
@@ -40,7 +44,11 @@ class DefaultWikipediaCheck extends WikipediaCheck {
     link.contains("en.wikipedia.org/wiki/")
 
   private def wikiLinkIsReal(link: String): Boolean = {
-    val response = basicRequest.head(uri"$link").send(backend)
+    val response = basicRequest
+      .head(uri"$link")
+      .header("User-Agent", "RecipeWebsite/1.0 (wiki validation for new ingredients)")
+      .followRedirects(true)
+      .send(backend)
     response.code match {
       case StatusCode.Ok => true
       case _             => false

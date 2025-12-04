@@ -39,6 +39,21 @@ trait IntegrationUserSupport {
     user
   }
 
+  protected def createTestAdminUser(userInput: UserInput): User = {
+    val user = createTestUser(userInput)
+    makeUserAdmin(user.id)
+  }
+
+  protected def makeUserAdmin(userId: UUID): User = {
+    Unsafe.unsafe { implicit unsafe =>
+      Runtime.default.unsafe
+        .run(
+          userFacade.makeAdmin(userId).provideLayer(createApiContext())
+        )
+        .getOrThrow()
+    }
+  }
+
   protected def login(userId: UUID): User = {
     val user = Unsafe.unsafe { implicit unsafe =>
       Runtime.default.unsafe

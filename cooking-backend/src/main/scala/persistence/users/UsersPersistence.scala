@@ -144,4 +144,23 @@ class UsersPersistence @Inject() (database: Database) extends Users {
       (_: Result) => ()
     )
   } yield ()
+
+  override def makeAdmin(userId: UUID): ZIO[ApiContext, Throwable, User] =
+    database.writeTransaction(
+      s"""
+         |${MatchByIdStatement.apply(userId)}
+         |SET user.admin = true
+         |SET user.updatedOn = "${Instant.now.toString}"
+         |${ReturnStatement.apply}
+         |""".stripMargin,
+      (result: Result) => {
+        if (result.hasNext) {
+          recordToUser(result.next())
+        } else {
+          throw NoSuchEntityError(
+            s"User with id $userId not found"
+          )
+        }
+      }
+    )
 }

@@ -13,7 +13,7 @@ class BelongsToIntegrationTest extends IntegrationTestFramework {
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    user1 = createTestUser(standardUserInput)
+    user1 = createTestAdminUser(standardUserInput)
     login(user1.id)
     tomato = createTestIngredient(IngredientInput(
       name = "Tomato",
@@ -38,7 +38,7 @@ class BelongsToIntegrationTest extends IntegrationTestFramework {
       countryOfOrigin = None,
       public = public,
       wikiLink = None,
-      instructions = "inst"
+      instructions = quillDelta("inst")
     )
   }
 
@@ -57,7 +57,7 @@ class BelongsToIntegrationTest extends IntegrationTestFramework {
     resultsForA.map(_.id).toSet should contain allOf (i1.id, i2.id)
 
     logout()
-    user2 = createTestUser(standardUserInput.copy(email = "other@example.com", name = "Other"))
+    user2 = createTestAdminUser(standardUserInput.copy(email = "other@example.com", name = "Other"))
     login(user2.id)
     val i3 = createTestIngredient(IngredientInput(
       name = "Chicken",
@@ -77,7 +77,7 @@ class BelongsToIntegrationTest extends IntegrationTestFramework {
     val recipePrivate1 = createTestRecipe(recipeInputWith(Seq(tomato), public = false, name = "A Private"))
 
     logout()
-    user2 = createTestUser(standardUserInput.copy(email = "b@example.com", name = "B User"))
+    user2 = createTestAdminUser(standardUserInput.copy(email = "b@example.com", name = "B User"))
     login(user2.id)
     val recipePublic2 = createTestRecipe(recipeInputWith(Seq(tomato), public = true, name = "B Public"))
     val recipePrivate2 = createTestRecipe(recipeInputWith(Seq(tomato), public = false, name = "B Private"))

@@ -18,6 +18,7 @@ class IngredientCreateInteractor @Inject() (
     for {
       maybeUser <- ZIO.service[ApiContext].map(_.applicationContext.user)
       user <- AuthenticationInteractor.ensureIsLoggedIn(maybeUser)
+      _ <- AuthenticationInteractor.ensureIsAdmin(user)
       _ <- wikipediaCheck.validateWikiLink(input.wikiLink)
       ingredient = IngredientAdapter.adapt(input, user)
       result <- persistence.create(ingredient)

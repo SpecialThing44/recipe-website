@@ -9,17 +9,18 @@ object StringFilterConverter extends Cypher[StringFilter] {
       property: String,
       nodeVar: String
   ): String = {
+    val sanitized = filter.sanitize
 
     val equalsClause =
-      filter.equals.map(value => s"$nodeVar.$property = '$value'")
+      sanitized.equals.map(value => s"$nodeVar.$property = '$value'")
     val anyOfClause =
-      filter.anyOf.map(values => s"$nodeVar.$property IN ${values.asJson}")
+      sanitized.anyOf.map(values => s"$nodeVar.$property IN ${values.asJson}")
     val containsClause =
-      filter.contains.map(value => s"$nodeVar.$property CONTAINS '$value'")
+      sanitized.contains.map(value => s"$nodeVar.$property CONTAINS '$value'")
     val startsWithClause =
-      filter.startsWith.map(value => s"$nodeVar.$property STARTS WITH '$value'")
+      sanitized.startsWith.map(value => s"$nodeVar.$property STARTS WITH '$value'")
     val endsWithClause =
-      filter.endsWith.map(value => s"$nodeVar.$property ENDS WITH '$value'")
+      sanitized.endsWith.map(value => s"$nodeVar.$property ENDS WITH '$value'")
     Seq(
       equalsClause,
       anyOfClause,
