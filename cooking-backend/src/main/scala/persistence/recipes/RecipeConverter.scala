@@ -1,7 +1,7 @@
 package persistence.recipes
 
 import domain.ingredients.{InstructionIngredient, Quantity, Unit}
-import domain.recipes.{Recipe, ImageUrls}
+import domain.recipes.{ImageUrls, Recipe}
 import persistence.Converter
 import persistence.ingredients.IngredientConverter
 import persistence.users.UserConverter
@@ -67,27 +67,32 @@ object RecipeConverter extends Converter[Recipe] {
         val ingAny = iq.get("ingredient")
         val ingMap = ingAny match {
           case m: util.Map[String, AnyRef] => m
-          case _ => new util.HashMap[String, AnyRef]()
+          case _                           => new util.HashMap[String, AnyRef]()
         }
         val ingredient = IngredientConverter.toDomain(ingMap)
         val amountAny = iq.get("amount")
         val amount = amountAny match {
           case n: Number => n.intValue()
-          case _ => amountAny.toString.toInt
+          case _         => amountAny.toString.toInt
         }
         val unitName = Option(iq.get("unit")).map(_.toString).getOrElse("")
         val unit = Unit(unitName, volume = false, wikiLink = "")
-        val description = Option(iq.get("description")).map(_.toString).filter(_.nonEmpty)
+        val description =
+          Option(iq.get("description")).map(_.toString).filter(_.nonEmpty)
         InstructionIngredient(ingredient, Quantity(unit, amount), description)
       }
 
-    val thumbnail = Option(record.get(imageThumbnailUrlField)).map(_.toString).filter(_.nonEmpty)
-    val medium = Option(record.get(imageMediumUrlField)).map(_.toString).filter(_.nonEmpty)
-    val large = Option(record.get(imageUrlField)).map(_.toString).filter(_.nonEmpty)
-    
+    val thumbnail = Option(record.get(imageThumbnailUrlField))
+      .map(_.toString)
+      .filter(_.nonEmpty)
+    val medium =
+      Option(record.get(imageMediumUrlField)).map(_.toString).filter(_.nonEmpty)
+    val large =
+      Option(record.get(imageUrlField)).map(_.toString).filter(_.nonEmpty)
+
     val image = (thumbnail, medium, large) match {
       case (Some(t), Some(m), Some(l)) => Some(domain.users.AvatarUrls(t, m, l))
-      case _ => None
+      case _                           => None
     }
 
     val instructionImages = Option(record.get(instructionImagesField))

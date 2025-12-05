@@ -163,4 +163,22 @@ class UsersPersistence @Inject() (database: Database) extends Users {
         }
       }
     )
+
+  override def getByIdentity(
+      identity: String
+  ): ZIO[ApiContext, Throwable, Option[User]] =
+    database.readTransaction(
+      s"""
+         |${MatchStatement.apply}
+         |WHERE ${graph.nodeVar}.identity = '$identity'
+         |${ReturnStatement.apply}
+         |""".stripMargin,
+      (result: Result) => {
+        if (result.hasNext) {
+          Some(recordToUser(result.next()))
+        } else {
+          None
+        }
+      }
+    )
 }

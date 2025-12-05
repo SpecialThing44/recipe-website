@@ -41,7 +41,7 @@ object IngredientConverter extends Converter[Ingredient] {
 
     val aliases = record.get(aliasesField) match {
       case list: java.util.List[String] => list.toSeq
-      case _ => Seq.empty
+      case _                            => Seq.empty
     }
 
     Ingredient(

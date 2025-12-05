@@ -3,16 +3,13 @@ package api.users
 import com.google.inject.Inject
 import context.ApiContext
 import domain.users.User
-import persistence.authentication.{AuthUsers, RefreshTokens}
 import persistence.users.Users
 import zio.ZIO
 
 import java.util.UUID
 
 class UserDeleteInteractor @Inject() (
-    persistence: Users,
-    authPersistence: AuthUsers,
-    refreshTokenPersistence: RefreshTokens
+    persistence: Users
 ) {
   def delete(id: UUID): ZIO[ApiContext, Throwable, User] = for {
     context <- ZIO.service[ApiContext]
@@ -21,11 +18,9 @@ class UserDeleteInteractor @Inject() (
       context.applicationContext.user,
       user.id
     )
-    _ <- authPersistence.delete(user.id)
-    _ <- refreshTokenPersistence.deleteAllForUser(user.id)
     deletedUser <- persistence.delete(id)
   } yield deletedUser
-  
+
   def deleteAll(): ZIO[ApiContext, Throwable, Unit] = for {
     _ <- persistence.deleteAll()
   } yield ()

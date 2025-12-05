@@ -22,7 +22,9 @@ class IngredientUpdateInteractor @Inject() (
   ): ZIO[ApiContext, Throwable, Ingredient] = {
     for {
       context <- ZIO.service[ApiContext]
-      user <- AuthenticationInteractor.ensureIsLoggedIn(context.applicationContext.user)
+      user <- AuthenticationInteractor.ensureIsLoggedIn(
+        context.applicationContext.user
+      )
       _ <- AuthenticationInteractor.ensureIsAdmin(user)
       _ <-
         if (

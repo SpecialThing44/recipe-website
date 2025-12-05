@@ -1,15 +1,14 @@
 package api.users
 
-import domain.authentication.TokenPair
 import com.google.inject.Inject
-import context.{ApiContext, CookingApi}
+import context.ApiContext
 import domain.filters.Filters
 import domain.users.{User, UserInput, UserUpdateInput}
 import org.apache.pekko.util.ByteString
 import persistence.users.Users
-import play.api.mvc.Request
 import zio.ZIO
 
+import java.time.Instant
 import java.util.UUID
 
 class UserFacade @Inject() (
@@ -23,8 +22,18 @@ class UserFacade @Inject() (
 
   override def create(
       entity: UserInput
-  ): ZIO[ApiContext, Throwable, User] =
-    authenticationInteractor.signup(entity)
+  ): ZIO[ApiContext, Throwable, User] = {
+    val user = User(
+      name = entity.name,
+      email = entity.email,
+      identity = UUID.randomUUID().toString,
+      countryOfOrigin = entity.countryOfOrigin,
+      createdOn = Instant.now(),
+      updatedOn = Instant.now(),
+      id = UUID.randomUUID()
+    )
+    persistence.create(user)
+  }
 
   override def update(
       entity: UserUpdateInput,
@@ -34,8 +43,9 @@ class UserFacade @Inject() (
 
   override def delete(id: UUID): ZIO[ApiContext, Throwable, User] =
     deleteInteractor.delete(id)
-    
-  override def deleteAll(): ZIO[ApiContext, Throwable, Unit] = deleteInteractor.deleteAll()
+
+  override def deleteAll(): ZIO[ApiContext, Throwable, Unit] =
+    deleteInteractor.deleteAll()
 
   override def list(filters: Filters): ZIO[ApiContext, Throwable, Seq[User]] =
     fetchInteractor.list(filters)
@@ -47,28 +57,6 @@ class UserFacade @Inject() (
       bearerToken: Option[String]
   ): ZIO[ApiContext, Throwable, Option[User]] =
     authenticationInteractor.getMaybeUser(bearerToken)
-
-  override def logout(
-      request: Request[?]
-  ): ZIO[ApiContext, Throwable, Boolean] = {
-    authenticationInteractor.logout(request)
-  }
-
-  override def login(
-      email: String,
-      password: String,
-  ): ZIO[ApiContext, Throwable, Option[TokenPair]] =
-    authenticationInteractor.login(email, password)
-
-  override def signup(
-      user: UserInput,
-  ): ZIO[ApiContext, Throwable, TokenPair] =
-    authenticationInteractor.signupAndLogin(user)
-
-  override def refresh(
-      refreshToken: String
-  ): ZIO[ApiContext, Throwable, Option[TokenPair]] =
-    authenticationInteractor.refreshAccessToken(refreshToken)
 
   override def uploadAvatar(
       userId: UUID,

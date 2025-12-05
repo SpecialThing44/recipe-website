@@ -11,6 +11,8 @@ final case class SimilarityFilter(
 )
 
 object SimilarityFilter {
-  implicit val encoder: Encoder[SimilarityFilter] = deriveEncoder[SimilarityFilter]
-  implicit val decoder: Decoder[SimilarityFilter] = deriveDecoder[SimilarityFilter]
+  implicit val encoder: Encoder[SimilarityFilter] =
+    deriveEncoder[SimilarityFilter]
+  implicit val decoder: Decoder[SimilarityFilter] =
+    deriveDecoder[SimilarityFilter]
 }

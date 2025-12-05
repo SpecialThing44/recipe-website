@@ -25,7 +25,8 @@ case class Recipe(
     public: Boolean,
     wikiLink: Option[String],
     instructions: String, // Quill Delta JSON format
-    instructionImages: Seq[String] = Seq.empty, // URLs of images embedded in instructions
+    instructionImages: Seq[String] =
+      Seq.empty, // URLs of images embedded in instructions
     image: Option[ImageUrls] = None,
     createdOn: Instant,
     updatedOn: Instant,
@@ -73,6 +74,8 @@ object RecipeInput {
 }
 
 object RecipeUpdateInput {
-  implicit val encoder: Encoder[RecipeUpdateInput] = deriveEncoder[RecipeUpdateInput]
-  implicit val decoder: Decoder[RecipeUpdateInput] = deriveDecoder[RecipeUpdateInput]
+  implicit val encoder: Encoder[RecipeUpdateInput] =
+    deriveEncoder[RecipeUpdateInput]
+  implicit val decoder: Decoder[RecipeUpdateInput] =
+    deriveDecoder[RecipeUpdateInput]
 }

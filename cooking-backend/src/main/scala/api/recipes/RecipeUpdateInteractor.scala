@@ -4,11 +4,11 @@ import api.users.AuthenticationInteractor
 import api.wiki.WikipediaCheck
 import com.google.inject.Inject
 import context.ApiContext
+import domain.ingredients.Unit
 import domain.recipes.{Recipe, RecipeUpdateInput}
 import persistence.ingredients.Ingredients
-import zio.ZIO
 import persistence.recipes.Recipes
-import domain.ingredients.Unit
+import zio.ZIO
 
 class RecipeUpdateInteractor @Inject() (
     persistence: Recipes,
@@ -26,19 +26,19 @@ class RecipeUpdateInteractor @Inject() (
         context.applicationContext.user,
         originalRecipe.createdBy.id
       )
-      
+
       // Validate and sanitize instructions if updated
       sanitizedInstructions <- input.instructions match {
-        case Some(instructions) => 
+        case Some(instructions) =>
           richTextSanitizer.validateAndSanitize(instructions).map(Some(_))
         case None => ZIO.succeed(None)
       }
       extractedImageUrls <- sanitizedInstructions match {
-        case Some(instructions) => 
+        case Some(instructions) =>
           richTextSanitizer.extractImageUrls(instructions).map(Some(_))
         case None => ZIO.succeed(None)
       }
-      
+
       _ <-
         if (input.wikiLink.isDefined)
           wikipediaCheck.validateWikiLink(input.wikiLink.get)
@@ -48,7 +48,9 @@ class RecipeUpdateInteractor @Inject() (
           zio.ZIO
             .foreach(list) { instructionIngredient =>
               for {
-                ingredient <- ingredientPersistence.getById(instructionIngredient.ingredientId)
+                ingredient <- ingredientPersistence.getById(
+                  instructionIngredient.ingredientId
+                )
               } yield domain.ingredients.InstructionIngredient(
                 ingredient,
                 instructionIngredient.quantity,
@@ -83,16 +85,27 @@ class RecipeUpdateInteractor @Inject() (
       }
       _ <- {
         val ingredientsToCheck = resolved.getOrElse(originalRecipe.ingredients)
-        val anyNonPredefinedUnit = ingredientsToCheck.exists(instructionIngredient => !Unit.isPredefined(instructionIngredient.quantity.unit))
+        val anyNonPredefinedUnit =
+          ingredientsToCheck.exists(instructionIngredient =>
+            !Unit.isPredefined(instructionIngredient.quantity.unit)
+          )
         if (anyNonPredefinedUnit)
-          ZIO.fail(domain.types.InputError("Recipe includes ingredient(s) with non-predefined unit"))
+          ZIO.fail(
+            domain.types.InputError(
+              "Recipe includes ingredient(s) with non-predefined unit"
+            )
+          )
         else ZIO.unit
       }
       inputWithSanitized = input.copy(
         instructions = sanitizedInstructions.orElse(input.instructions),
         instructionImages = extractedImageUrls.orElse(input.instructionImages)
       )
-      updated = RecipeAdapter.adaptUpdate(inputWithSanitized, originalRecipe, resolved)
+      updated = RecipeAdapter.adaptUpdate(
+        inputWithSanitized,
+        originalRecipe,
+        resolved
+      )
       result <- persistence.update(updated, originalRecipe)
     } yield result
   }

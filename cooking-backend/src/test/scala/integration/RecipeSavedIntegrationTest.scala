@@ -1,7 +1,7 @@
 package integration
 
 import domain.filters.Filters
-import domain.ingredients.{Ingredient, IngredientInput, Quantity, Unit => IngUnit}
+import domain.ingredients.{Ingredient, IngredientInput, Quantity, Unit as IngUnit}
 import domain.recipes.{Recipe, RecipeIngredientInput, RecipeInput}
 import domain.users.{User, UserInput}
 
@@ -13,28 +13,40 @@ class RecipeSavedIntegrationTest extends IntegrationTestFramework {
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    creator = createTestAdminUser(standardUserInput.copy(email = "creator@example.com"))
+    creator = createTestAdminUser(
+      standardUserInput.copy(email = "creator@example.com")
+    )
     login(creator.id)
-    tomato = createTestIngredient(IngredientInput(
-      name = "Tomato",
-      aliases = Seq("tomato", "tomatoes"),
-      wikiLink = "https://en.wikipedia.org/wiki/Tomato",
-      vegetarian = true,
-      vegan = true,
-      tags = Seq("vegetable", "fruit")
-    ))
-    onion = createTestIngredient(IngredientInput(
-      name = "Onion",
-      aliases = Seq("onion", "onions"),
-      wikiLink = "https://en.wikipedia.org/wiki/Onion",
-      vegetarian = true,
-      vegan = true,
-      tags = Seq("vegetable")
-    ))
+    tomato = createTestIngredient(
+      IngredientInput(
+        name = "Tomato",
+        aliases = Seq("tomato", "tomatoes"),
+        wikiLink = "https://en.wikipedia.org/wiki/Tomato",
+        vegetarian = true,
+        vegan = true,
+        tags = Seq("vegetable", "fruit")
+      )
+    )
+    onion = createTestIngredient(
+      IngredientInput(
+        name = "Onion",
+        aliases = Seq("onion", "onions"),
+        wikiLink = "https://en.wikipedia.org/wiki/Onion",
+        vegetarian = true,
+        vegan = true,
+        tags = Seq("vegetable")
+      )
+    )
   }
 
-  private def buildRecipeInput(ingredients: Seq[Ingredient], public: Boolean = true, name: String = "Saved Test Recipe"): RecipeInput = {
-    val ingredientInputs = ingredients.map(i => RecipeIngredientInput(i.id, Quantity(IngUnit("Piece", false, ""), 1)))
+  private def buildRecipeInput(
+      ingredients: Seq[Ingredient],
+      public: Boolean = true,
+      name: String = "Saved Test Recipe"
+  ): RecipeInput = {
+    val ingredientInputs = ingredients.map(i =>
+      RecipeIngredientInput(i.id, Quantity(IngUnit("Piece", false, ""), 1))
+    )
     RecipeInput(
       name = name,
       tags = Seq("quick", "easy"),
@@ -51,9 +63,11 @@ class RecipeSavedIntegrationTest extends IntegrationTestFramework {
   }
 
   it should "save a recipe and fetch it using savedByUser filter" in {
-    val recipe = createTestRecipe(buildRecipeInput(Seq(tomato, onion), public = true))
+    val recipe =
+      createTestRecipe(buildRecipeInput(Seq(tomato, onion), public = true))
 
-    saver = createTestUser(UserInput(name = "Saver", email = "saver@example.com", password = "pw"))
+    saver =
+      createTestUser(UserInput(name = "Saver", email = "saver@example.com"))
     login(saver.id)
 
     val saved = saveRecipe(recipe.id)
@@ -68,9 +82,12 @@ class RecipeSavedIntegrationTest extends IntegrationTestFramework {
   }
 
   it should "not allow saving private recipes and should return an error" in {
-    val privateRecipe = createTestRecipe(buildRecipeInput(Seq(tomato), public = false, name = "Private Recipe"))
+    val privateRecipe = createTestRecipe(
+      buildRecipeInput(Seq(tomato), public = false, name = "Private Recipe")
+    )
 
-    saver = createTestUser(UserInput(name = "Saver2", email = "saver2@example.com", password = "pw"))
+    saver =
+      createTestUser(UserInput(name = "Saver2", email = "saver2@example.com"))
     login(saver.id)
 
     val failed = scala.util.Try(saveRecipe(privateRecipe.id))

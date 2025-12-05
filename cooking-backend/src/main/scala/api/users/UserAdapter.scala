@@ -11,6 +11,7 @@ object UserAdapter {
     User(
       user.name,
       user.email,
+      UUID.randomUUID().toString,
       user.countryOfOrigin,
       None,
       false, // admin defaults to false for new users
@@ -25,6 +26,7 @@ object UserAdapter {
     User(
       user.name.getOrElse(existingUser.name),
       user.email.getOrElse(existingUser.email),
+      existingUser.identity,
       if (user.countryOfOrigin.isDefined) user.countryOfOrigin
       else existingUser.countryOfOrigin,
       if (user.avatar.isDefined) user.avatar

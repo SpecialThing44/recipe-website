@@ -5,10 +5,12 @@ import context.ApiContext
 import domain.users.User
 import persistence.{DbPersisting, DbQuerying}
 import zio.ZIO
+
 import java.util.UUID
 
 @ImplementedBy(classOf[UsersPersistence])
 trait Users extends DbPersisting[User] with DbQuerying[User] {
   def deleteAll(): ZIO[ApiContext, Throwable, Unit]
   def makeAdmin(userId: UUID): ZIO[ApiContext, Throwable, User]
+  def getByIdentity(identity: String): ZIO[ApiContext, Throwable, Option[User]]
 }

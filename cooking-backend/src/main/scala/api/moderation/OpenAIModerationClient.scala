@@ -57,23 +57,28 @@ case class ModerationViolation(
 )
 
 object ModerationRequest {
-  implicit val encoder: Encoder[ModerationRequest] = deriveEncoder[ModerationRequest]
+  implicit val encoder: Encoder[ModerationRequest] =
+    deriveEncoder[ModerationRequest]
 }
 
 object ModerationCategory {
-  implicit val decoder: Decoder[ModerationCategory] = deriveDecoder[ModerationCategory]
+  implicit val decoder: Decoder[ModerationCategory] =
+    deriveDecoder[ModerationCategory]
 }
 
 object ModerationCategoryScores {
-  implicit val decoder: Decoder[ModerationCategoryScores] = deriveDecoder[ModerationCategoryScores]
+  implicit val decoder: Decoder[ModerationCategoryScores] =
+    deriveDecoder[ModerationCategoryScores]
 }
 
 object ModerationResult {
-  implicit val decoder: Decoder[ModerationResult] = deriveDecoder[ModerationResult]
+  implicit val decoder: Decoder[ModerationResult] =
+    deriveDecoder[ModerationResult]
 }
 
 object ModerationResponse {
-  implicit val decoder: Decoder[ModerationResponse] = deriveDecoder[ModerationResponse]
+  implicit val decoder: Decoder[ModerationResponse] =
+    deriveDecoder[ModerationResponse]
 }
 
 @Singleton
@@ -83,48 +88,55 @@ class OpenAIModerationClient @Inject() (config: Configuration) {
   private val apiUrl = "https://api.openai.com/v1/moderations"
   private val backend = HttpClientSyncBackend()
 
-  /**
-   * Moderates text content using OpenAI's moderation API.
-   * Returns None if content is acceptable, or Some(ModerationViolation) if flagged.
-   */
-  def moderateText(text: String): Task[Option[ModerationViolation]] = ZIO.attempt {
-    if (skipModeration || text.trim.isEmpty) {
-      None
-    } else {
-      val requestBody = ModerationRequest(text).asJson.noSpaces
+  /** Moderates text content using OpenAI's moderation API. Returns None if
+    * content is acceptable, or Some(ModerationViolation) if flagged.
+    */
+  def moderateText(text: String): Task[Option[ModerationViolation]] =
+    ZIO.attempt {
+      if (skipModeration || text.trim.isEmpty) {
+        None
+      } else {
+        val requestBody = ModerationRequest(text).asJson.noSpaces
 
-      val response = basicRequest
-        .post(uri"$apiUrl")
-        .header("Authorization", s"Bearer $apiKey")
-        .header("Content-Type", "application/json")
-        .body(requestBody)
-        .response(asString)
-        .send(backend)
+        val response = basicRequest
+          .post(uri"$apiUrl")
+          .header("Authorization", s"Bearer $apiKey")
+          .header("Content-Type", "application/json")
+          .body(requestBody)
+          .response(asString)
+          .send(backend)
 
-      response.body match {
-        case Right(body) =>
-          decode[ModerationResponse](body) match {
-            case Right(moderationResponse) =>
-              moderationResponse.results.headOption match {
-                case Some(result) if result.flagged =>
-                  val flaggedCategories = extractFlaggedCategories(result.categories)
-                  Some(ModerationViolation(
-                    message = buildViolationMessage(flaggedCategories),
-                    categories = flaggedCategories
-                  ))
-                case _ =>
-                  None
-              }
-            case Left(error) =>
-              throw new Exception(s"Failed to parse moderation response: ${error.getMessage}")
-          }
-        case Left(error) =>
-          throw new Exception(s"Moderation API request failed: $error")
+        response.body match {
+          case Right(body) =>
+            decode[ModerationResponse](body) match {
+              case Right(moderationResponse) =>
+                moderationResponse.results.headOption match {
+                  case Some(result) if result.flagged =>
+                    val flaggedCategories =
+                      extractFlaggedCategories(result.categories)
+                    Some(
+                      ModerationViolation(
+                        message = buildViolationMessage(flaggedCategories),
+                        categories = flaggedCategories
+                      )
+                    )
+                  case _ =>
+                    None
+                }
+              case Left(error) =>
+                throw new Exception(
+                  s"Failed to parse moderation response: ${error.getMessage}"
+                )
+            }
+          case Left(error) =>
+            throw new Exception(s"Moderation API request failed: $error")
+        }
       }
     }
-  }
 
-  private def extractFlaggedCategories(categories: ModerationCategory): List[String] = {
+  private def extractFlaggedCategories(
+      categories: ModerationCategory
+  ): List[String] = {
     val categoryMap = Map(
       "hate" -> categories.hate,
       "hate/threatening" -> categories.`hate/threatening`,
@@ -158,7 +170,7 @@ class OpenAIModerationClient @Inject() (config: Configuration) {
     )
 
     val descriptions = categories.flatMap(cat => categoryDescriptions.get(cat))
-    
+
     if (descriptions.isEmpty) {
       "Content violates our community guidelines"
     } else if (descriptions.length == 1) {

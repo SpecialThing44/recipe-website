@@ -16,6 +16,7 @@ case class AvatarUrls(
 case class User(
     name: String,
     email: String,
+    identity: String,
     countryOfOrigin: Option[String] = None,
     avatar: Option[AvatarUrls] = None,
     admin: Boolean = false,
@@ -27,7 +28,6 @@ case class User(
 case class UserInput(
     name: String,
     email: String,
-    password: String = "",
     countryOfOrigin: Option[String] = None,
 )
 
@@ -51,7 +51,7 @@ object User {
 
   def empty(): User = {
     val now = Instant.now
-    User("", "", None, None, false, now, now, UUID.randomUUID())
+    User("", "", "", None, None, false, now, now, UUID.randomUUID())
   }
 }
 

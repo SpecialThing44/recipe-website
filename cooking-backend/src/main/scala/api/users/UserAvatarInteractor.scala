@@ -1,6 +1,6 @@
 package api.users
 
-import api.storage.{SeaweedFSClient, ImageProcessor, StorageAvatarUrls}
+import api.storage.{ImageProcessor, SeaweedFSClient, StorageAvatarUrls}
 import com.google.inject.Inject
 import context.ApiContext
 import domain.users.{User, UserUpdateInput}
@@ -38,13 +38,15 @@ class UserAvatarInteractor @Inject() (
       case Some(avatar) =>
         // Extract extension from old URL or default to jpg
         val extension = avatar.large.split("\\.").lastOption.getOrElse("jpg")
-        seaweedFSClient.deleteAllAvatarSizes(userId, extension).catchAll(_ => ZIO.unit)
+        seaweedFSClient
+          .deleteAllAvatarSizes(userId, extension)
+          .catchAll(_ => ZIO.unit)
       case None => ZIO.unit
     }
 
     // Process the image into three sizes
     processedImage <- ImageProcessor.processImage(fileBytes, contentType)
-    
+
     // Upload all three sizes
     seaweedUrls <- seaweedFSClient.uploadAvatar(processedImage, userId)
 

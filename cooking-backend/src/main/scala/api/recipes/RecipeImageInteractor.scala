@@ -1,6 +1,6 @@
 package api.recipes
 
-import api.storage.{SeaweedFSClient, ImageProcessor, StorageAvatarUrls}
+import api.storage.{ImageProcessor, SeaweedFSClient}
 import api.users.AuthenticationInteractor
 import com.google.inject.Inject
 import context.ApiContext
@@ -24,8 +24,10 @@ class RecipeImageInteractor @Inject() (
   ): ZIO[ApiContext, Throwable, Recipe] = for {
     context <- ZIO.service[ApiContext]
     recipe <- persistence.getById(recipeId)
-    
-    user <- AuthenticationInteractor.ensureIsLoggedIn(context.applicationContext.user)
+
+    user <- AuthenticationInteractor.ensureIsLoggedIn(
+      context.applicationContext.user
+    )
     _ <- AuthenticationInteractor.ensureAuthenticatedAndMatchingUser(
       Some(user),
       recipe.createdBy.id
@@ -34,7 +36,9 @@ class RecipeImageInteractor @Inject() (
     _ <- recipe.image match {
       case Some(image) =>
         val extension = image.large.split("\\.").lastOption.getOrElse("jpg")
-        seaweedFSClient.deleteAllImageSizes(recipeId, extension).catchAll(_ => ZIO.unit)
+        seaweedFSClient
+          .deleteAllImageSizes(recipeId, extension)
+          .catchAll(_ => ZIO.unit)
       case None => ZIO.unit
     }
 
@@ -55,7 +59,9 @@ class RecipeImageInteractor @Inject() (
     context <- ZIO.service[ApiContext]
     recipe <- persistence.getById(recipeId)
 
-    user <- AuthenticationInteractor.ensureIsLoggedIn(context.applicationContext.user)
+    user <- AuthenticationInteractor.ensureIsLoggedIn(
+      context.applicationContext.user
+    )
     _ <- AuthenticationInteractor.ensureAuthenticatedAndMatchingUser(
       Some(user),
       recipe.createdBy.id

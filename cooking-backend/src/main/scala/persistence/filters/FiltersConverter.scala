@@ -10,7 +10,9 @@ object FiltersConverter {
   def getOrderLine(filters: Filters, nodeVar: String): String = {
     if (similarityActive(filters)) {
       "ORDER BY score DESC"
-    } else if (filters.orderBy.isDefined && filters.orderBy.get.name.isDefined) {
+    } else if (
+      filters.orderBy.isDefined && filters.orderBy.get.name.isDefined
+    ) {
       s"ORDER BY $nodeVar.name"
     } else {
       ""

@@ -6,11 +6,13 @@ import domain.users.{User, UserInput}
 import zio.{Runtime, Unsafe, ZLayer}
 
 import java.util.UUID
-import scala.language.implicitConversions
-import scala.language.strictEquality
+import scala.language.{implicitConversions, strictEquality}
 
 class IngredientsIntegrationTest extends IntegrationTestFramework {
-  def ingredientsMatch(ingredient1: Ingredient, ingredient2: Ingredient): Unit = {
+  def ingredientsMatch(
+      ingredient1: Ingredient,
+      ingredient2: Ingredient
+  ): Unit = {
     ingredient1.id shouldBe ingredient2.id
     ingredient1.name shouldBe ingredient2.name
     ingredient1.aliases shouldBe ingredient2.aliases
@@ -21,7 +23,10 @@ class IngredientsIntegrationTest extends IntegrationTestFramework {
     ingredient1.createdBy.id shouldBe ingredient2.createdBy.id
   }
 
-  def ingredientInputsMatch(ingredientInput: IngredientInput, ingredient: Ingredient): Unit = {
+  def ingredientInputsMatch(
+      ingredientInput: IngredientInput,
+      ingredient: Ingredient
+  ): Unit = {
     ingredient.name shouldBe ingredientInput.name
     ingredient.aliases shouldBe ingredientInput.aliases
     ingredient.wikiLink shouldBe ingredientInput.wikiLink.toLowerCase
@@ -30,13 +35,24 @@ class IngredientsIntegrationTest extends IntegrationTestFramework {
     ingredient.tags.toSet shouldBe ingredientInput.tags.toSet
   }
 
-  def ingredientUpdatesMatch(ingredientUpdateInput: IngredientUpdateInput, ingredient: Ingredient): Unit = {
+  def ingredientUpdatesMatch(
+      ingredientUpdateInput: IngredientUpdateInput,
+      ingredient: Ingredient
+  ): Unit = {
     ingredientUpdateInput.name.map(name => ingredient.name shouldBe name)
-    ingredientUpdateInput.aliases.map(aliases => ingredient.aliases shouldBe aliases)
-    ingredientUpdateInput.wikiLink.map(wikiLink => ingredient.wikiLink shouldBe wikiLink.toLowerCase)
-    ingredientUpdateInput.vegetarian.map(vegetarian => ingredient.vegetarian shouldBe vegetarian)
+    ingredientUpdateInput.aliases.map(aliases =>
+      ingredient.aliases shouldBe aliases
+    )
+    ingredientUpdateInput.wikiLink.map(wikiLink =>
+      ingredient.wikiLink shouldBe wikiLink.toLowerCase
+    )
+    ingredientUpdateInput.vegetarian.map(vegetarian =>
+      ingredient.vegetarian shouldBe vegetarian
+    )
     ingredientUpdateInput.vegan.map(vegan => ingredient.vegan shouldBe vegan)
-    ingredientUpdateInput.tags.map(tags => ingredient.tags.toSet shouldBe tags.toSet)
+    ingredientUpdateInput.tags.map(tags =>
+      ingredient.tags.toSet shouldBe tags.toSet
+    )
   }
   val standardIngredientInput = IngredientInput(
     name = "Test Ingredient",

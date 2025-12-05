@@ -29,7 +29,10 @@ class IngredientsPersistence @Inject() (database: Database)
          |${FiltersConverter.toCypher(query, graph.nodeVar)}
          |${MatchRelationship.outgoing("CREATED_BY", "user", "User")}
          |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
-         |${FiltersConverter.getWithScoreLine(query, withLine)}, user, collect(DISTINCT tag.name) as tags
+         |${FiltersConverter.getWithScoreLine(
+          query,
+          withLine
+        )}, user, collect(DISTINCT tag.name) as tags
          |$orderLine
          |${query.limitAndSkipStatement}
          |${ReturnStatement.apply}, user as createdBy, tags
@@ -62,7 +65,14 @@ class IngredientsPersistence @Inject() (database: Database)
     val properties = IngredientConverter
       .convert(entity)
 
-    val createTagStatements = graph.createTagStatementsFor(graph.nodeVar, graph.tagRelation, graph.tagLabel, entity.tags, includeWithUser = true, useAliasSuffix = false)
+    val createTagStatements = graph.createTagStatementsFor(
+      graph.nodeVar,
+      graph.tagRelation,
+      graph.tagLabel,
+      entity.tags,
+      includeWithUser = true,
+      useAliasSuffix = false
+    )
     for {
       dbResult <- database.writeTransaction(
         s"""
@@ -98,7 +108,14 @@ class IngredientsPersistence @Inject() (database: Database)
     val properties = IngredientConverter
       .convertForUpdate(graph.nodeVar, entity)
 
-    val createTagStatements = graph.createTagStatementsFor(graph.nodeVar, graph.tagRelation, graph.tagLabel, entity.tags, includeWithUser = false, useAliasSuffix = true)
+    val createTagStatements = graph.createTagStatementsFor(
+      graph.nodeVar,
+      graph.tagRelation,
+      graph.tagLabel,
+      entity.tags,
+      includeWithUser = false,
+      useAliasSuffix = true
+    )
 
     database.writeTransaction(
       s"""

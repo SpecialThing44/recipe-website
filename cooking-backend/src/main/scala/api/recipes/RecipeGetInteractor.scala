@@ -17,7 +17,9 @@ class RecipeGetInteractor @Inject() (
       context <- ZIO.service[ApiContext]
       recipe <- persistence.getById(id)
       _ <- {
-        val isOwner = context.applicationContext.user.exists(u => u.id == recipe.createdBy.id)
+        val isOwner = context.applicationContext.user.exists(u =>
+          u.id == recipe.createdBy.id
+        )
         if (recipe.public || isOwner) ZIO.unit
         else ZIO.fail(NotFoundError(s"Recipe with id $id not found"))
       }

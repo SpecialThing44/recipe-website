@@ -1,18 +1,8 @@
 package integration
 
 import domain.filters.{Filters, StringFilter}
-import domain.ingredients.{
-  Ingredient,
-  IngredientInput,
-  Quantity,
-  Unit => IngUnit
-}
-import domain.recipes.{
-  Recipe,
-  RecipeInput,
-  RecipeIngredientInput,
-  RecipeUpdateInput
-}
+import domain.ingredients.{Ingredient, IngredientInput, Quantity, Unit as IngUnit}
+import domain.recipes.{Recipe, RecipeIngredientInput, RecipeInput, RecipeUpdateInput}
 import domain.users.User
 
 class RecipeIntegrationTest extends IntegrationTestFramework {
@@ -128,7 +118,10 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
     updated.wikiLink.map(_.toLowerCase()) shouldBe Some(
       "https://en.wikipedia.org/wiki/soup"
     )
-    updated.instructions shouldBe quillDelta("Chop and cook").replace("\\n", "\n")
+    updated.instructions shouldBe quillDelta("Chop and cook").replace(
+      "\\n",
+      "\n"
+    )
     updated.ingredients.head.description shouldBe Some("about one onion")
 
     val fetched = getRecipeById(created.id)
@@ -169,15 +162,25 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
 
   it should "ingredient similarity filter returns two recipes ordered and filters out third by min score" in {
     val garlic = createTestIngredient(
-      IngredientsIntegrationTestData.onion.copy(name = "Garlic", aliases = Seq("garlic"), wikiLink = "https://en.wikipedia.org/wiki/Garlic")
+      IngredientsIntegrationTestData.onion.copy(
+        name = "Garlic",
+        aliases = Seq("garlic"),
+        wikiLink = "https://en.wikipedia.org/wiki/Garlic"
+      )
     )
     val target = createTestRecipe(
       RecipeInput(
         name = "Target",
         tags = Seq("similarity-test"),
         ingredients = Seq(
-          RecipeIngredientInput(tomato.id, Quantity(IngUnit("gram", false, ""), 100)),
-          RecipeIngredientInput(onion.id, Quantity(IngUnit("gram", false, ""), 100))
+          RecipeIngredientInput(
+            tomato.id,
+            Quantity(IngUnit("gram", false, ""), 100)
+          ),
+          RecipeIngredientInput(
+            onion.id,
+            Quantity(IngUnit("gram", false, ""), 100)
+          )
         ),
         prepTime = 5,
         cookTime = 10,
@@ -195,8 +198,14 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
         name = "High Similarity",
         tags = Seq("similarity-test"),
         ingredients = Seq(
-          RecipeIngredientInput(tomato.id, Quantity(IngUnit("gram", false, ""), 100)),
-          RecipeIngredientInput(onion.id, Quantity(IngUnit("gram", false, ""), 100))
+          RecipeIngredientInput(
+            tomato.id,
+            Quantity(IngUnit("gram", false, ""), 100)
+          ),
+          RecipeIngredientInput(
+            onion.id,
+            Quantity(IngUnit("gram", false, ""), 100)
+          )
         ),
         prepTime = 5,
         cookTime = 10,
@@ -214,7 +223,10 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
         name = "Medium Similarity",
         tags = Seq("similarity-test"),
         ingredients = Seq(
-          RecipeIngredientInput(tomato.id, Quantity(IngUnit("gram", false, ""), 100))
+          RecipeIngredientInput(
+            tomato.id,
+            Quantity(IngUnit("gram", false, ""), 100)
+          )
         ),
         prepTime = 5,
         cookTime = 10,
@@ -232,7 +244,10 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
         name = "Low Similarity",
         tags = Seq("similarity-test"),
         ingredients = Seq(
-          RecipeIngredientInput(garlic.id, Quantity(IngUnit("gram", false, ""), 100))
+          RecipeIngredientInput(
+            garlic.id,
+            Quantity(IngUnit("gram", false, ""), 100)
+          )
         ),
         prepTime = 5,
         cookTime = 10,
@@ -249,7 +264,14 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
       .empty()
       .copy(
         analyzedEntity = Some(target.id),
-        ingredientSimilarity = Some(domain.filters.SimilarityFilter(alpha = 0.0, beta = 1.0, gamma = 0.0, minScore = 0.4))
+        ingredientSimilarity = Some(
+          domain.filters.SimilarityFilter(
+            alpha = 0.0,
+            beta = 1.0,
+            gamma = 0.0,
+            minScore = 0.4
+          )
+        )
       )
 
     val results = listRecipes(filters)

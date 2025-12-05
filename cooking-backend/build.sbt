@@ -40,4 +40,9 @@ Test / scalacOptions += "-Wconf:cat=other-pure-statement&msg=org.scalatest.Asser
 coverageMinimumStmtTotal := 70
 coverageFailOnMinimum := false
 
+libraryDependencies ++= Seq(
+  "com.auth0" % "java-jwt" % "4.4.0",
+  "com.auth0" % "jwks-rsa" % "0.22.1"
+)
+
 topLevelDirectory := Some(name.value)

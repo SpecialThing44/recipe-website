@@ -118,8 +118,12 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
     val result = FiltersConverter.toCypher(filters, "n")
 
     result should (
-      include("MATCH (n)-[:HAS_INGREDIENT]->(hasIngredient:Ingredient {name: 'Tomato'})") and
-        include("MATCH (n)-[:HAS_INGREDIENT]->(hasIngredient:Ingredient {name: 'Cheese'})")
+      include(
+        "MATCH (n)-[:HAS_INGREDIENT]->(hasIngredient:Ingredient {name: 'Tomato'})"
+      ) and
+        include(
+          "MATCH (n)-[:HAS_INGREDIENT]->(hasIngredient:Ingredient {name: 'Cheese'})"
+        )
     )
   }
 
@@ -195,7 +199,8 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "return ORDER BY name when orderBy.name is true" in {
-    val filters = Filters.empty().copy(orderBy = Some(OrderBy(name = Some(true))))
+    val filters =
+      Filters.empty().copy(orderBy = Some(OrderBy(name = Some(true))))
 
     val result = FiltersConverter.getOrderLine(filters, "n")
 
@@ -203,7 +208,8 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "return ORDER BY name when orderBy.name is false" in {
-    val filters = Filters.empty().copy(orderBy = Some(OrderBy(name = Some(false))))
+    val filters =
+      Filters.empty().copy(orderBy = Some(OrderBy(name = Some(false))))
 
     val result = FiltersConverter.getOrderLine(filters, "n")
 
@@ -212,15 +218,17 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
 
   it should "prioritize score ordering over name ordering when similarity is active" in {
     val userId = UUID.randomUUID()
-    val filters = Filters.empty().copy(
-      analyzedEntity = Some(userId),
-      ingredientSimilarity = Some(domain.filters.SimilarityFilter(1.0, 0.0, 0.0, 0.0)),
-      orderBy = Some(OrderBy(name = Some(true)))
-    )
+    val filters = Filters
+      .empty()
+      .copy(
+        analyzedEntity = Some(userId),
+        ingredientSimilarity =
+          Some(domain.filters.SimilarityFilter(1.0, 0.0, 0.0, 0.0)),
+        orderBy = Some(OrderBy(name = Some(true)))
+      )
 
     val result = FiltersConverter.getOrderLine(filters, "recipe")
 
     result shouldBe "ORDER BY score DESC"
   }
 }
-
