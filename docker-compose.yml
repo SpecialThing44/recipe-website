@@ -113,7 +113,6 @@ services:
   #     - SEAWEEDFS_MASTER_URL=http://seaweedfs-master:9333
   #     - SEAWEEDFS_FILER_URL=http://seaweedfs-filer:8888
   #     - SECRET_KEY=your-secret-key-here
-  #     - PEPPER=your-pepper-here
   #   networks:
   #     - recipe-network
   #   depends_on:

@@ -11,6 +11,7 @@ import persistence.users.Users
 import play.api.Configuration
 import zio.ZIO
 
+import java.net.URL
 import java.security.interfaces.RSAPublicKey
 import java.time.Instant
 import java.util.UUID
@@ -27,7 +28,7 @@ class AuthenticationInteractor @Inject() (
   ): ZIO[ApiContext, Throwable, User] = {
     ZIO
       .attempt {
-        val jwkProvider = new UrlJwkProvider(jwksUrl)
+        val jwkProvider = new UrlJwkProvider(new URL(jwksUrl))
         val decodedToken = JWT.decode(token)
         val jwk = jwkProvider.get(decodedToken.getKeyId)
         val algorithm =
@@ -42,7 +43,7 @@ class AuthenticationInteractor @Inject() (
       .flatMap { decodedJwt =>
         val identity = decodedJwt.getSubject
         val email = decodedJwt.getClaim("email").asString()
-        val name = decodedJwt.getClaim("name").asString()
+        val name = decodedJwt.getClaim("preferred_username").asString()
         ensureUserExists(identity, email, name)
       }
   }
@@ -73,11 +74,18 @@ class AuthenticationInteractor @Inject() (
   def getMaybeUser(
       bearerToken: Option[String]
   ): ZIO[ApiContext, Throwable, Option[User]] = {
+    println("BearerToken1")
+    bearerToken.map(token => println(token))
     bearerToken match {
       case Some(token) =>
         validateAuthentikToken(token.stripPrefix("Bearer "))
           .map(Some(_))
-          .catchAll(_ => ZIO.succeed(None))
+          .catchAll(error => {
+            println("Error")
+            println(error.getMessage)
+            println(error.getStackTrace)
+            ZIO.succeed(None)
+          })
       case None => ZIO.succeed(None)
     }
   }
