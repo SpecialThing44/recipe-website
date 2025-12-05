@@ -77,7 +77,7 @@ object FiltersConverter {
     val notIngredientsClause = filters.notIngredients.map(notIngredients =>
       notIngredients
         .map(notIngredient =>
-          s"MATCH ($nodeVar) WHERE NOT ($nodeVar)-[:HAS_INGREDIENT]->(notIngredient:Ingredient {name: '$notIngredient'})"
+          s"MATCH ($nodeVar) WHERE NOT ($nodeVar)-[:HAS_INGREDIENT]->(:Ingredient {name: '$notIngredient'})"
         )
         .mkString("\n")
     )

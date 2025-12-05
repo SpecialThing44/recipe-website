@@ -8,6 +8,7 @@ import zio.ZIO
 
 class UserUpdateInteractor @Inject() (
     persistence: Users,
+    authentikClient: AuthentikClient
 ) {
   def update(
       entity: UserUpdateInput,
@@ -18,6 +19,11 @@ class UserUpdateInteractor @Inject() (
       _ <- AuthenticationInteractor.ensureAuthenticatedAndMatchingUser(
         context.applicationContext.user,
         originalEntity.id
+      )
+      _ <- authentikClient.updateUser(
+        originalEntity.name,
+        entity.email,
+        entity.name
       )
       updatedUser <- persistence.update(
         UserAdapter.adaptUpdate(entity, originalEntity),

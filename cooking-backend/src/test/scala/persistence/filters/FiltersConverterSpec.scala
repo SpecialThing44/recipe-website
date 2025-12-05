@@ -135,10 +135,10 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
 
     result should (
       include(
-        "MATCH (n) WHERE NOT (n)-[:HAS_INGREDIENT]->(notIngredient:Ingredient {name: 'Meat'})"
+        "MATCH (n) WHERE NOT (n)-[:HAS_INGREDIENT]->(:Ingredient {name: 'Meat'})"
       ) and
         include(
-          "MATCH (n) WHERE NOT (n)-[:HAS_INGREDIENT]->(notIngredient:Ingredient {name: 'Fish'})"
+          "MATCH (n) WHERE NOT (n)-[:HAS_INGREDIENT]->(:Ingredient {name: 'Fish'})"
         )
     )
   }

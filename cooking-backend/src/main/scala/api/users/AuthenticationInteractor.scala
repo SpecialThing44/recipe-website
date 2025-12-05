@@ -74,8 +74,6 @@ class AuthenticationInteractor @Inject() (
   def getMaybeUser(
       bearerToken: Option[String]
   ): ZIO[ApiContext, Throwable, Option[User]] = {
-    println("BearerToken1")
-    bearerToken.map(token => println(token))
     bearerToken match {
       case Some(token) =>
         validateAuthentikToken(token.stripPrefix("Bearer "))
