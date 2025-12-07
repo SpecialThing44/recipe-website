@@ -4,14 +4,17 @@ import api.users.AuthenticationInteractor
 import api.wiki.WikipediaCheck
 import com.google.inject.Inject
 import context.ApiContext
+import domain.filters.{Filters, StringFilter}
 import domain.ingredients.Unit
 import domain.recipes.{Recipe, RecipeUpdateInput}
 import persistence.ingredients.Ingredients
 import persistence.recipes.Recipes
+import persistence.tags.Tags
 import zio.ZIO
 
 class RecipeUpdateInteractor @Inject() (
     persistence: Recipes,
+    tagsPersistence: Tags,
     wikipediaCheck: WikipediaCheck,
     ingredientPersistence: Ingredients,
     richTextSanitizer: RichTextSanitizer
@@ -26,6 +29,34 @@ class RecipeUpdateInteractor @Inject() (
         context.applicationContext.user,
         originalRecipe.createdBy.id
       )
+
+      _ <- input.tags match {
+        case Some(tags) if tags.nonEmpty =>
+          for {
+            existingTags <- tagsPersistence.list(
+              Filters
+                .empty()
+                .copy(name =
+                  Some(StringFilter.empty().copy(anyOf = Some(tags)))
+                )
+            )
+            newTags = tags.filterNot(existingTags.contains)
+            _ <-
+              if (
+                newTags.nonEmpty && !context.applicationContext.user
+                  .exists(_.admin)
+              ) {
+                ZIO.fail(
+                  domain.types.InputError(
+                    s"Only admins can create new tags: ${newTags.mkString(", ")}"
+                  )
+                )
+              } else {
+                ZIO.unit
+              }
+          } yield ()
+        case _ => ZIO.unit
+      }
 
       // Validate and sanitize instructions if updated
       sanitizedInstructions <- input.instructions match {
@@ -59,29 +90,6 @@ class RecipeUpdateInteractor @Inject() (
             }
             .map(Some(_))
         case None => ZIO.succeed(None)
-      }
-      _ <- {
-        val targetVegetarian =
-          input.vegetarian.getOrElse(originalRecipe.vegetarian)
-        val targetVegan = input.vegan.getOrElse(originalRecipe.vegan)
-        val ingredientsToCheck = resolved.getOrElse(originalRecipe.ingredients)
-        val anyNonVegetarian = ingredientsToCheck.exists(ingredient =>
-          !ingredient.ingredient.vegetarian && !ingredient.ingredient.vegan
-        )
-        val anyNonVegan = ingredientsToCheck.exists(!_.ingredient.vegan)
-        if (targetVegan && anyNonVegan)
-          ZIO.fail(
-            domain.types.InputError(
-              "Recipe marked vegan but includes non-vegan ingredient(s)"
-            )
-          )
-        else if (targetVegetarian && anyNonVegetarian)
-          ZIO.fail(
-            domain.types.InputError(
-              "Recipe marked vegetarian but includes non-vegetarian ingredient(s)"
-            )
-          )
-        else ZIO.unit
       }
       _ <- {
         val ingredientsToCheck = resolved.getOrElse(originalRecipe.ingredients)

@@ -14,8 +14,6 @@ import scala.jdk.CollectionConverters.*
 object RecipeConverter extends Converter[Recipe] {
   val prepTimeField = "prepTime"
   val cookTimeField = "cookTime"
-  val vegetarianField = "vegetarian"
-  val veganField = "vegan"
   val countryOfOriginField = "countryOfOrigin"
   val publicField = "public"
   val instructionsField = "instructions"
@@ -31,8 +29,6 @@ object RecipeConverter extends Converter[Recipe] {
       s"${lowerPrefix}name" -> recipe.name.toLowerCase,
       prepTimeField -> Int.box(recipe.prepTime),
       cookTimeField -> Int.box(recipe.cookTime),
-      vegetarianField -> recipe.vegetarian.toString,
-      veganField -> recipe.vegan.toString,
       countryOfOriginField -> recipe.countryOfOrigin.getOrElse(""),
       publicField -> Boolean.box(recipe.public),
       wikiLinkField -> recipe.wikiLink.getOrElse(""),
@@ -72,8 +68,8 @@ object RecipeConverter extends Converter[Recipe] {
         val ingredient = IngredientConverter.toDomain(ingMap)
         val amountAny = iq.get("amount")
         val amount = amountAny match {
-          case n: Number => n.intValue()
-          case _         => amountAny.toString.toInt
+          case n: Number => n.doubleValue()
+          case _         => amountAny.toString.toDouble
         }
         val unitName = Option(iq.get("unit")).map(_.toString).getOrElse("")
         val unit = Unit(unitName, volume = false, wikiLink = "")
@@ -109,8 +105,6 @@ object RecipeConverter extends Converter[Recipe] {
       ingredients = ingredients,
       prepTime = record.get(prepTimeField).toString.toInt,
       cookTime = record.get(cookTimeField).toString.toInt,
-      vegetarian = record.get(vegetarianField).toString.toBoolean,
-      vegan = record.get(veganField).toString.toBoolean,
       countryOfOrigin =
         Option(record.get(countryOfOriginField).toString).filter(_.nonEmpty),
       public = record.get(publicField).toString.toBoolean,

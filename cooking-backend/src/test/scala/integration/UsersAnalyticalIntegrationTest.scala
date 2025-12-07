@@ -10,8 +10,6 @@ class UsersAnalyticalIntegrationTest extends IntegrationTestFramework {
     name = "Tomato",
     aliases = Seq("tomato", "tomatoes"),
     wikiLink = "https://en.wikipedia.org/wiki/Tomato",
-    vegetarian = true,
-    vegan = true,
     tags = Seq("vegetable", "fruit")
   )
 
@@ -19,8 +17,6 @@ class UsersAnalyticalIntegrationTest extends IntegrationTestFramework {
     name = "Onion",
     aliases = Seq("onion", "onions"),
     wikiLink = "https://en.wikipedia.org/wiki/Onion",
-    vegetarian = true,
-    vegan = true,
     tags = Seq("vegetable")
   )
 
@@ -28,12 +24,10 @@ class UsersAnalyticalIntegrationTest extends IntegrationTestFramework {
     name = "Garlic",
     aliases = Seq("garlic"),
     wikiLink = "https://en.wikipedia.org/wiki/Garlic",
-    vegetarian = true,
-    vegan = true,
     tags = Seq("vegetable")
   )
 
-  private def grams(value: Int): Quantity =
+  private def grams(value: Double): Quantity =
     Quantity(IngUnit("gram", false, ""), value)
 
   private def recipeInput(
@@ -48,8 +42,6 @@ class UsersAnalyticalIntegrationTest extends IntegrationTestFramework {
         ingredients.map(i => RecipeIngredientInput(i.id, grams(100))),
       prepTime = 5,
       cookTime = 10,
-      vegetarian = true,
-      vegan = true,
       countryOfOrigin = Some("USA"),
       public = true,
       wikiLink = Some("https://en.wikipedia.org/wiki/Recipe"),

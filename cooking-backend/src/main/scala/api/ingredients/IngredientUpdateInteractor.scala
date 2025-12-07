@@ -28,7 +28,7 @@ class IngredientUpdateInteractor @Inject() (
       _ <- AuthenticationInteractor.ensureIsAdmin(user)
       _ <-
         if (
-          Seq(input.name, input.wikiLink, input.vegan, input.vegetarian).exists(
+          Seq(input.name, input.wikiLink).exists(
             _.isDefined
           )
         ) validateNoRecipeLinks(originalIngredient)

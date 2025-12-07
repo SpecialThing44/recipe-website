@@ -19,8 +19,6 @@ class BelongsToIntegrationTest extends IntegrationTestFramework {
         name = "Tomato",
         aliases = Seq("tomato"),
         wikiLink = "https://en.wikipedia.org/wiki/Tomato",
-        vegetarian = true,
-        vegan = true,
         tags = Seq("vegetable")
       )
     )
@@ -40,8 +38,6 @@ class BelongsToIntegrationTest extends IntegrationTestFramework {
       ingredients = ingredientInputs,
       prepTime = 1,
       cookTime = 1,
-      vegetarian = true,
-      vegan = true,
       countryOfOrigin = None,
       public = public,
       wikiLink = None,
@@ -56,8 +52,6 @@ class BelongsToIntegrationTest extends IntegrationTestFramework {
         name = "Onion",
         aliases = Seq("onion"),
         wikiLink = "https://en.wikipedia.org/wiki/Onion",
-        vegetarian = true,
-        vegan = true,
         tags = Seq("vegetable")
       )
     )
@@ -76,8 +70,6 @@ class BelongsToIntegrationTest extends IntegrationTestFramework {
         name = "Chicken",
         aliases = Seq("chicken"),
         wikiLink = "https://en.wikipedia.org/wiki/Chicken",
-        vegetarian = false,
-        vegan = false,
         tags = Seq("meat")
       )
     )

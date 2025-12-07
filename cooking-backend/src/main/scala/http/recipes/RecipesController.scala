@@ -50,7 +50,7 @@ class RecipesController @Inject() (
   }
 
   def save(id: java.util.UUID): Action[AnyContent] = Action { request =>
-    val maybeUser = request.headers.get("Authorization")
+    val maybeUser = extractUser(request, cookingApi)
     val result = cookingApi.recipes.save(id)
     val response = result.fold(
       error => ErrorMapping.mapCustomErrorsToHttp(error),
@@ -59,7 +59,7 @@ class RecipesController @Inject() (
           s"{ \"Body\": ${play.api.libs.json.Json.parse(saved.asJson.noSpaces)} }"
         )
     )
-    ApiRunner.runResponseSafely[ApiContext](response, cookingApi, None)
+    ApiRunner.runResponseSafely[ApiContext](response, cookingApi, maybeUser)
   }
 
   def uploadImage(id: java.util.UUID): Action[AnyContent] = Action { request =>

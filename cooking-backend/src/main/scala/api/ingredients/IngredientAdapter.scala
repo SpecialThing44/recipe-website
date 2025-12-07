@@ -11,8 +11,6 @@ object IngredientAdapter {
       name = input.name,
       aliases = input.aliases,
       wikiLink = input.wikiLink,
-      vegetarian = input.vegetarian,
-      vegan = input.vegan,
       tags = input.tags,
       createdBy = createdBy,
       id = UUID.randomUUID()
@@ -27,8 +25,6 @@ object IngredientAdapter {
       name = input.name.getOrElse(original.name),
       aliases = input.aliases.getOrElse(original.aliases),
       wikiLink = input.wikiLink.getOrElse(original.wikiLink),
-      vegetarian = input.vegetarian.getOrElse(original.vegetarian),
-      vegan = input.vegan.getOrElse(original.vegan),
       tags = input.tags.getOrElse(original.tags),
       createdBy = original.createdBy,
       id = original.id

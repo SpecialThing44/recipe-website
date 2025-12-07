@@ -19,8 +19,6 @@ object RecipeAdapter {
       ingredients = resolvedIngredients,
       prepTime = recipe.prepTime,
       cookTime = recipe.cookTime,
-      vegetarian = recipe.vegetarian,
-      vegan = recipe.vegan,
       countryOfOrigin = recipe.countryOfOrigin,
       public = recipe.public,
       wikiLink = recipe.wikiLink,
@@ -46,8 +44,6 @@ object RecipeAdapter {
       ingredients = resolvedIngredients.getOrElse(original.ingredients),
       prepTime = input.prepTime.getOrElse(original.prepTime),
       cookTime = input.cookTime.getOrElse(original.cookTime),
-      vegetarian = input.vegetarian.getOrElse(original.vegetarian),
-      vegan = input.vegan.getOrElse(original.vegan),
       countryOfOrigin =
         if (input.countryOfOrigin.isDefined) input.countryOfOrigin
         else original.countryOfOrigin,

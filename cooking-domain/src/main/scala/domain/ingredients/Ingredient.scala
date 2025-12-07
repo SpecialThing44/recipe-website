@@ -11,8 +11,6 @@ case class Ingredient(
     name: String,
     aliases: Seq[String],
     wikiLink: String,
-    vegetarian: Boolean,
-    vegan: Boolean,
     tags: Seq[String],
     createdBy: User,
     id: UUID
@@ -23,8 +21,6 @@ case class IngredientInput(
     name: String,
     aliases: Seq[String],
     wikiLink: String,
-    vegetarian: Boolean,
-    vegan: Boolean,
     tags: Seq[String],
 )
 
@@ -32,8 +28,6 @@ case class IngredientUpdateInput(
     name: Option[String],
     aliases: Option[Seq[String]],
     wikiLink: Option[String],
-    vegetarian: Option[Boolean],
-    vegan: Option[Boolean],
     tags: Option[Seq[String]],
 )
 

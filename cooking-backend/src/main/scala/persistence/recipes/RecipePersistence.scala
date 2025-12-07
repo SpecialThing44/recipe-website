@@ -45,13 +45,13 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
           if (useIngredientAliasSuffix) s"ing$aliasSuffix" else "ing"
         s"""
          |MATCH ($ingredientMatch:Ingredient {id: '%s'})
-         |CREATE (${graph.nodeVar})-[:HAS_INGREDIENT {amount: %d, unit: '%s', weight: %d, normalizedWeight: %f, description: '%s'}]->($ingredientMatch)
+         |CREATE (${graph.nodeVar})-[:HAS_INGREDIENT {amount: %f, unit: '%s', weight: %f, normalizedWeight: %f, description: '%s'}]->($ingredientMatch)
          |${WithStatement.apply}, user
          |""".stripMargin.format(
           ingredientInput.ingredient.id.toString,
-          ingredientInput.quantity.amount,
+          Double.box(ingredientInput.quantity.amount),
           ingredientInput.quantity.unit.name,
-          standardizedWeight,
+          Double.box(standardizedWeight),
           Double.box(normalizedWeight),
           ingredientInput.description.getOrElse("")
         )

@@ -22,8 +22,6 @@ class RecipeSavedIntegrationTest extends IntegrationTestFramework {
         name = "Tomato",
         aliases = Seq("tomato", "tomatoes"),
         wikiLink = "https://en.wikipedia.org/wiki/Tomato",
-        vegetarian = true,
-        vegan = true,
         tags = Seq("vegetable", "fruit")
       )
     )
@@ -32,8 +30,6 @@ class RecipeSavedIntegrationTest extends IntegrationTestFramework {
         name = "Onion",
         aliases = Seq("onion", "onions"),
         wikiLink = "https://en.wikipedia.org/wiki/Onion",
-        vegetarian = true,
-        vegan = true,
         tags = Seq("vegetable")
       )
     )
@@ -53,8 +49,6 @@ class RecipeSavedIntegrationTest extends IntegrationTestFramework {
       ingredients = ingredientInputs,
       prepTime = 5,
       cookTime = 10,
-      vegetarian = true,
-      vegan = true,
       countryOfOrigin = Some("USA"),
       public = public,
       wikiLink = Some("https://en.wikipedia.org/wiki/Recipe"),

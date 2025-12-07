@@ -15,8 +15,6 @@ case class Filters(
     email: Option[StringFilter],
     prepTime: Option[NumberFilter],
     cookTime: Option[NumberFilter],
-    vegetarian: Option[Boolean],
-    vegan: Option[Boolean],
     public: Option[Boolean],
     tags: Option[Seq[String]],
     ingredients: Option[Seq[String]],
@@ -38,8 +36,6 @@ object Filters {
   implicit val decoder: Decoder[Filters] = deriveDecoder[Filters]
 
   def empty(): Filters = Filters(
-    None,
-    None,
     None,
     None,
     None,

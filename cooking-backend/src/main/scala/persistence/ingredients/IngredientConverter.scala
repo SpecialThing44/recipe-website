@@ -11,8 +11,6 @@ import java.util.UUID
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 
 object IngredientConverter extends Converter[Ingredient] {
-  val veganField = "vegan"
-  val vegetarianField = "vegetarian"
   val aliasesField = "aliases"
 
   override def toGraph(ingredient: Ingredient): Map[String, Object] =
@@ -21,9 +19,7 @@ object IngredientConverter extends Converter[Ingredient] {
       nameField -> ingredient.name,
       s"$lowerPrefix$nameField" -> ingredient.name.toLowerCase,
       aliasesField -> ingredient.aliases.map(_.toLowerCase).asJson,
-      wikiLinkField -> ingredient.wikiLink.toLowerCase,
-      vegetarianField -> ingredient.vegetarian.toString,
-      veganField -> ingredient.vegan.toString
+      wikiLinkField -> ingredient.wikiLink.toLowerCase
     )
 
   override def toDomain(
@@ -49,8 +45,6 @@ object IngredientConverter extends Converter[Ingredient] {
       name = record.get(nameField).toString,
       aliases = aliases,
       wikiLink = record.get(wikiLinkField).toString,
-      vegetarian = record.get(vegetarianField).toString.toBoolean,
-      vegan = record.get(veganField).toString.toBoolean,
       tags = tags,
       createdBy = user
     )
