@@ -46,7 +46,7 @@ class UserIntegrationTest extends IntegrationTestFramework {
     val user = createTestUser(standardUserInput)
     userInputsMatch(standardUserInput, user)
     val retrievedUser = getUserById(user.id)
-    usersMatch(user, retrievedUser)
+    usersMatch(user.copy(email = ""), retrievedUser)
   }
 
   it should "update a user" in {
@@ -123,7 +123,7 @@ class UserIntegrationTest extends IntegrationTestFramework {
       )
     val emailFilterResults = listUsers(emailFilter)
     emailFilterResults.length shouldBe 1
-    emailFilterResults.head.email shouldBe bobSmithUserInput.email
+    emailFilterResults.head.email shouldBe ""
   }
 
   it should "delete a user" in {

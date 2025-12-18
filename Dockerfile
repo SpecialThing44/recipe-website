@@ -33,4 +33,4 @@ USER recipe
 
 EXPOSE 9000
 
-CMD ["bin/cooking-backend", "-Dplay.http.secret.key=${SECRET_KEY:-changeme}"]
+CMD ["bin/cooking-backend"]
