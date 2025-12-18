@@ -17,6 +17,7 @@ class UserFacade @Inject() (
     deleteInteractor: UserDeleteInteractor,
     updateInteractor: UserUpdateInteractor,
     fetchInteractor: UserFetchInteractor,
+    getInteractor: UserGetInteractor,
     avatarInteractor: UserAvatarInteractor
 ) extends UserApi {
 
@@ -51,7 +52,7 @@ class UserFacade @Inject() (
     fetchInteractor.list(filters)
 
   override def getById(id: UUID): ZIO[ApiContext, Throwable, User] =
-    persistence.getById(id)
+    getInteractor.getById(id)
 
   override def authenticate(
       bearerToken: Option[String]
