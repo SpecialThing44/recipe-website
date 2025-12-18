@@ -8,7 +8,11 @@ import api.wiki.WikipediaCheck
 import com.google.inject.Singleton
 import context.{ApiContext, ApplicationContext, CookingApi}
 import integration.stubs.FakeWikipediaCheck
-import integration.support.{IntegrationIngredientSupport, IntegrationUserSupport, IntegrationRecipeSupport}
+import integration.support.{
+  IntegrationIngredientSupport,
+  IntegrationRecipeSupport,
+  IntegrationUserSupport
+}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}

@@ -11,13 +11,18 @@ import scala.collection.mutable.ListBuffer
 
 trait IntegrationIngredientSupport {
   protected val ingredientsFacade: IngredientsFacade
-  protected val createdIngredients: ListBuffer[UUID] = collection.mutable.ListBuffer.empty[UUID]
+  protected val createdIngredients: ListBuffer[UUID] =
+    collection.mutable.ListBuffer.empty[UUID]
   protected def createApiContext(): ZLayer[Any, Nothing, ApiContext]
-  protected def createTestIngredient(ingredientInput: IngredientInput): Ingredient = {
+  protected def createTestIngredient(
+      ingredientInput: IngredientInput
+  ): Ingredient = {
     val ingredient = Unsafe.unsafe { implicit unsafe =>
       Runtime.default.unsafe
         .run(
-          ingredientsFacade.create(ingredientInput).provideLayer(createApiContext())
+          ingredientsFacade
+            .create(ingredientInput)
+            .provideLayer(createApiContext())
         )
         .getOrThrow()
     }
@@ -26,11 +31,16 @@ trait IntegrationIngredientSupport {
     ingredient
   }
 
-  protected def updateIngredient(ingredient: Ingredient, updateInput: domain.ingredients.IngredientUpdateInput): Ingredient = {
+  protected def updateIngredient(
+      ingredient: Ingredient,
+      updateInput: domain.ingredients.IngredientUpdateInput
+  ): Ingredient = {
     Unsafe.unsafe { implicit unsafe =>
       Runtime.default.unsafe
         .run(
-          ingredientsFacade.update(updateInput, ingredient).provideLayer(createApiContext())
+          ingredientsFacade
+            .update(updateInput, ingredient)
+            .provideLayer(createApiContext())
         )
         .getOrThrow()
     }
@@ -50,7 +60,9 @@ trait IntegrationIngredientSupport {
     Unsafe.unsafe { implicit unsafe =>
       Runtime.default.unsafe
         .run(
-          ingredientsFacade.delete(ingredientId).provideLayer(createApiContext())
+          ingredientsFacade
+            .delete(ingredientId)
+            .provideLayer(createApiContext())
         )
         .getOrThrow()
     }
@@ -60,7 +72,9 @@ trait IntegrationIngredientSupport {
     Unsafe.unsafe { implicit unsafe =>
       Runtime.default.unsafe
         .run(
-          ingredientsFacade.getById(ingredientId).provideLayer(createApiContext())
+          ingredientsFacade
+            .getById(ingredientId)
+            .provideLayer(createApiContext())
         )
         .getOrThrow()
     }

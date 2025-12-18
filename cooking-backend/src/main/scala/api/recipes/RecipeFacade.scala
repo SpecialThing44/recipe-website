@@ -62,5 +62,9 @@ class RecipeFacade @Inject() (
       fileBytes: org.apache.pekko.util.ByteString,
       contentType: String
   ): ZIO[ApiContext, Throwable, String] =
-    instructionImageInteractor.uploadInstructionImage(recipeId, fileBytes, contentType)
+    instructionImageInteractor.uploadInstructionImage(
+      recipeId,
+      fileBytes,
+      contentType
+    )
 }

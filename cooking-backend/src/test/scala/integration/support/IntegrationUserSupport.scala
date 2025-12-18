@@ -2,11 +2,8 @@ package integration.support
 
 import api.users.UserFacade
 import context.ApiContext
-import domain.authentication.TokenPair
 import domain.filters.Filters
 import domain.users.{User, UserInput, UserUpdateInput}
-import play.api.mvc.Headers
-import play.api.test.FakeRequest
 import zio.{Runtime, Unsafe, ZLayer}
 
 import java.util.UUID
@@ -20,8 +17,7 @@ trait IntegrationUserSupport {
 
   val standardUserInput: UserInput = UserInput(
     name = "Test User",
-    email = "test@example.com",
-    password = "password123"
+    email = "test@example.com"
   )
 
   protected def createApiContext(): ZLayer[Any, Nothing, ApiContext]
@@ -110,18 +106,6 @@ trait IntegrationUserSupport {
     }
   }
 
-  def loginUser(email: String, password: String): Option[TokenPair] = {
-    Unsafe.unsafe { implicit unsafe =>
-      Runtime.default.unsafe
-        .run(
-          userFacade
-            .login(email, password)
-            .provideLayer(createApiContext())
-        )
-        .getOrThrow()
-    }
-  }
-
   protected def authenticateUser(token: String): Option[User] = {
     Unsafe.unsafe { implicit unsafe =>
       Runtime.default.unsafe
@@ -133,44 +117,4 @@ trait IntegrationUserSupport {
         .getOrThrow()
     }
   }
-
-  protected def logoutUser(token: String): Boolean = {
-    val request = FakeRequest().withHeaders(
-      Headers("Authorization" -> s"$token")
-    )
-
-    Unsafe.unsafe { implicit unsafe =>
-      Runtime.default.unsafe
-        .run(
-          userFacade
-            .logout(request)
-            .provideLayer(createApiContext())
-        )
-        .getOrThrow()
-    }
-  }
-
-  protected def signupUser(userInput: UserInput): TokenPair = {
-    val token = Unsafe.unsafe { implicit unsafe =>
-      Runtime.default.unsafe
-        .run(
-          userFacade
-            .signup(userInput)
-            .provideLayer(createApiContext())
-        )
-        .getOrThrow()
-    }
-    val user = Unsafe.unsafe { implicit unsafe =>
-      Runtime.default.unsafe
-        .run(
-          userFacade
-            .authenticate(Some(token.accessToken))
-            .provideLayer(createApiContext())
-        )
-        .getOrThrow()
-    }
-    createdUsers += user.get.id
-    token
-  }
-
 }

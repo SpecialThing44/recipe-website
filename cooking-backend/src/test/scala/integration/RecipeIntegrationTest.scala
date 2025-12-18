@@ -1,18 +1,8 @@
 package integration
 
 import domain.filters.{Filters, StringFilter}
-import domain.ingredients.{
-  Ingredient,
-  IngredientInput,
-  Quantity,
-  Unit => IngUnit
-}
-import domain.recipes.{
-  Recipe,
-  RecipeInput,
-  RecipeIngredientInput,
-  RecipeUpdateInput
-}
+import domain.ingredients.{Ingredient, IngredientInput, Quantity, Unit as IngUnit}
+import domain.recipes.{Recipe, RecipeIngredientInput, RecipeInput, RecipeUpdateInput}
 import domain.users.User
 
 class RecipeIntegrationTest extends IntegrationTestFramework {
@@ -26,8 +16,6 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
     r1.ingredients.map(_.quantity) shouldBe r2.ingredients.map(_.quantity)
     r1.prepTime shouldBe r2.prepTime
     r1.cookTime shouldBe r2.cookTime
-    r1.vegetarian shouldBe r2.vegetarian
-    r1.vegan shouldBe r2.vegan
     r1.countryOfOrigin shouldBe r2.countryOfOrigin
     r1.public shouldBe r2.public
     r1.wikiLink shouldBe r2.wikiLink
@@ -44,8 +32,6 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
     created.tags shouldBe input.tags
     created.prepTime shouldBe input.prepTime
     created.cookTime shouldBe input.cookTime
-    created.vegetarian shouldBe input.vegetarian
-    created.vegan shouldBe input.vegan
     created.countryOfOrigin shouldBe input.countryOfOrigin
     created.public shouldBe input.public
     created.wikiLink.map(_.toLowerCase) shouldBe input.wikiLink.map(
@@ -103,8 +89,6 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
       ),
       prepTime = Some(10),
       cookTime = Some(20),
-      vegetarian = Some(true),
-      vegan = Some(true),
       countryOfOrigin = Some("Italy"),
       public = Some(true),
       wikiLink = Some("https://en.wikipedia.org/wiki/Soup"),
@@ -116,19 +100,20 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
     updated.name shouldBe "Updated Recipe"
     updated.tags.toSet shouldBe Set("dinner", "quick")
     updated.ingredients.map(_.ingredient.id) shouldBe Seq(onion.id)
-    updated.ingredients.head.quantity.amount shouldBe 2
+    updated.ingredients.head.quantity.amount shouldBe 2.0
     updated.ingredients.head.quantity.unit.name shouldBe "cup"
     updated.ingredients.head.description shouldBe Some("about one onion")
     updated.prepTime shouldBe 10
     updated.cookTime shouldBe 20
-    updated.vegetarian shouldBe true
-    updated.vegan shouldBe true
     updated.countryOfOrigin shouldBe Some("Italy")
     updated.public shouldBe true
     updated.wikiLink.map(_.toLowerCase()) shouldBe Some(
       "https://en.wikipedia.org/wiki/soup"
     )
-    updated.instructions shouldBe quillDelta("Chop and cook").replace("\\n", "\n")
+    updated.instructions shouldBe quillDelta("Chop and cook").replace(
+      "\\n",
+      "\n"
+    )
     updated.ingredients.head.description shouldBe Some("about one onion")
 
     val fetched = getRecipeById(created.id)
@@ -161,28 +146,32 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
       )
     val nameResults = listRecipes(nameContainsFilter)
     nameResults.map(_.id).toSet shouldBe Set(r2.id)
-
-    val vegetarianFilter = Filters.empty().copy(vegetarian = Some(true))
-    val vegetarianResults = listRecipes(vegetarianFilter)
-    vegetarianResults.forall(_.vegetarian) shouldBe true
   }
 
   it should "ingredient similarity filter returns two recipes ordered and filters out third by min score" in {
     val garlic = createTestIngredient(
-      IngredientsIntegrationTestData.onion.copy(name = "Garlic", aliases = Seq("garlic"), wikiLink = "https://en.wikipedia.org/wiki/Garlic")
+      IngredientsIntegrationTestData.onion.copy(
+        name = "Garlic",
+        aliases = Seq("garlic"),
+        wikiLink = "https://en.wikipedia.org/wiki/Garlic"
+      )
     )
     val target = createTestRecipe(
       RecipeInput(
         name = "Target",
         tags = Seq("similarity-test"),
         ingredients = Seq(
-          RecipeIngredientInput(tomato.id, Quantity(IngUnit("gram", false, ""), 100)),
-          RecipeIngredientInput(onion.id, Quantity(IngUnit("gram", false, ""), 100))
+          RecipeIngredientInput(
+            tomato.id,
+            Quantity(IngUnit("gram", false, ""), 100)
+          ),
+          RecipeIngredientInput(
+            onion.id,
+            Quantity(IngUnit("gram", false, ""), 100)
+          )
         ),
         prepTime = 5,
         cookTime = 10,
-        vegetarian = true,
-        vegan = true,
         countryOfOrigin = Some("USA"),
         public = true,
         wikiLink = Some("https://en.wikipedia.org/wiki/Recipe"),
@@ -195,13 +184,17 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
         name = "High Similarity",
         tags = Seq("similarity-test"),
         ingredients = Seq(
-          RecipeIngredientInput(tomato.id, Quantity(IngUnit("gram", false, ""), 100)),
-          RecipeIngredientInput(onion.id, Quantity(IngUnit("gram", false, ""), 100))
+          RecipeIngredientInput(
+            tomato.id,
+            Quantity(IngUnit("gram", false, ""), 100)
+          ),
+          RecipeIngredientInput(
+            onion.id,
+            Quantity(IngUnit("gram", false, ""), 100)
+          )
         ),
         prepTime = 5,
         cookTime = 10,
-        vegetarian = true,
-        vegan = true,
         countryOfOrigin = Some("USA"),
         public = true,
         wikiLink = Some("https://en.wikipedia.org/wiki/Recipe"),
@@ -214,12 +207,13 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
         name = "Medium Similarity",
         tags = Seq("similarity-test"),
         ingredients = Seq(
-          RecipeIngredientInput(tomato.id, Quantity(IngUnit("gram", false, ""), 100))
+          RecipeIngredientInput(
+            tomato.id,
+            Quantity(IngUnit("gram", false, ""), 100)
+          )
         ),
         prepTime = 5,
         cookTime = 10,
-        vegetarian = true,
-        vegan = true,
         countryOfOrigin = Some("USA"),
         public = true,
         wikiLink = Some("https://en.wikipedia.org/wiki/Recipe"),
@@ -232,12 +226,13 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
         name = "Low Similarity",
         tags = Seq("similarity-test"),
         ingredients = Seq(
-          RecipeIngredientInput(garlic.id, Quantity(IngUnit("gram", false, ""), 100))
+          RecipeIngredientInput(
+            garlic.id,
+            Quantity(IngUnit("gram", false, ""), 100)
+          )
         ),
         prepTime = 5,
         cookTime = 10,
-        vegetarian = true,
-        vegan = true,
         countryOfOrigin = Some("USA"),
         public = true,
         wikiLink = Some("https://en.wikipedia.org/wiki/Recipe"),
@@ -249,7 +244,14 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
       .empty()
       .copy(
         analyzedEntity = Some(target.id),
-        ingredientSimilarity = Some(domain.filters.SimilarityFilter(alpha = 0.0, beta = 1.0, gamma = 0.0, minScore = 0.4))
+        ingredientSimilarity = Some(
+          domain.filters.SimilarityFilter(
+            alpha = 0.0,
+            beta = 1.0,
+            gamma = 0.0,
+            minScore = 0.4
+          )
+        )
       )
 
     val results = listRecipes(filters)
@@ -273,8 +275,6 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
       name = "Tomato",
       aliases = Seq("tomato", "tomatoes"),
       wikiLink = "https://en.wikipedia.org/wiki/Tomato",
-      vegetarian = true,
-      vegan = true,
       tags = Seq("vegetable", "fruit")
     )
 
@@ -282,8 +282,6 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
       name = "Onion",
       aliases = Seq("onion", "onions"),
       wikiLink = "https://en.wikipedia.org/wiki/Onion",
-      vegetarian = true,
-      vegan = true,
       tags = Seq("vegetable")
     )
   }
@@ -298,8 +296,6 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
       ingredients = ingredientInputs,
       prepTime = 5,
       cookTime = 10,
-      vegetarian = true,
-      vegan = true,
       countryOfOrigin = Some("USA"),
       public = true,
       wikiLink = Some("https://en.wikipedia.org/wiki/Recipe"),

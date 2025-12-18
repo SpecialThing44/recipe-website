@@ -19,13 +19,12 @@ case class Recipe(
     ingredients: Seq[InstructionIngredient],
     prepTime: Int,
     cookTime: Int,
-    vegetarian: Boolean,
-    vegan: Boolean,
     countryOfOrigin: Option[String],
     public: Boolean,
     wikiLink: Option[String],
     instructions: String, // Quill Delta JSON format
-    instructionImages: Seq[String] = Seq.empty, // URLs of images embedded in instructions
+    instructionImages: Seq[String] =
+      Seq.empty, // URLs of images embedded in instructions
     image: Option[ImageUrls] = None,
     createdOn: Instant,
     updatedOn: Instant,
@@ -38,8 +37,6 @@ case class RecipeInput(
     ingredients: Seq[RecipeIngredientInput],
     prepTime: Int,
     cookTime: Int,
-    vegetarian: Boolean,
-    vegan: Boolean,
     countryOfOrigin: Option[String],
     public: Boolean,
     wikiLink: Option[String],
@@ -52,8 +49,6 @@ case class RecipeUpdateInput(
     ingredients: Option[Seq[RecipeIngredientInput]] = None,
     prepTime: Option[Int] = None,
     cookTime: Option[Int] = None,
-    vegetarian: Option[Boolean] = None,
-    vegan: Option[Boolean] = None,
     countryOfOrigin: Option[String] = None,
     public: Option[Boolean] = None,
     wikiLink: Option[String] = None,
@@ -73,6 +68,8 @@ object RecipeInput {
 }
 
 object RecipeUpdateInput {
-  implicit val encoder: Encoder[RecipeUpdateInput] = deriveEncoder[RecipeUpdateInput]
-  implicit val decoder: Decoder[RecipeUpdateInput] = deriveDecoder[RecipeUpdateInput]
+  implicit val encoder: Encoder[RecipeUpdateInput] =
+    deriveEncoder[RecipeUpdateInput]
+  implicit val decoder: Decoder[RecipeUpdateInput] =
+    deriveDecoder[RecipeUpdateInput]
 }

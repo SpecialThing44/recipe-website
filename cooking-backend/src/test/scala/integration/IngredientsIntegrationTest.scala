@@ -6,44 +6,50 @@ import domain.users.{User, UserInput}
 import zio.{Runtime, Unsafe, ZLayer}
 
 import java.util.UUID
-import scala.language.implicitConversions
-import scala.language.strictEquality
+import scala.language.{implicitConversions, strictEquality}
 
 class IngredientsIntegrationTest extends IntegrationTestFramework {
-  def ingredientsMatch(ingredient1: Ingredient, ingredient2: Ingredient): Unit = {
+  def ingredientsMatch(
+      ingredient1: Ingredient,
+      ingredient2: Ingredient
+  ): Unit = {
     ingredient1.id shouldBe ingredient2.id
     ingredient1.name shouldBe ingredient2.name
     ingredient1.aliases shouldBe ingredient2.aliases
     ingredient1.wikiLink shouldBe ingredient2.wikiLink
-    ingredient1.vegetarian shouldBe ingredient2.vegetarian
-    ingredient1.vegan shouldBe ingredient2.vegan
     ingredient1.tags.toSet shouldBe ingredient2.tags.toSet
     ingredient1.createdBy.id shouldBe ingredient2.createdBy.id
   }
 
-  def ingredientInputsMatch(ingredientInput: IngredientInput, ingredient: Ingredient): Unit = {
+  def ingredientInputsMatch(
+      ingredientInput: IngredientInput,
+      ingredient: Ingredient
+  ): Unit = {
     ingredient.name shouldBe ingredientInput.name
     ingredient.aliases shouldBe ingredientInput.aliases
     ingredient.wikiLink shouldBe ingredientInput.wikiLink.toLowerCase
-    ingredient.vegetarian shouldBe ingredientInput.vegetarian
-    ingredient.vegan shouldBe ingredientInput.vegan
     ingredient.tags.toSet shouldBe ingredientInput.tags.toSet
   }
 
-  def ingredientUpdatesMatch(ingredientUpdateInput: IngredientUpdateInput, ingredient: Ingredient): Unit = {
+  def ingredientUpdatesMatch(
+      ingredientUpdateInput: IngredientUpdateInput,
+      ingredient: Ingredient
+  ): Unit = {
     ingredientUpdateInput.name.map(name => ingredient.name shouldBe name)
-    ingredientUpdateInput.aliases.map(aliases => ingredient.aliases shouldBe aliases)
-    ingredientUpdateInput.wikiLink.map(wikiLink => ingredient.wikiLink shouldBe wikiLink.toLowerCase)
-    ingredientUpdateInput.vegetarian.map(vegetarian => ingredient.vegetarian shouldBe vegetarian)
-    ingredientUpdateInput.vegan.map(vegan => ingredient.vegan shouldBe vegan)
-    ingredientUpdateInput.tags.map(tags => ingredient.tags.toSet shouldBe tags.toSet)
+    ingredientUpdateInput.aliases.map(aliases =>
+      ingredient.aliases shouldBe aliases
+    )
+    ingredientUpdateInput.wikiLink.map(wikiLink =>
+      ingredient.wikiLink shouldBe wikiLink.toLowerCase
+    )
+    ingredientUpdateInput.tags.map(tags =>
+      ingredient.tags.toSet shouldBe tags.toSet
+    )
   }
   val standardIngredientInput = IngredientInput(
     name = "Test Ingredient",
     aliases = Seq("test", "ingredient"),
     wikiLink = "https://en.wikipedia.org/wiki/Ingredient",
-    vegetarian = true,
-    vegan = true,
     tags = Seq("test", "sample")
   )
 
@@ -51,8 +57,6 @@ class IngredientsIntegrationTest extends IntegrationTestFramework {
     name = "Tomato",
     aliases = Seq("tomato", "tomatoes"),
     wikiLink = "https://en.wikipedia.org/wiki/Tomato",
-    vegetarian = true,
-    vegan = true,
     tags = Seq("vegetable", "fruit")
   )
 
@@ -60,8 +64,6 @@ class IngredientsIntegrationTest extends IntegrationTestFramework {
     name = "Onion",
     aliases = Seq("onion", "onions"),
     wikiLink = "https://en.wikipedia.org/wiki/Onion",
-    vegetarian = true,
-    vegan = true,
     tags = Seq("vegetable")
   )
 
@@ -69,8 +71,6 @@ class IngredientsIntegrationTest extends IntegrationTestFramework {
     name = "Chicken",
     aliases = Seq("chicken", "poultry"),
     wikiLink = "https://en.wikipedia.org/wiki/Chicken",
-    vegetarian = false,
-    vegan = false,
     tags = Seq("meat", "protein")
   )
 
@@ -95,11 +95,9 @@ class IngredientsIntegrationTest extends IntegrationTestFramework {
     val ingredient = createTestIngredient(standardIngredientInput)
 
     val updateInput = IngredientUpdateInput(
-      name = Some("Updated Ingredient Name"),
-      aliases = Some(Seq("updated", "test ingredient")),
-      wikiLink = Some("https://en.wikipedia.org/wiki/Food"),
-      vegetarian = Some(false),
-      vegan = Some(false),
+      name = Some("Updated Ingredient"),
+      aliases = Some(Seq("updated", "test", "ingredient")),
+      wikiLink = Some("https://en.wikipedia.org/wiki/Updated_Ingredient"),
       tags = Some(Seq("updated", "test", "sample"))
     )
 
@@ -155,19 +153,6 @@ class IngredientsIntegrationTest extends IntegrationTestFramework {
     val nameContainsResults = listIngredients(nameContainsFilter)
     nameContainsResults.length shouldBe 1
     nameContainsResults.head.name shouldBe "Onion"
-
-    val vegetarianFilter = Filters.empty().copy(vegetarian = Some(true))
-    val vegetarianFilterResults = listIngredients(vegetarianFilter)
-    vegetarianFilterResults.length shouldBe 2
-    vegetarianFilterResults.map(_.name) should contain allOf (
-      tomatoIngredientInput.name,
-      onionIngredientInput.name
-    )
-
-    val veganFilter = Filters.empty().copy(vegan = Some(false))
-    val veganFilterResults = listIngredients(veganFilter)
-    veganFilterResults.length shouldBe 1
-    veganFilterResults.head.name shouldBe chickenIngredientInput.name
   }
 
   it should "delete an ingredient" in {

@@ -76,22 +76,6 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
     result shouldBe "MATCH (n) WHERE  n.cookTime >= 30 AND n.cookTime <= 40"
   }
 
-  it should "convert a filter with vegetarian" in {
-    val filters = Filters.empty().copy(vegetarian = Some(true))
-
-    val result = FiltersConverter.toCypher(filters, "n")
-
-    result shouldBe "MATCH (n) WHERE  n.vegetarian = 'true'"
-  }
-
-  it should "convert a filter with vegan" in {
-    val filters = Filters.empty().copy(vegan = Some(true))
-
-    val result = FiltersConverter.toCypher(filters, "n")
-
-    result shouldBe "MATCH (n) WHERE  n.vegan = 'true'"
-  }
-
   it should "convert a filter with public" in {
     val filters = Filters.empty().copy(public = Some(true))
 
@@ -118,8 +102,12 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
     val result = FiltersConverter.toCypher(filters, "n")
 
     result should (
-      include("MATCH (n)-[:HAS_INGREDIENT]->(hasIngredient:Ingredient {name: 'Tomato'})") and
-        include("MATCH (n)-[:HAS_INGREDIENT]->(hasIngredient:Ingredient {name: 'Cheese'})")
+      include(
+        "MATCH (n)-[:HAS_INGREDIENT]->(hasIngredient:Ingredient {name: 'Tomato'})"
+      ) and
+        include(
+          "MATCH (n)-[:HAS_INGREDIENT]->(hasIngredient:Ingredient {name: 'Cheese'})"
+        )
     )
   }
 
@@ -131,10 +119,10 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
 
     result should (
       include(
-        "MATCH (n) WHERE NOT (n)-[:HAS_INGREDIENT]->(notIngredient:Ingredient {name: 'Meat'})"
+        "MATCH (n) WHERE NOT (n)-[:HAS_INGREDIENT]->(:Ingredient {name: 'Meat'})"
       ) and
         include(
-          "MATCH (n) WHERE NOT (n)-[:HAS_INGREDIENT]->(notIngredient:Ingredient {name: 'Fish'})"
+          "MATCH (n) WHERE NOT (n)-[:HAS_INGREDIENT]->(:Ingredient {name: 'Fish'})"
         )
     )
   }
@@ -173,16 +161,14 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
       .empty()
       .copy(
         name = Some(nameFilter),
-        prepTime = Some(prepTimeFilter),
-        vegetarian = Some(true)
+        prepTime = Some(prepTimeFilter)
       )
 
     val result = FiltersConverter.toCypher(filters, "n")
 
     result should (
       include("n.lowername = 'test'") and
-        include("n.prepTime >= 10 AND n.prepTime <= 20") and
-        include("n.vegetarian = 'true'")
+        include("n.prepTime >= 10 AND n.prepTime <= 20")
     )
   }
 
@@ -195,7 +181,8 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "return ORDER BY name when orderBy.name is true" in {
-    val filters = Filters.empty().copy(orderBy = Some(OrderBy(name = Some(true))))
+    val filters =
+      Filters.empty().copy(orderBy = Some(OrderBy(name = Some(true))))
 
     val result = FiltersConverter.getOrderLine(filters, "n")
 
@@ -203,7 +190,8 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "return ORDER BY name when orderBy.name is false" in {
-    val filters = Filters.empty().copy(orderBy = Some(OrderBy(name = Some(false))))
+    val filters =
+      Filters.empty().copy(orderBy = Some(OrderBy(name = Some(false))))
 
     val result = FiltersConverter.getOrderLine(filters, "n")
 
@@ -212,15 +200,17 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
 
   it should "prioritize score ordering over name ordering when similarity is active" in {
     val userId = UUID.randomUUID()
-    val filters = Filters.empty().copy(
-      analyzedEntity = Some(userId),
-      ingredientSimilarity = Some(domain.filters.SimilarityFilter(1.0, 0.0, 0.0, 0.0)),
-      orderBy = Some(OrderBy(name = Some(true)))
-    )
+    val filters = Filters
+      .empty()
+      .copy(
+        analyzedEntity = Some(userId),
+        ingredientSimilarity =
+          Some(domain.filters.SimilarityFilter(1.0, 0.0, 0.0, 0.0)),
+        orderBy = Some(OrderBy(name = Some(true)))
+      )
 
     val result = FiltersConverter.getOrderLine(filters, "recipe")
 
     result shouldBe "ORDER BY score DESC"
   }
 }
-

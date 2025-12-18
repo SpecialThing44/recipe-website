@@ -12,7 +12,8 @@ import scala.collection.mutable.ListBuffer
 trait IntegrationRecipeSupport {
   protected val recipeFacade: RecipeFacade
   protected def createApiContext(): ZLayer[Any, Nothing, ApiContext]
-  protected val createdRecipes: ListBuffer[UUID] = collection.mutable.ListBuffer.empty[UUID]
+  protected val createdRecipes: ListBuffer[UUID] =
+    collection.mutable.ListBuffer.empty[UUID]
 
   protected def quillDelta(text: String): String = {
     s"""{"ops":[{"insert":"$text\\n"}]}"""
@@ -30,7 +31,10 @@ trait IntegrationRecipeSupport {
     recipe
   }
 
-  protected def updateRecipe(original: Recipe, update: RecipeUpdateInput): Recipe = {
+  protected def updateRecipe(
+      original: Recipe,
+      update: RecipeUpdateInput
+  ): Recipe = {
     Unsafe.unsafe { implicit unsafe =>
       Runtime.default.unsafe
         .run(
@@ -54,7 +58,9 @@ trait IntegrationRecipeSupport {
     Unsafe.unsafe { implicit unsafe =>
       Runtime.default.unsafe
         .run(
-          recipeFacade.list(Filters.empty().copy(savedByUser = Some(userId))).provideLayer(createApiContext())
+          recipeFacade
+            .list(Filters.empty().copy(savedByUser = Some(userId)))
+            .provideLayer(createApiContext())
         )
         .getOrThrow()
     }

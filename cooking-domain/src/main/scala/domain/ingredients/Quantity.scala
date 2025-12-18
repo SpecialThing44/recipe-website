@@ -5,7 +5,7 @@ import io.circe.{Decoder, Encoder}
 
 case class Quantity(
     unit: Unit,
-    amount: Int
+    amount: Double
 )
 
 object Quantity {

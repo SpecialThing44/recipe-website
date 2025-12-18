@@ -18,7 +18,9 @@ object StringFilterConverter extends Cypher[StringFilter] {
     val containsClause =
       sanitized.contains.map(value => s"$nodeVar.$property CONTAINS '$value'")
     val startsWithClause =
-      sanitized.startsWith.map(value => s"$nodeVar.$property STARTS WITH '$value'")
+      sanitized.startsWith.map(value =>
+        s"$nodeVar.$property STARTS WITH '$value'"
+      )
     val endsWithClause =
       sanitized.endsWith.map(value => s"$nodeVar.$property ENDS WITH '$value'")
     Seq(

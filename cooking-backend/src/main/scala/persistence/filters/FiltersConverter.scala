@@ -10,7 +10,9 @@ object FiltersConverter {
   def getOrderLine(filters: Filters, nodeVar: String): String = {
     if (similarityActive(filters)) {
       "ORDER BY score DESC"
-    } else if (filters.orderBy.isDefined && filters.orderBy.get.name.isDefined) {
+    } else if (
+      filters.orderBy.isDefined && filters.orderBy.get.name.isDefined
+    ) {
       s"ORDER BY $nodeVar.name"
     } else {
       ""
@@ -52,11 +54,6 @@ object FiltersConverter {
     val cookTimeClause = filters.cookTime.map(cookTimeFilter =>
       NumberFilterConverter.toCypher(cookTimeFilter, "cookTime", nodeVar)
     )
-    val vegetarianClause =
-      filters.vegetarian.map(vegetarian =>
-        s"$nodeVar.vegetarian = '$vegetarian'"
-      )
-    val veganClause = filters.vegan.map(vegan => s"$nodeVar.vegan = '$vegan'")
     val publicClause =
       filters.public.map(public => s"$nodeVar.public = $public")
 
@@ -75,7 +72,7 @@ object FiltersConverter {
     val notIngredientsClause = filters.notIngredients.map(notIngredients =>
       notIngredients
         .map(notIngredient =>
-          s"MATCH ($nodeVar) WHERE NOT ($nodeVar)-[:HAS_INGREDIENT]->(notIngredient:Ingredient {name: '$notIngredient'})"
+          s"MATCH ($nodeVar) WHERE NOT ($nodeVar)-[:HAS_INGREDIENT]->(:Ingredient {name: '$notIngredient'})"
         )
         .mkString("\n")
     )
@@ -100,8 +97,6 @@ object FiltersConverter {
       emailClause,
       prepTimeClause,
       cookTimeClause,
-      vegetarianClause,
-      veganClause,
       publicClause,
       aliasesOrNameClause
     )

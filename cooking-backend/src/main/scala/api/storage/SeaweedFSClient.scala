@@ -77,7 +77,7 @@ class SeaweedFSClient @Inject() (config: Configuration) {
       userId: UUID
   ): Task[StorageAvatarUrls] = {
     val extension = processedImage.extension
-    
+
     for {
       thumbnailUrl <- uploadFile(
         processedImage.thumbnail,
@@ -99,12 +99,19 @@ class SeaweedFSClient @Inject() (config: Configuration) {
       )
     } yield StorageAvatarUrls(thumbnailUrl, mediumUrl, largeUrl)
   }
-  
-  def deleteAllAvatarSizes(userId: UUID, extension: String = "jpg"): Task[Unit] = {
+
+  def deleteAllAvatarSizes(
+      userId: UUID,
+      extension: String = "jpg"
+  ): Task[Unit] = {
     for {
-      _ <- deleteFile(s"$filerUrl/avatars/$userId/avatar-thumbnail.$extension").catchAll(_ => ZIO.unit)
-      _ <- deleteFile(s"$filerUrl/avatars/$userId/avatar-medium.$extension").catchAll(_ => ZIO.unit)
-      _ <- deleteFile(s"$filerUrl/avatars/$userId/avatar.$extension").catchAll(_ => ZIO.unit)
+      _ <- deleteFile(s"$filerUrl/avatars/$userId/avatar-thumbnail.$extension")
+        .catchAll(_ => ZIO.unit)
+      _ <- deleteFile(s"$filerUrl/avatars/$userId/avatar-medium.$extension")
+        .catchAll(_ => ZIO.unit)
+      _ <- deleteFile(s"$filerUrl/avatars/$userId/avatar.$extension").catchAll(
+        _ => ZIO.unit
+      )
     } yield ()
   }
 
@@ -113,7 +120,7 @@ class SeaweedFSClient @Inject() (config: Configuration) {
       recipeId: UUID
   ): Task[StorageAvatarUrls] = {
     val extension = processedImage.extension
-    
+
     for {
       thumbnailUrl <- uploadFileToPath(
         processedImage.thumbnail,
@@ -168,12 +175,18 @@ class SeaweedFSClient @Inject() (config: Configuration) {
     }
   }
 
-  def deleteAllImageSizes(recipeId: UUID, extension: String = "jpg"): Task[Unit] = {
+  def deleteAllImageSizes(
+      recipeId: UUID,
+      extension: String = "jpg"
+  ): Task[Unit] = {
     for {
-      _ <- deleteFile(s"$filerUrl/recipes/$recipeId/recipe-thumbnail.$extension").catchAll(_ => ZIO.unit)
-      _ <- deleteFile(s"$filerUrl/recipes/$recipeId/recipe-medium.$extension").catchAll(_ => ZIO.unit)
-      _ <- deleteFile(s"$filerUrl/recipes/$recipeId/recipe.$extension").catchAll(_ => ZIO.unit)
+      _ <- deleteFile(
+        s"$filerUrl/recipes/$recipeId/recipe-thumbnail.$extension"
+      ).catchAll(_ => ZIO.unit)
+      _ <- deleteFile(s"$filerUrl/recipes/$recipeId/recipe-medium.$extension")
+        .catchAll(_ => ZIO.unit)
+      _ <- deleteFile(s"$filerUrl/recipes/$recipeId/recipe.$extension")
+        .catchAll(_ => ZIO.unit)
     } yield ()
   }
 }
-

@@ -22,11 +22,13 @@ class IngredientUpdateInteractor @Inject() (
   ): ZIO[ApiContext, Throwable, Ingredient] = {
     for {
       context <- ZIO.service[ApiContext]
-      user <- AuthenticationInteractor.ensureIsLoggedIn(context.applicationContext.user)
+      user <- AuthenticationInteractor.ensureIsLoggedIn(
+        context.applicationContext.user
+      )
       _ <- AuthenticationInteractor.ensureIsAdmin(user)
       _ <-
         if (
-          Seq(input.name, input.wikiLink, input.vegan, input.vegetarian).exists(
+          Seq(input.name, input.wikiLink).exists(
             _.isDefined
           )
         ) validateNoRecipeLinks(originalIngredient)
