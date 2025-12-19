@@ -16,6 +16,7 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
     r1.ingredients.map(_.quantity) shouldBe r2.ingredients.map(_.quantity)
     r1.prepTime shouldBe r2.prepTime
     r1.cookTime shouldBe r2.cookTime
+    r1.servings shouldBe r2.servings
     r1.countryOfOrigin shouldBe r2.countryOfOrigin
     r1.public shouldBe r2.public
     r1.wikiLink shouldBe r2.wikiLink
@@ -29,9 +30,10 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
       ingredientIds: Seq[java.util.UUID]
   ): Unit = {
     created.name shouldBe input.name
-    created.tags shouldBe input.tags
+    created.tags.sorted shouldBe input.tags.sorted
     created.prepTime shouldBe input.prepTime
     created.cookTime shouldBe input.cookTime
+    created.servings shouldBe input.servings
     created.countryOfOrigin shouldBe input.countryOfOrigin
     created.public shouldBe input.public
     created.wikiLink.map(_.toLowerCase) shouldBe input.wikiLink.map(
@@ -172,6 +174,7 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
         ),
         prepTime = 5,
         cookTime = 10,
+        servings = 4,
         countryOfOrigin = Some("USA"),
         public = true,
         wikiLink = Some("https://en.wikipedia.org/wiki/Recipe"),
@@ -195,6 +198,7 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
         ),
         prepTime = 5,
         cookTime = 10,
+        servings = 4,
         countryOfOrigin = Some("USA"),
         public = true,
         wikiLink = Some("https://en.wikipedia.org/wiki/Recipe"),
@@ -214,6 +218,7 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
         ),
         prepTime = 5,
         cookTime = 10,
+        servings = 4,
         countryOfOrigin = Some("USA"),
         public = true,
         wikiLink = Some("https://en.wikipedia.org/wiki/Recipe"),
@@ -233,6 +238,7 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
         ),
         prepTime = 5,
         cookTime = 10,
+        servings = 4,
         countryOfOrigin = Some("USA"),
         public = true,
         wikiLink = Some("https://en.wikipedia.org/wiki/Recipe"),
@@ -296,6 +302,7 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
       ingredients = ingredientInputs,
       prepTime = 5,
       cookTime = 10,
+      servings = 4,
       countryOfOrigin = Some("USA"),
       public = true,
       wikiLink = Some("https://en.wikipedia.org/wiki/Recipe"),

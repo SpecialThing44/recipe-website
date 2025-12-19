@@ -21,6 +21,7 @@ class RecipeCreateInteractor @Inject() (
 ) {
   def create(input: RecipeInput): ZIO[ApiContext, Throwable, Recipe] = {
     for {
+      _ <- RecipeValidator.validateRecipeInput(input)
       maybeUser <- ZIO.service[ApiContext].map(_.applicationContext.user)
       user <- AuthenticationInteractor.ensureIsLoggedIn(maybeUser)
       _ <- if (input.tags.nonEmpty) {

@@ -19,6 +19,7 @@ object RecipeAdapter {
       ingredients = resolvedIngredients,
       prepTime = recipe.prepTime,
       cookTime = recipe.cookTime,
+      servings = recipe.servings,
       countryOfOrigin = recipe.countryOfOrigin,
       public = recipe.public,
       wikiLink = recipe.wikiLink,
@@ -44,6 +45,7 @@ object RecipeAdapter {
       ingredients = resolvedIngredients.getOrElse(original.ingredients),
       prepTime = input.prepTime.getOrElse(original.prepTime),
       cookTime = input.cookTime.getOrElse(original.cookTime),
+      servings = input.servings.getOrElse(original.servings),
       countryOfOrigin =
         if (input.countryOfOrigin.isDefined) input.countryOfOrigin
         else original.countryOfOrigin,

@@ -42,6 +42,7 @@ class UsersAnalyticalIntegrationTest extends IntegrationTestFramework {
         ingredients.map(i => RecipeIngredientInput(i.id, grams(100))),
       prepTime = 5,
       cookTime = 10,
+      servings = 4,
       countryOfOrigin = Some("USA"),
       public = true,
       wikiLink = Some("https://en.wikipedia.org/wiki/Recipe"),

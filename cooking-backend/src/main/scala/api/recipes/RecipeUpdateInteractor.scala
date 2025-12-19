@@ -24,6 +24,7 @@ class RecipeUpdateInteractor @Inject() (
       originalRecipe: Recipe
   ): ZIO[ApiContext, Throwable, Recipe] = {
     for {
+      _ <- RecipeValidator.validateRecipeUpdateInput(input, originalRecipe)
       context <- ZIO.service[ApiContext]
       _ <- AuthenticationInteractor.ensureAuthenticatedAndMatchingUser(
         context.applicationContext.user,

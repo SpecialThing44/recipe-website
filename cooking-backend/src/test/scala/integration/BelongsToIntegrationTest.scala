@@ -38,6 +38,7 @@ class BelongsToIntegrationTest extends IntegrationTestFramework {
       ingredients = ingredientInputs,
       prepTime = 1,
       cookTime = 1,
+      servings = 2,
       countryOfOrigin = None,
       public = public,
       wikiLink = None,
