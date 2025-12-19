@@ -14,6 +14,7 @@ import scala.jdk.CollectionConverters.*
 object RecipeConverter extends Converter[Recipe] {
   val prepTimeField = "prepTime"
   val cookTimeField = "cookTime"
+  val servingsField = "servings"
   val countryOfOriginField = "countryOfOrigin"
   val publicField = "public"
   val instructionsField = "instructions"
@@ -29,6 +30,7 @@ object RecipeConverter extends Converter[Recipe] {
       s"${lowerPrefix}name" -> recipe.name.toLowerCase,
       prepTimeField -> Int.box(recipe.prepTime),
       cookTimeField -> Int.box(recipe.cookTime),
+      servingsField -> Int.box(recipe.servings),
       countryOfOriginField -> recipe.countryOfOrigin.getOrElse(""),
       publicField -> Boolean.box(recipe.public),
       wikiLinkField -> recipe.wikiLink.getOrElse(""),
@@ -105,6 +107,7 @@ object RecipeConverter extends Converter[Recipe] {
       ingredients = ingredients,
       prepTime = record.get(prepTimeField).toString.toInt,
       cookTime = record.get(cookTimeField).toString.toInt,
+      servings = Option(record.get(servingsField)).map(_.toString.toInt).getOrElse(1),
       countryOfOrigin =
         Option(record.get(countryOfOriginField).toString).filter(_.nonEmpty),
       public = record.get(publicField).toString.toBoolean,

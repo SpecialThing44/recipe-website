@@ -19,6 +19,7 @@ case class Recipe(
     ingredients: Seq[InstructionIngredient],
     prepTime: Int,
     cookTime: Int,
+    servings: Int, // Number of servings (positive integer)
     countryOfOrigin: Option[String],
     public: Boolean,
     wikiLink: Option[String],
@@ -37,6 +38,7 @@ case class RecipeInput(
     ingredients: Seq[RecipeIngredientInput],
     prepTime: Int,
     cookTime: Int,
+    servings: Int = 1, // Number of servings (defaults to 1)
     countryOfOrigin: Option[String],
     public: Boolean,
     wikiLink: Option[String],
@@ -49,6 +51,7 @@ case class RecipeUpdateInput(
     ingredients: Option[Seq[RecipeIngredientInput]] = None,
     prepTime: Option[Int] = None,
     cookTime: Option[Int] = None,
+    servings: Option[Int] = None,
     countryOfOrigin: Option[String] = None,
     public: Option[Boolean] = None,
     wikiLink: Option[String] = None,

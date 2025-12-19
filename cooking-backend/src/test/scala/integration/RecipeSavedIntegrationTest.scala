@@ -49,6 +49,7 @@ class RecipeSavedIntegrationTest extends IntegrationTestFramework {
       ingredients = ingredientInputs,
       prepTime = 5,
       cookTime = 10,
+      servings = 4,
       countryOfOrigin = Some("USA"),
       public = public,
       wikiLink = Some("https://en.wikipedia.org/wiki/Recipe"),
