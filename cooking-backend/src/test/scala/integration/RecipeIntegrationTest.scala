@@ -3,7 +3,7 @@ package integration
 import domain.filters.{Filters, StringFilter}
 import domain.ingredients.{Ingredient, IngredientInput, Quantity, Unit as IngUnit}
 import domain.recipes.{Recipe, RecipeIngredientInput, RecipeInput, RecipeUpdateInput}
-import domain.users.User
+import domain.users.{User, UserInput}
 
 class RecipeIntegrationTest extends IntegrationTestFramework {
   def recipesMatch(r1: Recipe, r2: Recipe): Unit = {
@@ -249,7 +249,7 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
     val filters = Filters
       .empty()
       .copy(
-        analyzedEntity = Some(target.id),
+        analyzedRecipe = Some(target.id),
         ingredientSimilarity = Some(
           domain.filters.SimilarityFilter(
             alpha = 0.0,
@@ -267,6 +267,69 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
     results.forall(_.id != candidateLow.id) shouldBe true
   }
 
+  it should "recommend recipes based on user preference" in {
+    val targetUser = createTestAdminUser(UserInput("Target User", "target@example.com"))
+
+    val beef = createTestIngredient(
+      IngredientInput("Beef", Seq(), "wiki-beef", Seq("meat"))
+    )
+    val chicken =
+      createTestIngredient(
+        IngredientInput("Chicken", Seq(), "wiki-chicken", Seq("meat"))
+      )
+    val lettuce =
+      createTestIngredient(
+        IngredientInput("Lettuce", Seq(), "wiki-lettuce", Seq("veg"))
+      )
+
+    login(targetUser.id)
+    createTestRecipe(
+      standardRecipeInput(Seq(beef)).copy(name = "Target Beef Recipe")
+    )
+
+    val otherUser =
+      createTestAdminUser(UserInput("Other User", "other@example.com"))
+    login(otherUser.id)
+
+    val candidateBeef = createTestRecipe(
+      standardRecipeInput(Seq(beef)).copy(name = "Candidate Beef")
+    )
+
+    val candidateChicken = createTestRecipe(
+      standardRecipeInput(Seq(chicken)).copy(name = "Candidate Chicken")
+    )
+
+    val candidateLettuce = createTestRecipe(
+      standardRecipeInput(Seq(lettuce)).copy(name = "Candidate Lettuce")
+    )
+
+    val filters = Filters
+      .empty()
+      .copy(
+        analyzedUser = Some(targetUser.id),
+        ingredientSimilarity = Some(
+          domain.filters.SimilarityFilter(
+            alpha = 0.0,
+            beta = 1.0,
+            gamma = 0.0,
+            minScore = 0.001
+          )
+        )
+      )
+    login(targetUser.id)
+
+    val results = listRecipes(filters)
+
+    results.map(_.id) should contain(candidateBeef.id)
+
+    results.map(_.id) should contain(candidateBeef.id)
+    results.map(_.id) should not contain candidateLettuce.id
+
+    println(results.map(_.name))
+
+    results.head.id shouldBe candidateBeef.id
+  }
+
   it should "delete a recipe" in {
     val created = createTestRecipe(standardRecipeInput(Seq(tomato)))
     val fetched = getRecipeById(created.id)
@@ -275,6 +338,69 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
     val deleted = deleteRecipe(created.id)
     deleted.id shouldBe created.id
   }
+
+  it should "exclude analyzed recipe from recommendations" in {
+     val user = createTestAdminUser(UserInput("Self Exclusion User", "selfExcluded@example.com"))
+     login(user.id)
+     
+     val ingredient = createTestIngredient(IngredientInput("SelfExcludedIngredient", Seq(), "link", Seq()))
+     val recipe = createTestRecipe(standardRecipeInput(Seq(ingredient)).copy(name = "Analyzed Recipe"))
+     val otherRecipe = createTestRecipe(standardRecipeInput(Seq(ingredient)).copy(name = "Other Recipe"))
+     
+     val filters = Filters.empty().copy(
+       analyzedRecipe = Some(recipe.id),
+       ingredientSimilarity = Some(
+          domain.filters.SimilarityFilter(
+            alpha = 0.0,
+            beta = 1.0,
+            gamma = 0.0,
+            minScore = 0.0
+          )
+       )
+     )
+     
+     val results = listRecipes(filters)
+     println(s"Results: $results")
+
+     results.map(_.id) should contain(otherRecipe.id)
+     results.map(_.id) should not contain(recipe.id)
+  }
+
+  it should "exclude recipes owned or saved by the analyzed user from recommendations" in {
+    val targetUser = createTestAdminUser(UserInput("Exclusion Target", "exclusions@example.com"))
+    val otherUser = createTestAdminUser(UserInput("Other Author", "otherAuthor@example.com"))
+    
+    val commonIngredient = createTestIngredient(IngredientInput("CommonIng", Seq(), "link", Seq()))
+
+    login(targetUser.id)
+    val ownedRecipe = createTestRecipe(standardRecipeInput(Seq(commonIngredient)).copy(name = "Owned Recipe"))
+    
+    login(otherUser.id)
+    val savedRecipe = createTestRecipe(standardRecipeInput(Seq(commonIngredient)).copy(name = "Saved Recipe"))
+    val recommendedRecipe = createTestRecipe(standardRecipeInput(Seq(commonIngredient)).copy(name = "Recommended Recipe"))
+    
+    login(targetUser.id)
+    saveRecipe(savedRecipe.id)
+    
+    val filters = Filters.empty().copy(
+       analyzedUser = Some(targetUser.id),
+       ingredientSimilarity = Some(
+          domain.filters.SimilarityFilter(
+            alpha = 0.0,
+            beta = 1.0,
+            gamma = 0.0,
+            minScore = 0.0
+          )
+       )
+    )
+    
+    val results = listRecipes(filters)
+    
+    results.map(_.id) should contain(recommendedRecipe.id)
+    results.map(_.id) should not contain(ownedRecipe.id)
+    results.map(_.id) should not contain(savedRecipe.id)
+  }
+
 
   object IngredientsIntegrationTestData {
     val tomato: IngredientInput = IngredientInput(

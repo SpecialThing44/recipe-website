@@ -6,7 +6,7 @@ import persistence.users.UserConverter.lowerPrefix
 
 object FiltersConverter {
   def similarityActive(filters: Filters): Boolean =
-    (filters.ingredientSimilarity.isDefined || filters.coSaveSimilarity.isDefined || filters.tagSimilarity.isDefined) && filters.analyzedEntity.isDefined
+    (filters.ingredientSimilarity.isDefined || filters.coSaveSimilarity.isDefined || filters.tagSimilarity.isDefined) && (filters.analyzedRecipe.isDefined || filters.analyzedUser.isDefined)
   def getOrderLine(filters: Filters, nodeVar: String): String = {
     if (similarityActive(filters)) {
       "ORDER BY score DESC"
@@ -114,32 +114,28 @@ object FiltersConverter {
 
     val isRecipeNode = nodeVar == "recipe"
     val isUserNode = nodeVar == "user"
-    val ingredientActiveRecipe =
-      filters.ingredientSimilarity.isDefined && filters.analyzedEntity.isDefined && isRecipeNode
-    val coSaveActiveRecipe =
-      filters.coSaveSimilarity.isDefined && filters.analyzedEntity.isDefined && isRecipeNode
-    val tagActiveRecipe =
-      filters.tagSimilarity.isDefined && filters.analyzedEntity.isDefined && isRecipeNode
 
-    val ingredientActiveUser =
-      filters.ingredientSimilarity.isDefined && filters.analyzedEntity.isDefined && isUserNode
-    val coSaveActiveUser =
-      filters.coSaveSimilarity.isDefined && filters.analyzedEntity.isDefined && isUserNode
-    val tagActiveUser =
-      filters.tagSimilarity.isDefined && filters.analyzedEntity.isDefined && isUserNode
+    val ingredientMin = filters.ingredientSimilarity.map(_.minScore)
+    val coSaveMin = filters.coSaveSimilarity.map(_.minScore)
+    val tagMin = filters.tagSimilarity.map(_.minScore)
 
-    if (
-      !ingredientActiveRecipe && !coSaveActiveRecipe && !tagActiveRecipe && !ingredientActiveUser && !coSaveActiveUser && !tagActiveUser
-    ) base
-    else if (isRecipeNode) {
-      val analyzedId = filters.analyzedEntity.get
-      val ingredientMin = filters.ingredientSimilarity.map(_.minScore)
-      val coSaveMin = filters.coSaveSimilarity.map(_.minScore)
-      val tagMin = filters.tagSimilarity.map(_.minScore)
+    val mode =
+      if (isRecipeNode && filters.analyzedRecipe.isDefined) "RecipeRecipe"
+      else if (isRecipeNode && filters.analyzedUser.isDefined) "UserRecipe"
+      else if (isUserNode && filters.analyzedUser.isDefined) "UserUser"
+      else "None"
+
+    if (mode == "None") base
+    else if (mode == "RecipeRecipe") {
+      val analyzedId = filters.analyzedRecipe.get
+      val ingredientActiveRecipe = filters.ingredientSimilarity.isDefined
+      val coSaveActiveRecipe = filters.coSaveSimilarity.isDefined
+      val tagActiveRecipe = filters.tagSimilarity.isDefined
 
       val start = s"""
          |WITH $nodeVar
          |MATCH (target:Recipe {id: '$analyzedId'})
+         |WHERE $nodeVar.id <> target.id
          |""".stripMargin
 
       val ingredientPart =
@@ -156,7 +152,7 @@ object FiltersConverter {
            |     sqrt(reduce(s = 0.0, x IN candidateVector | s + x.weight * x.weight)) AS normCandidate
            |WITH $nodeVar, target, CASE WHEN normTarget = 0 OR normCandidate = 0 THEN 0.0 ELSE dotProd / (normTarget * normCandidate) END AS ingredientScore
            |""".stripMargin + ingredientMin
-            .map(min => s"\nWHERE ingredientScore >= $min")
+            .map(min => s"\nWHERE ingredientScore >= $min ")
             .getOrElse("")
 
       val coSaveCarry =
@@ -178,7 +174,7 @@ object FiltersConverter {
            |WITH $coSaveCarry, inter, sizeT, sizeC,
            |     CASE WHEN sizeT + sizeC - inter = 0 THEN 0.0 ELSE toFloat(inter) / toFloat(sizeT + sizeC - inter) END AS coSaveScore
            |""".stripMargin + coSaveMin
-            .map(min => s"\nWHERE coSaveScore >= $min")
+            .map(min => s"\nWHERE coSaveScore >= $min ")
             .getOrElse("")
 
       val tagCarryBase =
@@ -197,16 +193,11 @@ object FiltersConverter {
            |OPTIONAL MATCH ($nodeVar)-[:HAS_TAG]->(ct:Tag)
            |WITH $tagCarryBase, targetTags, collect(DISTINCT ct.name) AS candidateTags
            |WITH $tagCarryBase, size([x IN candidateTags WHERE x IN targetTags]) AS interTags, size(targetTags) AS sizeTargetTags, size(candidateTags) AS sizeCandidateTags
-           |WITH $tagCarryBase,, interTags, sizeTargetTags, sizeCandidateTags,
+           |WITH $tagCarryBase, interTags, sizeTargetTags, sizeCandidateTags,
            |     CASE WHEN sizeTargetTags + sizeCandidateTags - interTags = 0 THEN 0.0 ELSE toFloat(interTags) / toFloat(sizeTargetTags + sizeCandidateTags - interTags) END AS tagScore
            |""".stripMargin + tagMin
-            .map(min => s"\nWHERE tagScore >= $min")
+            .map(min => s"\nWHERE tagScore >= $min ")
             .getOrElse("")
-
-      val anyMinApplied =
-        (ingredientActiveRecipe && ingredientMin.isDefined) || (coSaveActiveRecipe && coSaveMin.isDefined) || (tagActiveRecipe && tagMin.isDefined)
-      val finalWhereOrAnd = if (anyMinApplied) "AND" else "WHERE"
-      val finalWhere = s"\n$finalWhereOrAnd $nodeVar.id <> '$analyzedId'\n"
 
       val sumExprParts = (if (ingredientActiveRecipe) Seq("ingredientScore")
                           else Seq()) ++ (if (coSaveActiveRecipe)
@@ -214,16 +205,91 @@ object FiltersConverter {
                                           else Seq()) ++ (if (tagActiveRecipe)
                                                             Seq("tagScore")
                                                           else Seq())
-      val sumExpr = sumExprParts.mkString(" + ")
+      val sumExpr = if (sumExprParts.isEmpty) "0.0" else sumExprParts.mkString(" + ")
       val denom = sumExprParts.size.max(1)
       val finalWith = s"WITH $nodeVar, ($sumExpr) / $denom AS score\n"
 
-      base + start + ingredientPart + coSavePart + tagPart + finalWhere + finalWith
+      base + start + ingredientPart + coSavePart + tagPart + finalWith
+    } else if (mode == "UserRecipe") {
+      val analyzedId = filters.analyzedUser.get
+      val ingredientActiveRecipe = filters.ingredientSimilarity.isDefined
+      val tagActiveRecipe = filters.tagSimilarity.isDefined
+
+      val start = s"""
+         |WITH $nodeVar
+         |MATCH (target:User {id: '$analyzedId'})
+         |""".stripMargin
+
+      val ingredientPart =
+        if (!ingredientActiveRecipe) ""
+        else
+          s"""
+           |OPTIONAL MATCH (target)<-[:SAVED_BY]-(tr:Recipe)
+           |OPTIONAL MATCH (target)<-[:CREATED_BY]-(tcr:Recipe)
+           |WITH $nodeVar, target, (collect(DISTINCT tr) + collect(DISTINCT tcr)) AS recipesT
+           |WHERE NOT $nodeVar IN recipesT
+           |UNWIND recipesT AS tRec
+           |MATCH (tRec)-[tr:HAS_INGREDIENT]->(ti:Ingredient)
+           |WITH $nodeVar, target, ti.id AS ingrIdT, sum(coalesce(tr.normalizedWeight, 0.0)) AS weightT
+           |WITH $nodeVar, target, collect({ingredientId: ingrIdT, weight: weightT}) AS targetVector
+           |MATCH ($nodeVar)-[ci:HAS_INGREDIENT]->(ciIngr:Ingredient)
+           |WITH $nodeVar, target, targetVector, collect({ingredientId: ciIngr.id, weight: coalesce(ci.normalizedWeight, 0.0)}) AS candidateVector
+           |WITH $nodeVar, target, targetVector, candidateVector,
+           |     reduce(dot = 0.0, x IN targetVector | dot + coalesce([y IN candidateVector WHERE y.ingredientId = x.ingredientId][0].weight, 0.0) * x.weight) AS dotProd,
+           |     sqrt(reduce(s = 0.0, x IN targetVector | s + x.weight * x.weight)) AS normTarget,
+           |     sqrt(reduce(s = 0.0, x IN candidateVector | s + x.weight * x.weight)) AS normCandidate
+           |WITH $nodeVar, target, CASE WHEN normTarget = 0 OR normCandidate = 0 THEN 0.0 ELSE dotProd / (normTarget * normCandidate) END AS ingredientScore
+           |""".stripMargin + ingredientMin
+            .map(min => s"\nWHERE ingredientScore >= $min ")
+            .getOrElse("")
+
+      // CoSave not implemented for User-Recipe, defaulting to skip
+      val coSaveCarry =
+        if (ingredientActiveRecipe) s"$nodeVar, target, ingredientScore"
+        else s"$nodeVar, target"
+
+      val tagCarryBase =
+        if (ingredientActiveRecipe) s"$nodeVar, target, ingredientScore"
+        else s"$nodeVar, target"
+
+      val tagPart =
+        if (!tagActiveRecipe) ""
+        else
+          s"""
+           |WITH $tagCarryBase
+           |OPTIONAL MATCH (target)<-[:SAVED_BY]-(tr:Recipe)
+           |OPTIONAL MATCH (target)<-[:CREATED_BY]-(tcr:Recipe)
+           |WITH $tagCarryBase, (collect(DISTINCT tr) + collect(DISTINCT tcr)) AS recipesT
+           |WHERE NOT $nodeVar IN recipesT
+           |UNWIND recipesT AS tRec
+           |MATCH (tRec)-[:HAS_TAG]->(tt:Tag)
+           |WITH $tagCarryBase, collect(DISTINCT tt.name) AS targetTags
+           |OPTIONAL MATCH ($nodeVar)-[:HAS_TAG]->(ct:Tag)
+           |WITH $tagCarryBase, targetTags, collect(DISTINCT ct.name) AS candidateTags
+           |WITH $tagCarryBase, size([x IN candidateTags WHERE x IN targetTags]) AS interTags, size(targetTags) AS sizeTargetTags, size(candidateTags) AS sizeCandidateTags
+           |WITH $tagCarryBase, interTags, sizeTargetTags, sizeCandidateTags,
+           |     CASE WHEN sizeTargetTags + sizeCandidateTags - interTags = 0 THEN 0.0 ELSE toFloat(interTags) / toFloat(sizeTargetTags + sizeCandidateTags - interTags) END AS tagScore
+           |""".stripMargin + tagMin
+            .map(min => s"\nWHERE tagScore >= $min ")
+            .getOrElse("")
+
+      val anyMinApplied = (ingredientActiveRecipe && ingredientMin.isDefined) || (tagActiveRecipe && tagMin.isDefined)
+      val finalWhereOrAnd = if (anyMinApplied) "AND" else "WHERE"
+      val finalWhere = s"\n$finalWhereOrAnd $nodeVar.id IS NOT NULL \n"
+
+      val sumExprParts = (if (ingredientActiveRecipe) Seq("ingredientScore") else Seq()) ++
+                         (if (tagActiveRecipe) Seq("tagScore") else Seq())
+      val sumExpr = if (sumExprParts.isEmpty) "0.0" else sumExprParts.mkString(" + ")
+      val denom = sumExprParts.size.max(1)
+      val finalWith = s"WITH $nodeVar, ($sumExpr) / $denom AS score\n"
+
+      base + start + ingredientPart + tagPart + finalWhere + finalWith
+
     } else {
-      val analyzedId = filters.analyzedEntity.get
-      val ingredientMin = filters.ingredientSimilarity.map(_.minScore)
-      val coSaveMin = filters.coSaveSimilarity.map(_.minScore)
-      val tagMin = filters.tagSimilarity.map(_.minScore)
+      val analyzedId = filters.analyzedUser.get
+      val ingredientActiveUser = filters.ingredientSimilarity.isDefined
+      val coSaveActiveUser = filters.coSaveSimilarity.isDefined
+      val tagActiveUser = filters.tagSimilarity.isDefined
 
       val start = s"""
          |WITH $nodeVar
@@ -258,7 +324,7 @@ object FiltersConverter {
              |     sqrt(reduce(s = 0.0, x IN candidateVector | s + x.weight * x.weight)) AS normCandidate
              |WITH $nodeVar, target, CASE WHEN normTarget = 0 OR normCandidate = 0 THEN 0.0 ELSE dotProd / (normTarget * normCandidate) END AS ingredientScore
              |""".stripMargin + ingredientMin
-            .map(min => s"\nWHERE ingredientScore >= $min")
+            .map(min => s"\nWHERE ingredientScore >= $min ")
             .getOrElse("")
 
       val coSaveCarry =
@@ -282,7 +348,7 @@ object FiltersConverter {
            |WITH $coSaveCarry, inter, sizeT, sizeC,
            |     CASE WHEN sizeT + sizeC - inter = 0 THEN 0.0 ELSE toFloat(inter) / toFloat(sizeT + sizeC - inter) END AS coSaveScore
            |""".stripMargin + coSaveMin
-            .map(min => s"\nWHERE coSaveScore >= $min")
+            .map(min => s"\nWHERE coSaveScore >= $min ")
             .getOrElse("")
 
       val tagCarryBase =
@@ -319,7 +385,7 @@ object FiltersConverter {
              |WITH $tagCarryBase, interTags, sizeTargetTags, sizeCandidateTags,
              |     CASE WHEN sizeTargetTags + sizeCandidateTags - interTags = 0 THEN 0.0 ELSE toFloat(interTags) / toFloat(sizeTargetTags + sizeCandidateTags - interTags) END AS tagScore
              |""".stripMargin + tagMin
-            .map(min => s"\nWHERE tagScore >= $min")
+            .map(min => s"\nWHERE tagScore >= $min ")
             .getOrElse("")
 
       val anyMinApplied =
@@ -333,7 +399,7 @@ object FiltersConverter {
                                           else Seq()) ++ (if (tagActiveUser)
                                                             Seq("tagScore")
                                                           else Seq())
-      val sumExpr = sumExprParts.mkString(" + ")
+      val sumExpr = if (sumExprParts.isEmpty) "0.0" else sumExprParts.mkString(" + ")
       val denom = sumExprParts.size.max(1)
       val finalWith = s"WITH $nodeVar, ($sumExpr) / $denom AS score\n"
 

@@ -61,7 +61,7 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
 
   override def list(query: Filters): ZIO[ApiContext, Throwable, Seq[Recipe]] = {
     val includeIngredientScore =
-      query.ingredientSimilarity.isDefined && query.analyzedEntity.isDefined
+      query.ingredientSimilarity.isDefined && (query.analyzedRecipe.isDefined || query.analyzedUser.isDefined)
     val withLine =
       s"WITH ${graph.nodeVar}, user, collect(DISTINCT ${graph.tagVar}.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit, weight: ri.weight, description: ri.description}) as ingredientQuantities"
     val orderLine = FiltersConverter.getOrderLine(query, graph.nodeVar)
