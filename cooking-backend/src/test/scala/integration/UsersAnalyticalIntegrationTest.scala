@@ -1,7 +1,7 @@
 package integration
 
 import domain.filters.{Filters, SimilarityFilter}
-import domain.ingredients.{Ingredient, IngredientInput, Quantity, Unit as IngUnit}
+import domain.ingredients.{Ingredient, IngredientInput, Quantity, Unit}
 import domain.recipes.{RecipeIngredientInput, RecipeInput}
 import domain.users.UserInput
 
@@ -28,7 +28,7 @@ class UsersAnalyticalIntegrationTest extends IntegrationTestFramework {
   )
 
   private def grams(value: Double): Quantity =
-    Quantity(IngUnit("gram", false, ""), value)
+    Quantity(Unit("gram", false, ""), value)
 
   private def recipeInput(
       name: String,
@@ -82,7 +82,7 @@ class UsersAnalyticalIntegrationTest extends IntegrationTestFramework {
     val filters = Filters
       .empty()
       .copy(
-        analyzedEntity = Some(target.id),
+        analyzedUser = Some(target.id),
         ingredientSimilarity = Some(
           SimilarityFilter(alpha = 0.0, beta = 1.0, gamma = 0.0, minScore = 0.4)
         )
@@ -122,7 +122,7 @@ class UsersAnalyticalIntegrationTest extends IntegrationTestFramework {
     val filters = Filters
       .empty()
       .copy(
-        analyzedEntity = Some(target.id),
+        analyzedUser = Some(target.id),
         tagSimilarity = Some(
           SimilarityFilter(alpha = 0.0, beta = 0.0, gamma = 1.0, minScore = 0.3)
         )
@@ -161,7 +161,7 @@ class UsersAnalyticalIntegrationTest extends IntegrationTestFramework {
     val filtersStrict = Filters
       .empty()
       .copy(
-        analyzedEntity = Some(target.id),
+        analyzedUser = Some(target.id),
         coSaveSimilarity = Some(
           SimilarityFilter(alpha = 1.0, beta = 0.0, gamma = 0.0, minScore = 0.6)
         )
@@ -212,7 +212,7 @@ class UsersAnalyticalIntegrationTest extends IntegrationTestFramework {
     val filters = Filters
       .empty()
       .copy(
-        analyzedEntity = Some(target.id),
+        analyzedUser = Some(target.id),
         ingredientSimilarity = Some(
           SimilarityFilter(alpha = 0.0, beta = 1.0, gamma = 0.0, minScore = 0.0)
         ),

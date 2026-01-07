@@ -49,6 +49,15 @@ class RecipesController @Inject() (
     )
   }
 
+  def delete(id: java.util.UUID): Action[AnyContent] = Action { request =>
+    Requests.delete[Recipe](
+      id,
+      request,
+      cookingApi,
+      cookingApi.recipes
+    )
+  }
+
   def save(id: java.util.UUID): Action[AnyContent] = Action { request =>
     val maybeUser = extractUser(request, cookingApi)
     val result = cookingApi.recipes.save(id)

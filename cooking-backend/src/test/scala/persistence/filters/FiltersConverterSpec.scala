@@ -203,7 +203,7 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
     val filters = Filters
       .empty()
       .copy(
-        analyzedEntity = Some(userId),
+        analyzedUser = Some(userId),
         ingredientSimilarity =
           Some(domain.filters.SimilarityFilter(1.0, 0.0, 0.0, 0.0)),
         orderBy = Some(OrderBy(name = Some(true)))
