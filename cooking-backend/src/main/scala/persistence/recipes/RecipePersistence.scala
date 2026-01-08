@@ -164,7 +164,7 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
          |${WithStatement.apply}, user
          |$createTagStatements
          |$createIngredientStatements
-         |${WithStatement.apply}, user
+         |WITH DISTINCT ${graph.nodeVar}, user
          |OPTIONAL MATCH (${graph.nodeVar})-[ri:HAS_INGREDIENT]->(ingredient:Ingredient)
          |OPTIONAL ${MatchRelationship.outgoing(
           graph.tagRelation,
@@ -178,6 +178,7 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
         if (result.hasNext) {
           attachAllToRecord(result.next())
         } else {
+          println("AHHH")
           throw domain.types.NoSuchEntityError(
             s"Update for ${graph.nodeLabel} with id ${entity.id} has failed for some reason"
           )
