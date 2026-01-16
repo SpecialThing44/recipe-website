@@ -4,16 +4,12 @@ import api.users.AuthenticationInteractor
 import api.wiki.WikipediaCheck
 import com.google.inject.Inject
 import context.ApiContext
-import domain.filters.Filters
 import domain.ingredients.{Ingredient, IngredientUpdateInput}
-import domain.types.InputError
 import persistence.ingredients.Ingredients
-import persistence.recipes.Recipes
 import zio.ZIO
 
 class IngredientUpdateInteractor @Inject() (
     ingredientPersistence: Ingredients,
-    recipePersistence: Recipes,
     wikipediaCheck: WikipediaCheck
 ) {
   def update(
@@ -27,13 +23,6 @@ class IngredientUpdateInteractor @Inject() (
       )
       _ <- AuthenticationInteractor.ensureIsAdmin(user)
       _ <-
-        if (
-          Seq(input.name, input.wikiLink).exists(
-            _.isDefined
-          )
-        ) validateNoRecipeLinks(originalIngredient)
-        else ZIO.succeed(())
-      _ <-
         if (input.wikiLink.isDefined)
           wikipediaCheck.validateWikiLink(input.wikiLink.get)
         else ZIO.unit
@@ -46,24 +35,5 @@ class IngredientUpdateInteractor @Inject() (
         originalIngredient
       )
     } yield result
-  }
-
-  private def validateNoRecipeLinks(
-      ingredient: Ingredient
-  ): ZIO[ApiContext, Throwable, Unit] = {
-    for {
-      recipes <-
-        recipePersistence.list(
-          Filters.empty().copy(ingredients = Some(Seq(ingredient.name)))
-        )
-      _ <-
-        if (recipes.isEmpty) ZIO.unit
-        else
-          ZIO.fail(
-            InputError(
-              "Cannot update ingredient that is used in recipes (Expect for tags and aliases)"
-            )
-          )
-    } yield ()
   }
 }
