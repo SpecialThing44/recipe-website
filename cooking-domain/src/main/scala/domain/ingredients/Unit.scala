@@ -15,13 +15,14 @@ enum Unit(val name: String, val isVolume: Boolean, val wikiLink: String) extends
   case Kilogram extends Unit("kilogram", false, "")
   case Ounce extends Unit("ounce", false, "")
   case Pound extends Unit("pound", false, "")
+  case Other extends Unit("other", false, "")
 
   def standardizedUnitName: String = if isVolume then "milliliter" else "gram"
   def toStandardizedAmount(amount: Double): Double = Unit.toStandardizedAmount(this, amount)
 
 object Unit:
   private val predefinedUnits: Seq[Unit] =
-    Seq(Cup, Milliliter, Liter, Teaspoon, Tablespoon, Piece, Gram, Kilogram, Ounce, Pound)
+    Seq(Cup, Milliliter, Liter, Teaspoon, Tablespoon, Piece, Gram, Kilogram, Ounce, Pound, Other)
 
   private val unitsByName: Map[String, Unit] = predefinedUnits.map(u => u.name -> u).toMap
 
