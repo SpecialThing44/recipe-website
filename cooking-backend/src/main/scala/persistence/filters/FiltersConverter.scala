@@ -44,8 +44,8 @@ object FiltersConverter {
         )
       )
     val aliasesOrNameClause = filters.aliasesOrName.map(aliasesList =>
-      s"(((EXISTS($nodeVar.aliases) AND ANY(alias IN $nodeVar.aliases WHERE alias IN ${aliasesList.asJson}))) OR " +
-        s"ANY(searchTerm IN ${aliasesList.asJson} WHERE $nodeVar.name CONTAINS searchTerm))"
+      s"ANY(searchTerm IN ${aliasesList.asJson} WHERE $nodeVar.name CONTAINS searchTerm OR " +
+        s"($nodeVar.aliases IS NOT NULL AND ANY(alias IN $nodeVar.aliases WHERE alias CONTAINS searchTerm)))"
     )
 
     val prepTimeClause = filters.prepTime.map(prepTimeFilter =>
