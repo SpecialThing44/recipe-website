@@ -26,7 +26,6 @@ object Graph {
   val Constraints: Seq[Constraint] = Vector(
     Constraint("name", className(Ingredient.getClass), Unique),
     Constraint(s"${lowerPrefix}name", className(Ingredient.getClass), Unique),
-    Constraint("wikiLink", className(Ingredient.getClass), Unique),
     Constraint("id", className(Ingredient.getClass), Unique),
     Constraint("email", className(User.getClass), Unique),
     Constraint(s"${lowerPrefix}email", className(User.getClass), Unique),
