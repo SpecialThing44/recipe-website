@@ -462,7 +462,18 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
   }
 
   private def countHasIngredientRelationships(recipeId: java.util.UUID): Long = {
-    val driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.none())
+    val neo4jUri =
+      TestAppHolder.application.configuration.get[String]("neo4j.uri")
+    val neo4jUsername =
+      TestAppHolder.application.configuration
+        .getOptional[String]("neo4j.username")
+        .getOrElse("neo4j")
+    val neo4jPassword =
+      TestAppHolder.application.configuration
+        .getOptional[String]("neo4j.password")
+        .getOrElse("Password!1")
+    val driver =
+      GraphDatabase.driver(neo4jUri, AuthTokens.basic(neo4jUsername, neo4jPassword))
     val session = driver.session()
     try {
       session.executeRead[Long](tx =>

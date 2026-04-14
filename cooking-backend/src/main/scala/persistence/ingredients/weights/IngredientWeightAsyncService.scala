@@ -390,42 +390,42 @@ class IngredientWeightAsyncService @Inject() (database: Database)
 
   private def applyIngredientDeltas(deltas: Seq[IngredientDelta]): Task[Unit] =
     if (deltas.isEmpty) ZIO.unit
-    else {
-      val deltasLiteral = deltas.asJson.noSpaces
-      database.writeTransaction(
-        s"""
-           |MATCH (allRecipes:Recipe)
-           |WITH count(allRecipes) AS totalRecipes
-           |UNWIND $deltasLiteral AS delta
-           |MATCH (ingredient:Ingredient {id: delta.ingredientId})
-           |WITH ingredient, totalRecipes,
-           |     toInteger(delta.recipeCountDelta) AS recipeCountDelta,
-           |     toFloat(delta.rawDelta) AS rawDelta
-           |WITH ingredient, totalRecipes,
-           |     CASE
-           |       WHEN coalesce(ingredient.recipeCount, 0) + recipeCountDelta < 0 THEN 0
-           |       ELSE coalesce(ingredient.recipeCount, 0) + recipeCountDelta
-           |     END AS newRecipeCount,
-           |     coalesce(ingredient.sumRawNormalizedWeight, 0.0) + rawDelta AS newSumRaw
-           |WITH ingredient, totalRecipes, newRecipeCount, newSumRaw,
-           |     CASE WHEN newRecipeCount = 0 THEN 0.0 ELSE newSumRaw / toFloat(newRecipeCount) END AS newMeanRaw
-           |WITH ingredient, totalRecipes, newRecipeCount, newSumRaw, newMeanRaw,
-           |     (log((toFloat(totalRecipes) + 1.0) / (toFloat(newRecipeCount) + 1.0)) + 1.0) AS idfWeight,
-           |     (1.0 / (1.0 + newMeanRaw)) AS quantityPenalty
-           |SET ingredient.recipeCount = newRecipeCount,
-           |    ingredient.sumRawNormalizedWeight = newSumRaw,
-           |    ingredient.meanRawNormalizedWeight = newMeanRaw,
-           |    ingredient.globalWeight = CASE
-           |      WHEN totalRecipes = 0 OR newRecipeCount = 0 THEN 1.0
-           |      ELSE idfWeight * quantityPenalty
-           |    END,
-           |    ingredient.weightUpdatedAt = datetime(),
-           |    ingredient.weightVersion = coalesce(ingredient.weightVersion, 0) + 1
-           |RETURN count(ingredient) AS updatedCount
-           |""".stripMargin,
-        (_: org.neo4j.driver.Result) => ()
-      )
-    }
+    else
+      zio.ZIO.foreach(deltas) { delta =>
+        val ingredientId = delta.ingredientId.replace("'", "")
+        database.writeTransaction(
+          s"""
+             |MATCH (allRecipes:Recipe)
+             |WITH count(allRecipes) AS totalRecipes
+             |MATCH (ingredient:Ingredient {id: '$ingredientId'})
+             |WITH ingredient, totalRecipes,
+             |     ${delta.recipeCountDelta} AS recipeCountDelta,
+             |     ${delta.rawDelta} AS rawDelta
+             |WITH ingredient, totalRecipes,
+             |     CASE
+             |       WHEN coalesce(ingredient.recipeCount, 0) + recipeCountDelta < 0 THEN 0
+             |       ELSE coalesce(ingredient.recipeCount, 0) + recipeCountDelta
+             |     END AS newRecipeCount,
+             |     coalesce(ingredient.sumRawNormalizedWeight, 0.0) + rawDelta AS newSumRaw
+             |WITH ingredient, totalRecipes, newRecipeCount, newSumRaw,
+             |     CASE WHEN newRecipeCount = 0 THEN 0.0 ELSE newSumRaw / toFloat(newRecipeCount) END AS newMeanRaw
+             |WITH ingredient, totalRecipes, newRecipeCount, newSumRaw, newMeanRaw,
+             |     (log((toFloat(totalRecipes) + 1.0) / (toFloat(newRecipeCount) + 1.0)) + 1.0) AS idfWeight,
+             |     (1.0 / (1.0 + newMeanRaw)) AS quantityPenalty
+             |SET ingredient.recipeCount = newRecipeCount,
+             |    ingredient.sumRawNormalizedWeight = newSumRaw,
+             |    ingredient.meanRawNormalizedWeight = newMeanRaw,
+             |    ingredient.globalWeight = CASE
+             |      WHEN totalRecipes = 0 OR newRecipeCount = 0 THEN 1.0
+             |      ELSE idfWeight * quantityPenalty
+             |    END,
+             |    ingredient.weightUpdatedAt = datetime(),
+             |    ingredient.weightVersion = coalesce(ingredient.weightVersion, 0) + 1
+             |RETURN count(ingredient) AS updatedCount
+             |""".stripMargin,
+          (_: org.neo4j.driver.Result) => ()
+        )
+      }.unit
 
   private def getAllIngredientIds(): Task[Seq[String]] =
     database.readTransaction(

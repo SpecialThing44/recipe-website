@@ -9,6 +9,22 @@ import zio.{Runtime, Unsafe}
 class IngredientWeightAsyncIntegrationTest extends IntegrationTestFramework {
   private val ingredientWeightService: IngredientWeightAsyncService =
     TestAppHolder.application.injector.instanceOf[IngredientWeightAsyncService]
+  private val neo4jUri =
+    TestAppHolder.application.configuration.get[String]("neo4j.uri")
+  private val neo4jUsername =
+    TestAppHolder.application.configuration
+      .getOptional[String]("neo4j.username")
+      .getOrElse("neo4j")
+  private val neo4jPassword =
+    TestAppHolder.application.configuration
+      .getOptional[String]("neo4j.password")
+      .getOrElse("Password!1")
+
+  private def neo4jDriver =
+    GraphDatabase.driver(
+      neo4jUri,
+      AuthTokens.basic(neo4jUsername, neo4jPassword)
+    )
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -137,7 +153,7 @@ class IngredientWeightAsyncIntegrationTest extends IntegrationTestFramework {
   }
 
   private def countEventsByStatus(status: String): Long = {
-    val driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.none())
+    val driver = neo4jDriver
     val session = driver.session()
     try {
       session.executeRead[Long](tx =>
@@ -156,7 +172,7 @@ class IngredientWeightAsyncIntegrationTest extends IntegrationTestFramework {
   }
 
   private def readIngredientGlobalWeight(ingredientId: String): Double = {
-    val driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.none())
+    val driver = neo4jDriver
     val session = driver.session()
     try {
       session.executeRead[Double](tx =>
@@ -175,7 +191,7 @@ class IngredientWeightAsyncIntegrationTest extends IntegrationTestFramework {
   }
 
   private def setActiveProcessorLock(holderJobId: String): Unit = {
-    val driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.none())
+    val driver = neo4jDriver
     val session = driver.session()
     try {
       session.executeWrite[Unit](tx => {
@@ -196,7 +212,7 @@ class IngredientWeightAsyncIntegrationTest extends IntegrationTestFramework {
   }
 
   private def clearProcessorLock(): Unit = {
-    val driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.none())
+    val driver = neo4jDriver
     val session = driver.session()
     try {
       session.executeWrite[Unit](tx => {
@@ -217,7 +233,7 @@ class IngredientWeightAsyncIntegrationTest extends IntegrationTestFramework {
   }
 
   private def deleteWeightNodes(): Unit = {
-    val driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.none())
+    val driver = neo4jDriver
     val session = driver.session()
     try {
       session.executeWrite[Unit](tx => {
