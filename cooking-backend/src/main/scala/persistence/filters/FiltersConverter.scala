@@ -53,6 +53,151 @@ object FiltersConverter {
   ): Boolean =
     activeAndMin.exists { case (active, min) => active && min.isDefined }
 
+  private sealed trait SimilarityMode
+  private case object RecipeRecipeMode extends SimilarityMode
+  private case object UserRecipeMode extends SimilarityMode
+  private case object UserUserMode extends SimilarityMode
+
+  private def resolveSimilarityMode(
+      filters: Filters,
+      nodeVar: String
+  ): Option[(SimilarityMode, String)] = {
+    val isRecipeNode = nodeVar == "recipe"
+    val isUserNode = nodeVar == "user"
+
+    if (isRecipeNode && filters.analyzedRecipe.isDefined)
+      Some(RecipeRecipeMode -> filters.analyzedRecipe.get.toString)
+    else if (isRecipeNode && filters.analyzedUser.isDefined)
+      Some(UserRecipeMode -> filters.analyzedUser.get.toString)
+    else if (isUserNode && filters.analyzedUser.isDefined)
+      Some(UserUserMode -> filters.analyzedUser.get.toString)
+    else None
+  }
+
+  private def buildSimilarityStart(
+      nodeVar: String,
+      analyzedId: String,
+      mode: SimilarityMode
+  ): String = {
+    val targetLabel = mode match {
+      case RecipeRecipeMode => "Recipe"
+      case UserRecipeMode   => "User"
+      case UserUserMode     => "User"
+    }
+    val modeSpecificTail = mode match {
+      case RecipeRecipeMode => s"\nWHERE $nodeVar.id <> target.id\n"
+      case _                => ""
+    }
+
+    s"WITH $nodeVar\nMATCH (target:$targetLabel {id: '$analyzedId'})\n" + modeSpecificTail
+  }
+
+  private def buildModeFinalWhere(
+      mode: SimilarityMode,
+      nodeVar: String,
+      analyzedId: String,
+      ingredientActive: Boolean,
+      coSaveActive: Boolean,
+      tagActive: Boolean,
+      ingredientMin: Option[Double],
+      coSaveMin: Option[Double],
+      tagMin: Option[Double]
+  ): String =
+    mode match {
+      case RecipeRecipeMode => ""
+      case UserRecipeMode =>
+        val anyMinApplied = hasAppliedMinThreshold(
+          ingredientActive -> ingredientMin,
+          tagActive -> tagMin
+        )
+        val finalWhereOrAnd = if (anyMinApplied) "AND" else "WHERE"
+        s"\n$finalWhereOrAnd $nodeVar.id IS NOT NULL \n"
+      case UserUserMode =>
+        val anyMinApplied = hasAppliedMinThreshold(
+          ingredientActive -> ingredientMin,
+          coSaveActive -> coSaveMin,
+          tagActive -> tagMin
+        )
+        val finalWhereOrAnd = if (anyMinApplied) "AND" else "WHERE"
+        s"\n$finalWhereOrAnd $nodeVar.id <> '$analyzedId'\n"
+    }
+
+  private def buildSimilarityCypher(
+      base: String,
+      mode: SimilarityMode,
+      nodeVar: String,
+      analyzedId: String,
+      ingredientMin: Option[Double],
+      coSaveMin: Option[Double],
+      tagMin: Option[Double],
+      ingredientActive: Boolean,
+      coSaveActive: Boolean,
+      tagActive: Boolean
+  ): String = {
+    val start = buildSimilarityStart(nodeVar, analyzedId, mode)
+
+    val ingredientPartBuilder = mode match {
+      case RecipeRecipeMode => recipeRecipeIngredientPart
+      case UserRecipeMode   => userRecipeIngredientPart
+      case UserUserMode     => userUserIngredientPart
+    }
+
+    val coSavePartBuilderOpt = mode match {
+      case RecipeRecipeMode => Some(recipeRecipeCoSavePart)
+      case UserRecipeMode   => None
+      case UserUserMode     => Some(userUserCoSavePart)
+    }
+
+    val tagPartBuilder = mode match {
+      case RecipeRecipeMode => recipeRecipeTagPart
+      case UserRecipeMode   => userRecipeTagPart
+      case UserUserMode     => userUserTagPart
+    }
+
+    val ingredientPart =
+      if (!ingredientActive) ""
+      else ingredientPartBuilder(nodeVar, ingredientMin)
+
+    val coSaveCarry = carryFields(
+      nodeVar,
+      includeIngredient = ingredientActive,
+      includeCoSave = false
+    )
+    val coSavePart =
+      if (!coSaveActive || coSavePartBuilderOpt.isEmpty) ""
+      else coSavePartBuilderOpt.get(nodeVar, coSaveCarry, coSaveMin)
+
+    val tagCarryBase = carryFields(
+      nodeVar,
+      includeIngredient = ingredientActive,
+      includeCoSave = coSaveActive
+    )
+    val tagPart =
+      if (!tagActive) ""
+      else tagPartBuilder(nodeVar, tagCarryBase, tagMin)
+
+    val finalWhere = buildModeFinalWhere(
+      mode,
+      nodeVar,
+      analyzedId,
+      ingredientActive,
+      coSaveActive,
+      tagActive,
+      ingredientMin,
+      coSaveMin,
+      tagMin
+    )
+
+    val finalWith = buildFinalScoreWith(
+      nodeVar,
+      ingredientActive,
+      coSaveActive,
+      tagActive
+    )
+
+    base + start + ingredientPart + coSavePart + tagPart + finalWhere + finalWith
+  }
+
   def getOrderLine(filters: Filters, nodeVar: String): String = {
     if (similarityActive(filters)) {
       "ORDER BY score DESC"
@@ -154,151 +299,29 @@ object FiltersConverter {
 
     val base = buildBaseCypher(matchingFilters, nonMatchingFilters, nodeVar)
 
-    val isRecipeNode = nodeVar == "recipe"
-    val isUserNode = nodeVar == "user"
-
     val ingredientMin = filters.ingredientSimilarity.map(_.minScore)
     val coSaveMin = filters.coSaveSimilarity.map(_.minScore)
     val tagMin = filters.tagSimilarity.map(_.minScore)
 
-    val mode =
-      if (isRecipeNode && filters.analyzedRecipe.isDefined) "RecipeRecipe"
-      else if (isRecipeNode && filters.analyzedUser.isDefined) "UserRecipe"
-      else if (isUserNode && filters.analyzedUser.isDefined) "UserUser"
-      else "None"
+    val ingredientActive = filters.ingredientSimilarity.isDefined
+    val coSaveActive = filters.coSaveSimilarity.isDefined
+    val tagActive = filters.tagSimilarity.isDefined
 
-    if (mode == "None") base
-    else if (mode == "RecipeRecipe") {
-      val analyzedId = filters.analyzedRecipe.get
-      val ingredientActiveRecipe = filters.ingredientSimilarity.isDefined
-      val coSaveActiveRecipe = filters.coSaveSimilarity.isDefined
-      val tagActiveRecipe = filters.tagSimilarity.isDefined
-
-      val start = s"""
-         |WITH $nodeVar
-         |MATCH (target:Recipe {id: '$analyzedId'})
-         |WHERE $nodeVar.id <> target.id
-         |""".stripMargin
-
-      val ingredientPart =
-        if (!ingredientActiveRecipe) ""
-        else recipeRecipeIngredientPart(nodeVar, ingredientMin)
-
-      val coSaveCarry = carryFields(
-        nodeVar,
-        includeIngredient = ingredientActiveRecipe,
-        includeCoSave = false
-      )
-      val coSavePart =
-        if (!coSaveActiveRecipe) ""
-        else recipeRecipeCoSavePart(nodeVar, coSaveCarry, coSaveMin)
-
-      val tagCarryBase = carryFields(
-        nodeVar,
-        includeIngredient = ingredientActiveRecipe,
-        includeCoSave = coSaveActiveRecipe
-      )
-      val tagPart =
-        if (!tagActiveRecipe) ""
-        else recipeRecipeTagPart(nodeVar, tagCarryBase, tagMin)
-
-      val finalWith = buildFinalScoreWith(
-        nodeVar,
-        ingredientActiveRecipe,
-        coSaveActiveRecipe,
-        tagActiveRecipe
-      )
-
-      base + start + ingredientPart + coSavePart + tagPart + finalWith
-    } else if (mode == "UserRecipe") {
-      val analyzedId = filters.analyzedUser.get
-      val ingredientActiveRecipe = filters.ingredientSimilarity.isDefined
-      val tagActiveRecipe = filters.tagSimilarity.isDefined
-
-      val start = s"""
-         |WITH $nodeVar
-         |MATCH (target:User {id: '$analyzedId'})
-         |""".stripMargin
-
-      val ingredientPart =
-        if (!ingredientActiveRecipe) ""
-        else userRecipeIngredientPart(nodeVar, ingredientMin)
-
-      val tagCarryBase = carryFields(
-        nodeVar,
-        includeIngredient = ingredientActiveRecipe,
-        includeCoSave = false
-      )
-
-      val tagPart =
-        if (!tagActiveRecipe) ""
-        else userRecipeTagPart(nodeVar, tagCarryBase, tagMin)
-
-      val anyMinApplied = hasAppliedMinThreshold(
-        ingredientActiveRecipe -> ingredientMin,
-        tagActiveRecipe -> tagMin
-      )
-      val finalWhereOrAnd = if (anyMinApplied) "AND" else "WHERE"
-      val finalWhere = s"\n$finalWhereOrAnd $nodeVar.id IS NOT NULL \n"
-
-      val finalWith = buildFinalScoreWith(
-        nodeVar,
-        ingredientActiveRecipe,
-        coSaveActive = false,
-        tagActiveRecipe
-      )
-
-      base + start + ingredientPart + tagPart + finalWhere + finalWith
-
-    } else {
-      val analyzedId = filters.analyzedUser.get
-      val ingredientActiveUser = filters.ingredientSimilarity.isDefined
-      val coSaveActiveUser = filters.coSaveSimilarity.isDefined
-      val tagActiveUser = filters.tagSimilarity.isDefined
-
-      val start = s"""
-         |WITH $nodeVar
-         |MATCH (target:User {id: '$analyzedId'})
-         |""".stripMargin
-
-      val ingredientPart =
-        if (!ingredientActiveUser) ""
-        else userUserIngredientPart(nodeVar, ingredientMin)
-
-      val coSaveCarry = carryFields(
-        nodeVar,
-        includeIngredient = ingredientActiveUser,
-        includeCoSave = false
-      )
-      val coSavePart =
-        if (!coSaveActiveUser) ""
-        else userUserCoSavePart(nodeVar, coSaveCarry, coSaveMin)
-
-      val tagCarryBase = carryFields(
-        nodeVar,
-        includeIngredient = ingredientActiveUser,
-        includeCoSave = coSaveActiveUser
-      )
-      val tagPart =
-        if (!tagActiveUser) ""
-        else userUserTagPart(nodeVar, tagCarryBase, tagMin)
-
-      val anyMinApplied = hasAppliedMinThreshold(
-        ingredientActiveUser -> ingredientMin,
-        coSaveActiveUser -> coSaveMin,
-        tagActiveUser -> tagMin
-      )
-      val finalWhereOrAnd = if (anyMinApplied) "AND" else "WHERE"
-      val finalWhere = s"\n$finalWhereOrAnd $nodeVar.id <> '$analyzedId'\n"
-
-      val finalWith = buildFinalScoreWith(
-        nodeVar,
-        ingredientActiveUser,
-        coSaveActiveUser,
-        tagActiveUser
-      )
-
-      base + start + ingredientPart + coSavePart + tagPart + finalWhere + finalWith
-    }
+    resolveSimilarityMode(filters, nodeVar)
+      .map { case (mode, analyzedId) =>
+        buildSimilarityCypher(
+          base,
+          mode,
+          nodeVar,
+          analyzedId,
+          ingredientMin,
+          coSaveMin,
+          tagMin,
+          ingredientActive,
+          coSaveActive,
+          tagActive
+        )
+      }
+      .getOrElse(base)
   }
 }
