@@ -7,6 +7,54 @@ import persistence.users.UserConverter.lowerPrefix
 object FiltersConverter {
   private def similarityActive(filters: Filters): Boolean =
     (filters.ingredientSimilarity.isDefined || filters.coSaveSimilarity.isDefined || filters.tagSimilarity.isDefined) && (filters.analyzedRecipe.isDefined || filters.analyzedUser.isDefined)
+
+  private def buildBaseCypher(
+      matchingFilters: Seq[Option[String]],
+      nonMatchingFilters: Seq[Option[String]],
+      nodeVar: String
+  ): String = {
+    matchingFilters.flatten.mkString(" \n ") + {
+      if (nonMatchingFilters.exists(_.isDefined)) s"MATCH ($nodeVar) WHERE  "
+      else ""
+    } + nonMatchingFilters.flatten.mkString(" AND ")
+  }
+
+  private def carryFields(
+      nodeVar: String,
+      includeIngredient: Boolean,
+      includeCoSave: Boolean
+  ): String =
+    if (includeIngredient && includeCoSave)
+      s"$nodeVar, target, ingredientScore, coSaveScore"
+    else if (includeIngredient) s"$nodeVar, target, ingredientScore"
+    else if (includeCoSave) s"$nodeVar, target, coSaveScore"
+    else s"$nodeVar, target"
+
+  private def appendMinWhere(scoreName: String, min: Option[Double]): String =
+    min.map(minValue => s"\nWHERE $scoreName >= $minValue ").getOrElse("")
+
+  private def buildFinalScoreWith(
+      nodeVar: String,
+      ingredientActive: Boolean,
+      coSaveActive: Boolean,
+      tagActive: Boolean
+  ): String = {
+    val scoreParts = (if (ingredientActive) Seq("ingredientScore")
+                      else Seq()) ++
+      (if (coSaveActive) Seq("coSaveScore")
+       else Seq()) ++
+      (if (tagActive) Seq("tagScore")
+       else Seq())
+    val sumExpr = if (scoreParts.isEmpty) "0.0" else scoreParts.mkString(" + ")
+    val denom = scoreParts.size.max(1)
+    s"WITH $nodeVar, ($sumExpr) / $denom AS score\n"
+  }
+
+  private def hasAppliedMinThreshold(
+      activeAndMin: (Boolean, Option[Double])*
+  ): Boolean =
+    activeAndMin.exists { case (active, min) => active && min.isDefined }
+
   def getOrderLine(filters: Filters, nodeVar: String): String = {
     if (similarityActive(filters)) {
       "ORDER BY score DESC"
@@ -106,16 +154,7 @@ object FiltersConverter {
       aliasesOrNameClause
     )
 
-    val base = matchingFilters
-      .filter(_.isDefined)
-      .map(_.get)
-      .mkString(" \n ") + {
-      if (nonMatchingFilters.exists(_.isDefined)) s"MATCH ($nodeVar) WHERE  "
-      else ""
-    } + nonMatchingFilters
-      .filter(_.isDefined)
-      .map(_.get)
-      .mkString(" AND ")
+    val base = buildBaseCypher(matchingFilters, nonMatchingFilters, nodeVar)
 
     val isRecipeNode = nodeVar == "recipe"
     val isUserNode = nodeVar == "user"
@@ -156,13 +195,13 @@ object FiltersConverter {
            |     sqrt(reduce(s = 0.0, x IN targetVector | s + x.weight * x.weight)) AS normTarget,
            |     sqrt(reduce(s = 0.0, x IN candidateVector | s + x.weight * x.weight)) AS normCandidate
            |WITH $nodeVar, target, CASE WHEN normTarget = 0 OR normCandidate = 0 THEN 0.0 ELSE dotProd / (normTarget * normCandidate) END AS ingredientScore
-           |""".stripMargin + ingredientMin
-            .map(min => s"\nWHERE ingredientScore >= $min ")
-            .getOrElse("")
+           |""".stripMargin + appendMinWhere("ingredientScore", ingredientMin)
 
-      val coSaveCarry =
-        if (ingredientActiveRecipe) s"$nodeVar, target, ingredientScore"
-        else s"$nodeVar, target"
+      val coSaveCarry = carryFields(
+        nodeVar,
+        includeIngredient = ingredientActiveRecipe,
+        includeCoSave = false
+      )
       val coSavePart =
         if (!coSaveActiveRecipe) ""
         else
@@ -178,16 +217,13 @@ object FiltersConverter {
            |     size(usersC) AS sizeC
            |WITH $coSaveCarry, inter, sizeT, sizeC,
            |     CASE WHEN sizeT + sizeC - inter = 0 THEN 0.0 ELSE toFloat(inter) / toFloat(sizeT + sizeC - inter) END AS coSaveScore
-           |""".stripMargin + coSaveMin
-            .map(min => s"\nWHERE coSaveScore >= $min ")
-            .getOrElse("")
+           |""".stripMargin + appendMinWhere("coSaveScore", coSaveMin)
 
-      val tagCarryBase =
-        if (coSaveActiveRecipe && ingredientActiveRecipe)
-          s"$nodeVar, target, ingredientScore, coSaveScore"
-        else if (ingredientActiveRecipe) s"$nodeVar, target, ingredientScore"
-        else if (coSaveActiveRecipe) s"$nodeVar, target, coSaveScore"
-        else s"$nodeVar, target"
+      val tagCarryBase = carryFields(
+        nodeVar,
+        includeIngredient = ingredientActiveRecipe,
+        includeCoSave = coSaveActiveRecipe
+      )
       val tagPart =
         if (!tagActiveRecipe) ""
         else
@@ -200,20 +236,14 @@ object FiltersConverter {
            |WITH $tagCarryBase, size([x IN candidateTags WHERE x IN targetTags]) AS interTags, size(targetTags) AS sizeTargetTags, size(candidateTags) AS sizeCandidateTags
            |WITH $tagCarryBase, interTags, sizeTargetTags, sizeCandidateTags,
            |     CASE WHEN sizeTargetTags + sizeCandidateTags - interTags = 0 THEN 0.0 ELSE toFloat(interTags) / toFloat(sizeTargetTags + sizeCandidateTags - interTags) END AS tagScore
-           |""".stripMargin + tagMin
-            .map(min => s"\nWHERE tagScore >= $min ")
-            .getOrElse("")
+           |""".stripMargin + appendMinWhere("tagScore", tagMin)
 
-      val sumExprParts = (if (ingredientActiveRecipe) Seq("ingredientScore")
-                          else Seq()) ++ (if (coSaveActiveRecipe)
-                                            Seq("coSaveScore")
-                                          else Seq()) ++ (if (tagActiveRecipe)
-                                                            Seq("tagScore")
-                                                          else Seq())
-      val sumExpr =
-        if (sumExprParts.isEmpty) "0.0" else sumExprParts.mkString(" + ")
-      val denom = sumExprParts.size.max(1)
-      val finalWith = s"WITH $nodeVar, ($sumExpr) / $denom AS score\n"
+      val finalWith = buildFinalScoreWith(
+        nodeVar,
+        ingredientActiveRecipe,
+        coSaveActiveRecipe,
+        tagActiveRecipe
+      )
 
       base + start + ingredientPart + coSavePart + tagPart + finalWith
     } else if (mode == "UserRecipe") {
@@ -245,13 +275,13 @@ object FiltersConverter {
            |     sqrt(reduce(s = 0.0, x IN targetVector | s + x.weight * x.weight)) AS normTarget,
            |     sqrt(reduce(s = 0.0, x IN candidateVector | s + x.weight * x.weight)) AS normCandidate
            |WITH $nodeVar, target, CASE WHEN normTarget = 0 OR normCandidate = 0 THEN 0.0 ELSE dotProd / (normTarget * normCandidate) END AS ingredientScore
-           |""".stripMargin + ingredientMin
-            .map(min => s"\nWHERE ingredientScore >= $min ")
-            .getOrElse("")
-      
-      val tagCarryBase =
-        if (ingredientActiveRecipe) s"$nodeVar, target, ingredientScore"
-        else s"$nodeVar, target"
+           |""".stripMargin + appendMinWhere("ingredientScore", ingredientMin)
+
+      val tagCarryBase = carryFields(
+        nodeVar,
+        includeIngredient = ingredientActiveRecipe,
+        includeCoSave = false
+      )
 
       val tagPart =
         if (!tagActiveRecipe) ""
@@ -270,22 +300,21 @@ object FiltersConverter {
            |WITH $tagCarryBase, size([x IN candidateTags WHERE x IN targetTags]) AS interTags, size(targetTags) AS sizeTargetTags, size(candidateTags) AS sizeCandidateTags
            |WITH $tagCarryBase, interTags, sizeTargetTags, sizeCandidateTags,
            |     CASE WHEN sizeTargetTags + sizeCandidateTags - interTags = 0 THEN 0.0 ELSE toFloat(interTags) / toFloat(sizeTargetTags + sizeCandidateTags - interTags) END AS tagScore
-           |""".stripMargin + tagMin
-            .map(min => s"\nWHERE tagScore >= $min ")
-            .getOrElse("")
+           |""".stripMargin + appendMinWhere("tagScore", tagMin)
 
-      val anyMinApplied =
-        (ingredientActiveRecipe && ingredientMin.isDefined) || (tagActiveRecipe && tagMin.isDefined)
+      val anyMinApplied = hasAppliedMinThreshold(
+        ingredientActiveRecipe -> ingredientMin,
+        tagActiveRecipe -> tagMin
+      )
       val finalWhereOrAnd = if (anyMinApplied) "AND" else "WHERE"
       val finalWhere = s"\n$finalWhereOrAnd $nodeVar.id IS NOT NULL \n"
 
-      val sumExprParts =
-        (if (ingredientActiveRecipe) Seq("ingredientScore") else Seq()) ++
-          (if (tagActiveRecipe) Seq("tagScore") else Seq())
-      val sumExpr =
-        if (sumExprParts.isEmpty) "0.0" else sumExprParts.mkString(" + ")
-      val denom = sumExprParts.size.max(1)
-      val finalWith = s"WITH $nodeVar, ($sumExpr) / $denom AS score\n"
+      val finalWith = buildFinalScoreWith(
+        nodeVar,
+        ingredientActiveRecipe,
+        coSaveActive = false,
+        tagActiveRecipe
+      )
 
       base + start + ingredientPart + tagPart + finalWhere + finalWith
 
@@ -327,13 +356,13 @@ object FiltersConverter {
              |     sqrt(reduce(s = 0.0, x IN targetVector | s + x.weight * x.weight)) AS normTarget,
              |     sqrt(reduce(s = 0.0, x IN candidateVector | s + x.weight * x.weight)) AS normCandidate
              |WITH $nodeVar, target, CASE WHEN normTarget = 0 OR normCandidate = 0 THEN 0.0 ELSE dotProd / (normTarget * normCandidate) END AS ingredientScore
-             |""".stripMargin + ingredientMin
-            .map(min => s"\nWHERE ingredientScore >= $min ")
-            .getOrElse("")
+             |""".stripMargin + appendMinWhere("ingredientScore", ingredientMin)
 
-      val coSaveCarry =
-        if (ingredientActiveUser) s"$nodeVar, target, ingredientScore"
-        else s"$nodeVar, target"
+      val coSaveCarry = carryFields(
+        nodeVar,
+        includeIngredient = ingredientActiveUser,
+        includeCoSave = false
+      )
       val coSavePart =
         if (!coSaveActiveUser) ""
         else
@@ -351,16 +380,13 @@ object FiltersConverter {
            |     size(recipesC) AS sizeC
            |WITH $coSaveCarry, inter, sizeT, sizeC,
            |     CASE WHEN sizeT + sizeC - inter = 0 THEN 0.0 ELSE toFloat(inter) / toFloat(sizeT + sizeC - inter) END AS coSaveScore
-           |""".stripMargin + coSaveMin
-            .map(min => s"\nWHERE coSaveScore >= $min ")
-            .getOrElse("")
+           |""".stripMargin + appendMinWhere("coSaveScore", coSaveMin)
 
-      val tagCarryBase =
-        if (coSaveActiveUser && ingredientActiveUser)
-          s"$nodeVar, target, ingredientScore, coSaveScore"
-        else if (ingredientActiveUser) s"$nodeVar, target, ingredientScore"
-        else if (coSaveActiveUser) s"$nodeVar, target, coSaveScore"
-        else s"$nodeVar, target"
+      val tagCarryBase = carryFields(
+        nodeVar,
+        includeIngredient = ingredientActiveUser,
+        includeCoSave = coSaveActiveUser
+      )
       val tagPart =
         if (!tagActiveUser) ""
         else
@@ -388,25 +414,22 @@ object FiltersConverter {
              |     size(candidateTags) AS sizeCandidateTags
              |WITH $tagCarryBase, interTags, sizeTargetTags, sizeCandidateTags,
              |     CASE WHEN sizeTargetTags + sizeCandidateTags - interTags = 0 THEN 0.0 ELSE toFloat(interTags) / toFloat(sizeTargetTags + sizeCandidateTags - interTags) END AS tagScore
-             |""".stripMargin + tagMin
-            .map(min => s"\nWHERE tagScore >= $min ")
-            .getOrElse("")
+             |""".stripMargin + appendMinWhere("tagScore", tagMin)
 
-      val anyMinApplied =
-        (ingredientActiveUser && ingredientMin.isDefined) || (coSaveActiveUser && coSaveMin.isDefined) || (tagActiveUser && tagMin.isDefined)
+      val anyMinApplied = hasAppliedMinThreshold(
+        ingredientActiveUser -> ingredientMin,
+        coSaveActiveUser -> coSaveMin,
+        tagActiveUser -> tagMin
+      )
       val finalWhereOrAnd = if (anyMinApplied) "AND" else "WHERE"
       val finalWhere = s"\n$finalWhereOrAnd $nodeVar.id <> '$analyzedId'\n"
 
-      val sumExprParts = (if (ingredientActiveUser) Seq("ingredientScore")
-                          else Seq()) ++ (if (coSaveActiveUser)
-                                            Seq("coSaveScore")
-                                          else Seq()) ++ (if (tagActiveUser)
-                                                            Seq("tagScore")
-                                                          else Seq())
-      val sumExpr =
-        if (sumExprParts.isEmpty) "0.0" else sumExprParts.mkString(" + ")
-      val denom = sumExprParts.size.max(1)
-      val finalWith = s"WITH $nodeVar, ($sumExpr) / $denom AS score\n"
+      val finalWith = buildFinalScoreWith(
+        nodeVar,
+        ingredientActiveUser,
+        coSaveActiveUser,
+        tagActiveUser
+      )
 
       base + start + ingredientPart + coSavePart + tagPart + finalWhere + finalWith
     }
