@@ -12,16 +12,16 @@ import java.util.UUID
 import scala.jdk.CollectionConverters.*
 
 object RecipeConverter extends Converter[Recipe] {
-  val prepTimeField = "prepTime"
-  val cookTimeField = "cookTime"
-  val servingsField = "servings"
-  val countryOfOriginField = "countryOfOrigin"
-  val publicField = "public"
-  val instructionsField = "instructions"
-  val instructionImagesField = "instructionImages"
-  val imageUrlField = "imageUrl"
-  val imageThumbnailUrlField = "imageThumbnailUrl"
-  val imageMediumUrlField = "imageMediumUrl"
+  private val prepTimeField = "prepTime"
+  private val cookTimeField = "cookTime"
+  private val servingsField = "servings"
+  private val countryOfOriginField = "countryOfOrigin"
+  private val publicField = "public"
+  private val instructionsField = "instructions"
+  private val instructionImagesField = "instructionImages"
+  private val imageUrlField = "imageUrl"
+  private val imageThumbnailUrlField = "imageThumbnailUrl"
+  private val imageMediumUrlField = "imageMediumUrl"
 
   override def toGraph(recipe: Recipe): Map[String, Object] =
     Map(

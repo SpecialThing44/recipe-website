@@ -5,7 +5,7 @@ import io.circe.syntax.EncoderOps
 import persistence.users.UserConverter.lowerPrefix
 
 object FiltersConverter {
-  def similarityActive(filters: Filters): Boolean =
+  private def similarityActive(filters: Filters): Boolean =
     (filters.ingredientSimilarity.isDefined || filters.coSaveSimilarity.isDefined || filters.tagSimilarity.isDefined) && (filters.analyzedRecipe.isDefined || filters.analyzedUser.isDefined)
   def getOrderLine(filters: Filters, nodeVar: String): String = {
     if (similarityActive(filters)) {
@@ -20,6 +20,11 @@ object FiltersConverter {
   }
   def getWithScoreLine(filters: Filters, withStatement: String): String =
     if (similarityActive(filters)) withStatement + ", score" else withStatement
+
+  def limitAndSkipStatement(filters: Filters): String =
+    filters.limit
+      .map(l => s"SKIP ${filters.page.getOrElse(0) * l} LIMIT $l")
+      .getOrElse("")
 
   def toCypher(
       filters: Filters,
@@ -205,7 +210,8 @@ object FiltersConverter {
                                           else Seq()) ++ (if (tagActiveRecipe)
                                                             Seq("tagScore")
                                                           else Seq())
-      val sumExpr = if (sumExprParts.isEmpty) "0.0" else sumExprParts.mkString(" + ")
+      val sumExpr =
+        if (sumExprParts.isEmpty) "0.0" else sumExprParts.mkString(" + ")
       val denom = sumExprParts.size.max(1)
       val finalWith = s"WITH $nodeVar, ($sumExpr) / $denom AS score\n"
 
@@ -242,12 +248,7 @@ object FiltersConverter {
            |""".stripMargin + ingredientMin
             .map(min => s"\nWHERE ingredientScore >= $min ")
             .getOrElse("")
-
-      // CoSave not implemented for User-Recipe, defaulting to skip
-      val coSaveCarry =
-        if (ingredientActiveRecipe) s"$nodeVar, target, ingredientScore"
-        else s"$nodeVar, target"
-
+      
       val tagCarryBase =
         if (ingredientActiveRecipe) s"$nodeVar, target, ingredientScore"
         else s"$nodeVar, target"
@@ -273,13 +274,16 @@ object FiltersConverter {
             .map(min => s"\nWHERE tagScore >= $min ")
             .getOrElse("")
 
-      val anyMinApplied = (ingredientActiveRecipe && ingredientMin.isDefined) || (tagActiveRecipe && tagMin.isDefined)
+      val anyMinApplied =
+        (ingredientActiveRecipe && ingredientMin.isDefined) || (tagActiveRecipe && tagMin.isDefined)
       val finalWhereOrAnd = if (anyMinApplied) "AND" else "WHERE"
       val finalWhere = s"\n$finalWhereOrAnd $nodeVar.id IS NOT NULL \n"
 
-      val sumExprParts = (if (ingredientActiveRecipe) Seq("ingredientScore") else Seq()) ++
-                         (if (tagActiveRecipe) Seq("tagScore") else Seq())
-      val sumExpr = if (sumExprParts.isEmpty) "0.0" else sumExprParts.mkString(" + ")
+      val sumExprParts =
+        (if (ingredientActiveRecipe) Seq("ingredientScore") else Seq()) ++
+          (if (tagActiveRecipe) Seq("tagScore") else Seq())
+      val sumExpr =
+        if (sumExprParts.isEmpty) "0.0" else sumExprParts.mkString(" + ")
       val denom = sumExprParts.size.max(1)
       val finalWith = s"WITH $nodeVar, ($sumExpr) / $denom AS score\n"
 
@@ -399,7 +403,8 @@ object FiltersConverter {
                                           else Seq()) ++ (if (tagActiveUser)
                                                             Seq("tagScore")
                                                           else Seq())
-      val sumExpr = if (sumExprParts.isEmpty) "0.0" else sumExprParts.mkString(" + ")
+      val sumExpr =
+        if (sumExprParts.isEmpty) "0.0" else sumExprParts.mkString(" + ")
       val denom = sumExprParts.size.max(1)
       val finalWith = s"WITH $nodeVar, ($sumExpr) / $denom AS score\n"
 

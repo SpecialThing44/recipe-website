@@ -8,13 +8,13 @@ import java.util
 import java.util.UUID
 
 object UserConverter extends Converter[User] {
-  val emailField = "email"
-  val countryOfOriginField = "countryOfOrigin"
-  val avatarUrlField = "avatarUrl"
-  val avatarThumbnailUrlField = "avatarThumbnailUrl"
-  val avatarMediumUrlField = "avatarMediumUrl"
-  val adminField = "admin"
-  val identityField = "identity"
+  private val emailField = "email"
+  private val countryOfOriginField = "countryOfOrigin"
+  private val avatarUrlField = "avatarUrl"
+  private val avatarThumbnailUrlField = "avatarThumbnailUrl"
+  private val avatarMediumUrlField = "avatarMediumUrl"
+  private val adminField = "admin"
+  private val identityField = "identity"
 
   override def toGraph(user: User): Map[String, Object] =
     Map(
@@ -54,9 +54,7 @@ object UserConverter extends Converter[User] {
       countryOfOrigin =
         Option(record.get(countryOfOriginField).toString).filter(_.nonEmpty),
       avatar = avatar,
-      admin = Option(record.get(adminField))
-        .map(_.toString.toBoolean)
-        .getOrElse(false),
+      admin = Option(record.get(adminField)).exists(_.toString.toBoolean),
       createdOn = Instant.parse(record.get(createdOnField).toString),
       updatedOn = Instant.parse(record.get(updatedOnField).toString)
     )
