@@ -4,13 +4,15 @@ import api.users.AuthenticationInteractor
 import com.google.inject.Inject
 import context.ApiContext
 import domain.recipes.Recipe
+import persistence.ingredients.weights.IngredientWeightAsyncService
 import persistence.recipes.Recipes
 import zio.ZIO
 
 import java.util.UUID
 
 class RecipeDeleteInteractor @Inject() (
-    persistence: Recipes
+    persistence: Recipes,
+    ingredientWeightAsyncService: IngredientWeightAsyncService
 ) {
   def delete(id: UUID): ZIO[ApiContext, Throwable, Recipe] = {
     for {
@@ -21,6 +23,9 @@ class RecipeDeleteInteractor @Inject() (
         recipe.createdBy.id
       )
       deleted <- persistence.delete(id)
+      _ <- ingredientWeightAsyncService
+        .enqueueRecipeDeleted(recipe)
+        .catchAll(_ => ZIO.unit)
     } yield deleted
   }
 }

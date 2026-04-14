@@ -23,20 +23,13 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
     val standardizedWeights = entity.ingredients.map(ii =>
       Unit.toStandardizedAmount(ii.quantity.unit, ii.quantity.amount)
     )
-    val totalStandardizedExcludingWater = entity.ingredients
-      .zip(standardizedWeights)
-      .filter { case (ingredientInput, _) =>
-        !ingredientInput.ingredient.name.equalsIgnoreCase("Water")
-      }
-      .map(_._2.toDouble)
-      .sum
+    val totalStandardized = standardizedWeights.map(_.toDouble).sum
     entity.ingredients
       .zip(standardizedWeights)
       .map { case (ingredientInput, standardizedWeight) =>
         val normalizedWeight =
-          if (ingredientInput.ingredient.name.equalsIgnoreCase("Water")) 0.0
-          else if (totalStandardizedExcludingWater == 0) 0.0
-          else standardizedWeight.toDouble / totalStandardizedExcludingWater
+          if (totalStandardized == 0) 0.0
+          else standardizedWeight.toDouble / totalStandardized
         val aliasSuffix =
           if (useIngredientAliasSuffix)
             ingredientInput.ingredient.id.toString.replace("-", "")
@@ -45,13 +38,14 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
           if (useIngredientAliasSuffix) s"ing$aliasSuffix" else "ing"
         s"""
          |MATCH ($ingredientMatch:Ingredient {id: '%s'})
-         |CREATE (${graph.nodeVar})-[:HAS_INGREDIENT {amount: %f, unit: '%s', weight: %f, normalizedWeight: %f, description: '%s'}]->($ingredientMatch)
+        |CREATE (${graph.nodeVar})-[:HAS_INGREDIENT {amount: %f, unit: '%s', weight: %f, rawNormalizedWeight: %f, normalizedWeight: %f, description: '%s'}]->($ingredientMatch)
          |${WithStatement.apply}, user
          |""".stripMargin.format(
           ingredientInput.ingredient.id.toString,
           Double.box(ingredientInput.quantity.amount),
           ingredientInput.quantity.unit.name,
           Double.box(standardizedWeight),
+         Double.box(normalizedWeight),
           Double.box(normalizedWeight),
           ingredientInput.description.getOrElse("")
         )
@@ -63,7 +57,7 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
     val includeIngredientScore =
       query.ingredientSimilarity.isDefined && (query.analyzedRecipe.isDefined || query.analyzedUser.isDefined)
     val withLine =
-      s"WITH ${graph.nodeVar}, user, collect(DISTINCT ${graph.tagVar}.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit, weight: ri.weight, description: ri.description}) as ingredientQuantities"
+      s"WITH ${graph.nodeVar}, user, collect(DISTINCT ${graph.tagVar}.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit, weight: ri.weight, rawNormalizedWeight: coalesce(ri.rawNormalizedWeight, ri.normalizedWeight, 0.0), normalizedWeight: coalesce(ri.normalizedWeight, ri.rawNormalizedWeight, 0.0), description: ri.description}) as ingredientQuantities"
     val orderLine = FiltersConverter.getOrderLine(query, graph.nodeVar)
     database.readTransaction(
       s"""
@@ -118,7 +112,7 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
           "tag",
           graph.tagLabel
         )}
-         |WITH ${graph.nodeVar}, user, collect(DISTINCT ${graph.tagVar}.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit, weight: ri.weight, normalizedWeight: coalesce(ri.normalizedWeight, 0.0), description: ri.description}) as ingredientQuantities
+         |WITH ${graph.nodeVar}, user, collect(DISTINCT ${graph.tagVar}.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit, weight: ri.weight, rawNormalizedWeight: coalesce(ri.rawNormalizedWeight, ri.normalizedWeight, 0.0), normalizedWeight: coalesce(ri.normalizedWeight, ri.rawNormalizedWeight, 0.0), description: ri.description}) as ingredientQuantities
          |${ReturnStatement.apply}, user as createdBy, tags, ingredientQuantities
          |""".stripMargin,
       (result: org.neo4j.driver.Result) => {
@@ -171,7 +165,7 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
           graph.tagVar,
           graph.tagLabel
         )}
-         |WITH ${graph.nodeVar}, user, collect(DISTINCT ${graph.tagVar}.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit, weight: ri.weight, normalizedWeight: coalesce(ri.normalizedWeight, 0.0), description: ri.description}) as ingredientQuantities
+         |WITH ${graph.nodeVar}, user, collect(DISTINCT ${graph.tagVar}.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit, weight: ri.weight, rawNormalizedWeight: coalesce(ri.rawNormalizedWeight, ri.normalizedWeight, 0.0), normalizedWeight: coalesce(ri.normalizedWeight, ri.rawNormalizedWeight, 0.0), description: ri.description}) as ingredientQuantities
          |${ReturnStatement.apply}, user as createdBy, tags, ingredientQuantities
          |""".stripMargin,
       (result: org.neo4j.driver.Result) => {
@@ -209,7 +203,7 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
           graph.tagVar,
           graph.tagLabel
         )}
-         |WITH ${graph.nodeVar}, user, collect(DISTINCT ${graph.tagVar}.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit, weight: ri.weight, normalizedWeight: coalesce(ri.normalizedWeight, 0.0), description: ri.description}) as ingredientQuantities
+         |WITH ${graph.nodeVar}, user, collect(DISTINCT ${graph.tagVar}.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit, weight: ri.weight, rawNormalizedWeight: coalesce(ri.rawNormalizedWeight, ri.normalizedWeight, 0.0), normalizedWeight: coalesce(ri.normalizedWeight, ri.rawNormalizedWeight, 0.0), description: ri.description}) as ingredientQuantities
          |${ReturnStatement.apply}, user as createdBy, tags, ingredientQuantities
          |""".stripMargin,
       (result: org.neo4j.driver.Result) => {
@@ -241,7 +235,7 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
           graph.tagVar,
           graph.tagLabel
         )}
-         |WITH ${graph.nodeVar}, user, collect(DISTINCT ${graph.tagVar}.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit, weight: ri.weight, normalizedWeight: coalesce(ri.normalizedWeight, 0.0), description: ri.description}) as ingredientQuantities
+         |WITH ${graph.nodeVar}, user, collect(DISTINCT ${graph.tagVar}.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit, weight: ri.weight, rawNormalizedWeight: coalesce(ri.rawNormalizedWeight, ri.normalizedWeight, 0.0), normalizedWeight: coalesce(ri.normalizedWeight, ri.rawNormalizedWeight, 0.0), description: ri.description}) as ingredientQuantities
          |${ReturnStatement.apply}, user as createdBy, tags, ingredientQuantities
          |""".stripMargin,
       (result: org.neo4j.driver.Result) => {

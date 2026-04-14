@@ -8,6 +8,7 @@ import domain.filters.{Filters, StringFilter}
 import domain.ingredients.Unit
 import domain.recipes.{Recipe, RecipeInput}
 import persistence.ingredients.Ingredients
+import persistence.ingredients.weights.IngredientWeightAsyncService
 import persistence.recipes.Recipes
 import persistence.tags.Tags
 import zio.ZIO
@@ -17,7 +18,8 @@ class RecipeCreateInteractor @Inject() (
     tagsPersistence: Tags,
     wikipediaCheck: WikipediaCheck,
     ingredientPersistence: Ingredients,
-    richTextSanitizer: RichTextSanitizer
+  richTextSanitizer: RichTextSanitizer,
+  ingredientWeightAsyncService: IngredientWeightAsyncService
 ) {
   def create(input: RecipeInput): ZIO[ApiContext, Throwable, Recipe] = {
     for {
@@ -84,6 +86,9 @@ class RecipeCreateInteractor @Inject() (
       recipe = RecipeAdapter.adapt(recipeWithSanitized, ingredients, user)
       recipeWithImages = recipe.copy(instructionImages = extractedImageUrls)
       result <- persistence.create(recipeWithImages)
+      _ <- ingredientWeightAsyncService
+        .enqueueRecipeCreated(result)
+        .catchAll(_ => ZIO.unit)
     } yield result
   }
 }
