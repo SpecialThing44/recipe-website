@@ -37,9 +37,9 @@ object CypherScoringParts {
   ): String =
     s"""
        |MATCH (target)-[tr:HAS_INGREDIENT]->(ti:Ingredient)
-       |WITH $nodeVar, target, collect({ingredientId: ti.id, weight: coalesce(tr.normalizedWeight, 0.0)}) AS targetVector
+       |WITH $nodeVar, target, collect({ingredientId: ti.id, weight: coalesce(tr.rawNormalizedWeight, tr.normalizedWeight, 0.0) * coalesce(ti.globalWeight, 1.0)}) AS targetVector
        |MATCH ($nodeVar)-[ci:HAS_INGREDIENT]->(ciIngr:Ingredient)
-       |WITH $nodeVar, target, targetVector, collect({ingredientId: ciIngr.id, weight: coalesce(ci.normalizedWeight, 0.0)}) AS candidateVector
+       |WITH $nodeVar, target, targetVector, collect({ingredientId: ciIngr.id, weight: coalesce(ci.rawNormalizedWeight, ci.normalizedWeight, 0.0) * coalesce(ciIngr.globalWeight, 1.0)}) AS candidateVector
        |""".stripMargin + ingredientCosineScoreTail(nodeVar) + appendMinWhere(
       "ingredientScore",
       ingredientMin
@@ -56,10 +56,10 @@ object CypherScoringParts {
        |WHERE NOT $nodeVar IN recipesT
        |UNWIND recipesT AS tRec
        |MATCH (tRec)-[tr:HAS_INGREDIENT]->(ti:Ingredient)
-       |WITH $nodeVar, target, ti.id AS ingrIdT, sum(coalesce(tr.normalizedWeight, 0.0)) AS weightT
+       |WITH $nodeVar, target, ti.id AS ingrIdT, sum(coalesce(tr.rawNormalizedWeight, tr.normalizedWeight, 0.0) * coalesce(ti.globalWeight, 1.0)) AS weightT
        |WITH $nodeVar, target, collect({ingredientId: ingrIdT, weight: weightT}) AS targetVector
        |MATCH ($nodeVar)-[ci:HAS_INGREDIENT]->(ciIngr:Ingredient)
-       |WITH $nodeVar, target, targetVector, collect({ingredientId: ciIngr.id, weight: coalesce(ci.normalizedWeight, 0.0)}) AS candidateVector
+       |WITH $nodeVar, target, targetVector, collect({ingredientId: ciIngr.id, weight: coalesce(ci.rawNormalizedWeight, ci.normalizedWeight, 0.0) * coalesce(ciIngr.globalWeight, 1.0)}) AS candidateVector
        |""".stripMargin + ingredientCosineScoreTail(nodeVar) + appendMinWhere(
       "ingredientScore",
       ingredientMin
@@ -82,11 +82,11 @@ object CypherScoringParts {
        |     CASE WHEN size(cAll) = 0 THEN [null] ELSE cAll END AS cAllNZ
        |UNWIND tAllNZ AS tRec
        |OPTIONAL MATCH (tRec)-[tr:HAS_INGREDIENT]->(ti:Ingredient)
-       |WITH $nodeVar, target, ti.id AS ingrIdT, sum(coalesce(tr.normalizedWeight, 0.0)) AS weightT, cAllNZ
+      |WITH $nodeVar, target, ti.id AS ingrIdT, sum(coalesce(tr.rawNormalizedWeight, tr.normalizedWeight, 0.0) * coalesce(ti.globalWeight, 1.0)) AS weightT, cAllNZ
        |WITH $nodeVar, target, collect({ingredientId: ingrIdT, weight: weightT}) AS targetVector, cAllNZ
        |UNWIND cAllNZ AS cRec
        |OPTIONAL MATCH (cRec)-[ci:HAS_INGREDIENT]->(ciIngr:Ingredient)
-       |WITH $nodeVar, target, targetVector, ciIngr.id AS ingrIdC, sum(coalesce(ci.normalizedWeight, 0.0)) AS weightC
+      |WITH $nodeVar, target, targetVector, ciIngr.id AS ingrIdC, sum(coalesce(ci.rawNormalizedWeight, ci.normalizedWeight, 0.0) * coalesce(ciIngr.globalWeight, 1.0)) AS weightC
        |WITH $nodeVar, target, targetVector, collect({ingredientId: ingrIdC, weight: weightC}) AS candidateVector
        |""".stripMargin + ingredientCosineScoreTail(nodeVar) + appendMinWhere(
       "ingredientScore",

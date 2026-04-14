@@ -8,6 +8,7 @@ import domain.filters.{Filters, StringFilter}
 import domain.ingredients.Unit
 import domain.recipes.{Recipe, RecipeUpdateInput}
 import persistence.ingredients.Ingredients
+import persistence.ingredients.weights.IngredientWeightAsyncService
 import persistence.recipes.Recipes
 import persistence.tags.Tags
 import zio.ZIO
@@ -17,7 +18,8 @@ class RecipeUpdateInteractor @Inject() (
     tagsPersistence: Tags,
     wikipediaCheck: WikipediaCheck,
     ingredientPersistence: Ingredients,
-    richTextSanitizer: RichTextSanitizer
+  richTextSanitizer: RichTextSanitizer,
+  ingredientWeightAsyncService: IngredientWeightAsyncService
 ) {
   def update(
       input: RecipeUpdateInput,
@@ -116,6 +118,9 @@ class RecipeUpdateInteractor @Inject() (
         resolved
       )
       result <- persistence.update(updated, originalRecipe)
+      _ <- ingredientWeightAsyncService
+        .enqueueRecipeUpdated(originalRecipe, result)
+        .catchAll(_ => ZIO.unit)
     } yield result
   }
 }
