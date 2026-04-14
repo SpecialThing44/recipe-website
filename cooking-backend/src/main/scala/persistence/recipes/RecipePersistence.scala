@@ -156,10 +156,10 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
          |${WithStatement.apply}
          |OPTIONAL MATCH (${graph.nodeVar})-[r:${graph.tagRelation}]->()
          |DELETE r
-         |${WithStatement.apply}
+         |WITH DISTINCT ${graph.nodeVar}
          |OPTIONAL MATCH (${graph.nodeVar})-[ri:HAS_INGREDIENT]->()
          |DELETE ri
-         |${WithStatement.apply}
+         |WITH DISTINCT ${graph.nodeVar}
          |${MatchRelationship.outgoing("CREATED_BY", "user", "User")}
          |${WithStatement.apply}, user
          |$createTagStatements

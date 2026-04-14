@@ -4,6 +4,7 @@ import domain.filters.{Filters, StringFilter}
 import domain.ingredients.{Ingredient, IngredientInput, Quantity, Unit as IngUnit}
 import domain.recipes.{Recipe, RecipeIngredientInput, RecipeInput, RecipeUpdateInput}
 import domain.users.{User, UserInput}
+import org.neo4j.driver.{AuthTokens, GraphDatabase}
 
 class RecipeIntegrationTest extends IntegrationTestFramework {
   def recipesMatch(r1: Recipe, r2: Recipe): Unit = {
@@ -120,6 +121,30 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
 
     val fetched = getRecipeById(created.id)
     recipesMatch(updated, fetched)
+  }
+
+  it should "not duplicate has-ingredient relationships on repeated updates" in {
+    val created = createTestRecipe(standardRecipeInput(Seq(tomato, onion)))
+    val update = RecipeUpdateInput(
+      tags = Some(Seq("quick", "easy")),
+      ingredients = Some(
+        Seq(
+          RecipeIngredientInput(
+            onion.id,
+            Quantity(IngUnit("cup", true, ""), 2),
+            description = Some("about one onion")
+          )
+        )
+      )
+    )
+
+    var current = created
+    (1 to 3).foreach { _ =>
+      current = updateRecipe(current, update)
+    }
+
+    val relationshipCount = countHasIngredientRelationships(current.id)
+    relationshipCount shouldBe 1L
   }
 
   it should "list recipes with filters" in {
@@ -434,5 +459,24 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
       wikiLink = Some("https://en.wikipedia.org/wiki/Recipe"),
       instructions = quillDelta("Mix and cook")
     )
+  }
+
+  private def countHasIngredientRelationships(recipeId: java.util.UUID): Long = {
+    val driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.none())
+    val session = driver.session()
+    try {
+      session.executeRead[Long](tx =>
+        tx
+          .run(
+            s"MATCH (recipe:Recipe {id: '$recipeId'})-[ri:HAS_INGREDIENT]->(:Ingredient) RETURN count(ri) AS count"
+          )
+          .single()
+          .get("count")
+          .asLong()
+      )
+    } finally {
+      session.close()
+      driver.close()
+    }
   }
 }
