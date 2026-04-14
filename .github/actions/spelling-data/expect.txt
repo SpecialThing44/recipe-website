@@ -13,6 +13,7 @@ healthcheck
 idx
 ingr
 interactor
+jaccard
 jwks
 Lanczos
 logback

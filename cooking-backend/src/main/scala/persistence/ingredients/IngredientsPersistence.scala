@@ -34,7 +34,7 @@ class IngredientsPersistence @Inject() (database: Database)
           withLine
         )}, user, collect(DISTINCT tag.name) as tags
          |$orderLine
-         |${query.limitAndSkipStatement}
+         |${FiltersConverter.limitAndSkipStatement(query)}
          |${ReturnStatement.apply}, user as createdBy, tags
          |""".stripMargin,
       (result: Result) =>

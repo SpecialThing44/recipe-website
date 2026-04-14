@@ -27,10 +27,7 @@ case class Filters(
     orderBy: Option[OrderBy],
     limit: Option[Int],
     page: Option[Int],
-) {
-  def limitAndSkipStatement: String =
-    limit.map(l => s"SKIP ${page.getOrElse(0) * l} LIMIT $l").getOrElse("")
-}
+)
 
 object Filters {
   implicit val encoder: Encoder[Filters] = deriveEncoder[Filters]

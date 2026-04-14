@@ -9,6 +9,7 @@ case class Index(
     val indexTypeStr = indexType match {
       case IndexType.Text  => "TEXT"
       case IndexType.Range => "RANGE"
+      case IndexType.Lookup => "LOOKUP"
     }
     s"CREATE $indexTypeStr INDEX IF NOT EXISTS FOR (n:$label) ON (${fields.map(f => s"n.$f").mkString(",")})"
   }

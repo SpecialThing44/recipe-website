@@ -11,7 +11,7 @@ import java.util.UUID
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 
 object IngredientConverter extends Converter[Ingredient] {
-  val aliasesField = "aliases"
+  private val aliasesField = "aliases"
 
   override def toGraph(ingredient: Ingredient): Map[String, Object] =
     Map(

@@ -78,7 +78,7 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
         )}
          |${FiltersConverter.getWithScoreLine(query, withLine)}
          |$orderLine
-         |${query.limitAndSkipStatement}
+         |${FiltersConverter.limitAndSkipStatement(query)}
          |${ReturnStatement.apply}, user as createdBy, tags, ingredientQuantities
          |""".stripMargin,
       (result: org.neo4j.driver.Result) =>

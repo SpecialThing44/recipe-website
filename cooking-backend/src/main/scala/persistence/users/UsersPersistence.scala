@@ -44,7 +44,7 @@ class UsersPersistence @Inject() (database: Database) extends Users {
            |${FiltersConverter.toCypher(filters, graph.nodeVar)}
            |${FiltersConverter.getWithScoreLine(filters, withLine)}
            |$orderLine
-           |${filters.limitAndSkipStatement}
+           |${FiltersConverter.limitAndSkipStatement(filters)}
            |${ReturnStatement.apply}
            |""".stripMargin
       },
