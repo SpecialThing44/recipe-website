@@ -79,4 +79,31 @@ trait IntegrationIngredientSupport {
         .getOrThrow()
     }
   }
+
+  protected def listIngredientSubstitutes(ingredientId: UUID): Seq[Ingredient] = {
+    Unsafe.unsafe { implicit unsafe =>
+      Runtime.default.unsafe
+        .run(
+          ingredientsFacade
+            .listSubstitutes(ingredientId)
+            .provideLayer(createApiContext())
+        )
+        .getOrThrow()
+    }
+  }
+
+  protected def addIngredientSubstitute(
+      ingredientId: UUID,
+      substituteId: UUID
+  ): Unit = {
+    Unsafe.unsafe { implicit unsafe =>
+      Runtime.default.unsafe
+        .run(
+          ingredientsFacade
+            .addSubstitute(ingredientId, substituteId)
+            .provideLayer(createApiContext())
+        )
+        .getOrThrow()
+    }
+  }
 }

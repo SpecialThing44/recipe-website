@@ -33,5 +33,8 @@ POST          /ingredients                          http.ingredients.Ingredients
 GET           /ingredients/:id                      http.ingredients.IngredientsController.get(id: java.util.UUID)
 PUT           /ingredients/:id                      http.ingredients.IngredientsController.put(id: java.util.UUID)
 DELETE        /ingredients/:id                      http.ingredients.IngredientsController.delete(id: java.util.UUID)
+GET           /ingredients/:id/substitutes          http.ingredients.IngredientsController.substitutes(id: java.util.UUID)
+POST          /ingredients/:id/substitutes/:substituteId http.ingredients.IngredientsController.addSubstitute(id: java.util.UUID, substituteId: java.util.UUID)
+DELETE        /ingredients/:id/substitutes/:substituteId http.ingredients.IngredientsController.deleteSubstitute(id: java.util.UUID, substituteId: java.util.UUID)
 
 POST          /tags/query                           http.tags.TagsController.list()
