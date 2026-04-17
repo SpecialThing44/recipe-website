@@ -5,7 +5,8 @@ import context.CookingApi
 import http.Requests.extractUser
 import api.users.AuthenticationInteractor
 import persistence.ingredients.weights.IngredientWeightAsyncService
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.Reads
 import play.api.mvc.*
 
 @Singleton
@@ -14,6 +15,10 @@ class AdminController @Inject() (
     cookingApi: CookingApi,
     ingredientWeightAsyncService: IngredientWeightAsyncService
 ) extends AbstractController(cc) {
+
+  private case class IngredientWeightSettingsInput(meanRawPenaltyFactor: Double)
+  private implicit val ingredientWeightSettingsReads: Reads[IngredientWeightSettingsInput] =
+    Json.reads[IngredientWeightSettingsInput]
 
   def processIngredientWeightEvents(): Action[AnyContent] = Action { request =>
     val maybeUser = extractUser(request, cookingApi)
@@ -112,5 +117,72 @@ class AdminController @Inject() (
       case None =>
         Unauthorized(Json.obj("error" -> "Invalid or missing token"))
     }
+  }
+
+  def getIngredientWeightSettings(): Action[AnyContent] = Action { request =>
+    val maybeUser = extractUser(request, cookingApi)
+    maybeUser match {
+      case Some(user) =>
+        domain.types.ZIORuntime.unsafeRun(AuthenticationInteractor.ensureIsAdmin(user).either) match {
+          case Right(_) =>
+            val meanRawPenaltyFactor =
+              domain.types.ZIORuntime.unsafeRun(
+                ingredientWeightAsyncService.getMeanRawPenaltyFactor()
+              )
+            Ok(
+              Json.obj(
+                "meanRawPenaltyFactor" -> meanRawPenaltyFactor
+              )
+            )
+          case Left(_) =>
+            Forbidden(Json.obj("error" -> "Admin privileges required"))
+        }
+      case None =>
+        Unauthorized(Json.obj("error" -> "Invalid or missing token"))
+    }
+  }
+
+  def updateIngredientWeightSettings(): Action[JsValue] = Action(parse.json) {
+    request =>
+      val maybeUser = extractUser(request, cookingApi)
+      maybeUser match {
+        case Some(user) =>
+          domain.types.ZIORuntime.unsafeRun(AuthenticationInteractor.ensureIsAdmin(user).either) match {
+            case Right(_) =>
+              request.body
+                .validate[IngredientWeightSettingsInput]
+                .fold(
+                  errors =>
+                    BadRequest(
+                      Json.obj(
+                        "error" -> "Invalid request body",
+                        "details" -> errors.toString
+                      )
+                    ),
+                  payload => {
+                    try {
+                      val meanRawPenaltyFactor =
+                        domain.types.ZIORuntime.unsafeRun(
+                          ingredientWeightAsyncService.setMeanRawPenaltyFactor(
+                            payload.meanRawPenaltyFactor
+                          )
+                        )
+                      Ok(
+                        Json.obj(
+                          "meanRawPenaltyFactor" -> meanRawPenaltyFactor
+                        )
+                      )
+                    } catch {
+                      case e: IllegalArgumentException =>
+                        BadRequest(Json.obj("error" -> e.getMessage))
+                    }
+                  }
+                )
+            case Left(_) =>
+              Forbidden(Json.obj("error" -> "Admin privileges required"))
+          }
+        case None =>
+          Unauthorized(Json.obj("error" -> "Invalid or missing token"))
+      }
   }
 }

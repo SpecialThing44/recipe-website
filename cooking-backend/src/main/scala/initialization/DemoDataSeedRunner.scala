@@ -93,6 +93,96 @@ object DemoDataSeedRunner {
       createdBy = rootUser
     )
 
+    val onion = Ingredient(
+      id = UUID.nameUUIDFromBytes("demo-ingredient-onion".getBytes(StandardCharsets.UTF_8)),
+      name = "Onion",
+      aliases = Seq("Yellow Onion"),
+      wikiLink = "https://en.wikipedia.org/wiki/Onion",
+      tags = Seq("aromatic"),
+      createdBy = rootUser
+    )
+
+    val basil = Ingredient(
+      id = UUID.nameUUIDFromBytes("demo-ingredient-basil".getBytes(StandardCharsets.UTF_8)),
+      name = "Basil",
+      aliases = Seq("Sweet Basil"),
+      wikiLink = "https://en.wikipedia.org/wiki/Basil",
+      tags = Seq("herb", "fresh"),
+      createdBy = rootUser
+    )
+
+    val parmesan = Ingredient(
+      id = UUID.nameUUIDFromBytes("demo-ingredient-parmesan".getBytes(StandardCharsets.UTF_8)),
+      name = "Parmesan",
+      aliases = Seq("Parmigiano Reggiano"),
+      wikiLink = "https://en.wikipedia.org/wiki/Parmesan",
+      tags = Seq("cheese", "dairy"),
+      createdBy = rootUser
+    )
+
+    val butter = Ingredient(
+      id = UUID.nameUUIDFromBytes("demo-ingredient-butter".getBytes(StandardCharsets.UTF_8)),
+      name = "Butter",
+      aliases = Seq("Unsalted Butter"),
+      wikiLink = "https://en.wikipedia.org/wiki/Butter",
+      tags = Seq("fat", "dairy"),
+      createdBy = rootUser
+    )
+
+    val lemon = Ingredient(
+      id = UUID.nameUUIDFromBytes("demo-ingredient-lemon".getBytes(StandardCharsets.UTF_8)),
+      name = "Lemon",
+      aliases = Seq("Lemon Juice"),
+      wikiLink = "https://en.wikipedia.org/wiki/Lemon",
+      tags = Seq("citrus", "acid"),
+      createdBy = rootUser
+    )
+
+    val chickenBreast = Ingredient(
+      id = UUID.nameUUIDFromBytes("demo-ingredient-chicken-breast".getBytes(StandardCharsets.UTF_8)),
+      name = "Chicken Breast",
+      aliases = Seq("Chicken Fillet"),
+      wikiLink = "https://en.wikipedia.org/wiki/Chicken_as_food",
+      tags = Seq("protein", "meat"),
+      createdBy = rootUser
+    )
+
+    val rice = Ingredient(
+      id = UUID.nameUUIDFromBytes("demo-ingredient-rice".getBytes(StandardCharsets.UTF_8)),
+      name = "Rice",
+      aliases = Seq("Arborio Rice"),
+      wikiLink = "https://en.wikipedia.org/wiki/Rice",
+      tags = Seq("staple", "grain"),
+      createdBy = rootUser
+    )
+
+    val blackPepper = Ingredient(
+      id = UUID.nameUUIDFromBytes("demo-ingredient-black-pepper".getBytes(StandardCharsets.UTF_8)),
+      name = "Black Pepper",
+      aliases = Seq("Ground Black Pepper"),
+      wikiLink = "https://en.wikipedia.org/wiki/Black_pepper",
+      tags = Seq("spice"),
+      createdBy = rootUser
+    )
+
+    val salt = Ingredient(
+      id = UUID.nameUUIDFromBytes("demo-ingredient-salt".getBytes(StandardCharsets.UTF_8)),
+      name = "Salt",
+      aliases = Seq("Sea Salt"),
+      wikiLink = "https://en.wikipedia.org/wiki/Salt",
+      tags = Seq("seasoning"),
+      createdBy = rootUser
+    )
+
+    val mushroom = Ingredient(
+      id = UUID.nameUUIDFromBytes("demo-ingredient-mushroom".getBytes(StandardCharsets.UTF_8)),
+      name = "Mushroom",
+      aliases = Seq("Cremini Mushroom"),
+      wikiLink = "https://en.wikipedia.org/wiki/Mushroom",
+      tags = Seq("fungi", "umami"),
+      createdBy = rootUser
+    )
+
     val pastaRecipe = Recipe(
       id = UUID.nameUUIDFromBytes("demo-recipe-spaghetti".getBytes(StandardCharsets.UTF_8)),
       name = "Spaghetti al Pomodoro",
@@ -164,6 +254,140 @@ object DemoDataSeedRunner {
       updatedOn = now
     )
 
+    val lemonGarlicChickenRecipe = Recipe(
+      id = UUID.nameUUIDFromBytes("demo-recipe-lemon-garlic-chicken".getBytes(StandardCharsets.UTF_8)),
+      name = "Lemon Garlic Chicken",
+      createdBy = rootUser,
+      tags = Seq("dinner", "high-protein"),
+      ingredients = Seq(
+        InstructionIngredient(
+          chickenBreast,
+          Quantity(IngredientUnit.Gram, 500.0),
+          Some("Pat dry before seasoning")
+        ),
+        InstructionIngredient(
+          garlic,
+          Quantity(IngredientUnit.Piece, 3.0),
+          Some("Minced")
+        ),
+        InstructionIngredient(
+          lemon,
+          Quantity(IngredientUnit.Piece, 1.0),
+          Some("Juiced")
+        ),
+        InstructionIngredient(
+          oliveOil,
+          Quantity(IngredientUnit.Tablespoon, 1.0),
+          None
+        ),
+        InstructionIngredient(
+          blackPepper,
+          Quantity(IngredientUnit.Tablespoon, 0.25),
+          None
+        ),
+        InstructionIngredient(
+          salt,
+          Quantity(IngredientUnit.Tablespoon, 0.25),
+          None
+        )
+      ),
+      prepTime = 12,
+      cookTime = 20,
+      servings = 3,
+      countryOfOrigin = Some("US"),
+      public = true,
+      wikiLink = None,
+      instructions = "{\"ops\":[{\"insert\":\"Season chicken with salt and pepper, sear in olive oil, then finish with garlic and lemon juice.\\n\"}]}",
+      createdOn = now,
+      updatedOn = now
+    )
+
+    val mushroomRisottoRecipe = Recipe(
+      id = UUID.nameUUIDFromBytes("demo-recipe-mushroom-risotto".getBytes(StandardCharsets.UTF_8)),
+      name = "Mushroom Risotto",
+      createdBy = demoUser,
+      tags = Seq("italian", "comfort-food"),
+      ingredients = Seq(
+        InstructionIngredient(
+          rice,
+          Quantity(IngredientUnit.Gram, 300.0),
+          Some("Arborio preferred")
+        ),
+        InstructionIngredient(
+          mushroom,
+          Quantity(IngredientUnit.Gram, 250.0),
+          Some("Sliced")
+        ),
+        InstructionIngredient(
+          onion,
+          Quantity(IngredientUnit.Piece, 1.0),
+          Some("Finely chopped")
+        ),
+        InstructionIngredient(
+          butter,
+          Quantity(IngredientUnit.Tablespoon, 2.0),
+          None
+        ),
+        InstructionIngredient(
+          parmesan,
+          Quantity(IngredientUnit.Gram, 60.0),
+          Some("Grated")
+        )
+      ),
+      prepTime = 15,
+      cookTime = 35,
+      servings = 4,
+      countryOfOrigin = Some("IT"),
+      public = true,
+      wikiLink = None,
+      instructions = "{\"ops\":[{\"insert\":\"Saute onion and mushrooms, stir in rice, and gradually cook while adding liquid. Finish with butter and parmesan.\\n\"}]}",
+      createdOn = now,
+      updatedOn = now
+    )
+
+    val basilTomatoPastaRecipe = Recipe(
+      id = UUID.nameUUIDFromBytes("demo-recipe-basil-tomato-pasta".getBytes(StandardCharsets.UTF_8)),
+      name = "Basil Tomato Pasta",
+      createdBy = demoUser,
+      tags = Seq("quick", "vegetarian"),
+      ingredients = Seq(
+        InstructionIngredient(
+          pasta,
+          Quantity(IngredientUnit.Gram, 220.0),
+          Some("Cook until al dente")
+        ),
+        InstructionIngredient(
+          tomato,
+          Quantity(IngredientUnit.Gram, 350.0),
+          Some("Chopped")
+        ),
+        InstructionIngredient(
+          basil,
+          Quantity(IngredientUnit.Piece, 8.0),
+          Some("Torn leaves")
+        ),
+        InstructionIngredient(
+          oliveOil,
+          Quantity(IngredientUnit.Tablespoon, 2.0),
+          None
+        ),
+        InstructionIngredient(
+          parmesan,
+          Quantity(IngredientUnit.Gram, 40.0),
+          Some("To serve")
+        )
+      ),
+      prepTime = 10,
+      cookTime = 18,
+      servings = 2,
+      countryOfOrigin = Some("IT"),
+      public = true,
+      wikiLink = None,
+      instructions = "{\"ops\":[{\"insert\":\"Cook pasta, simmer tomato in olive oil, toss with basil, and top with parmesan.\\n\"}]}",
+      createdOn = now,
+      updatedOn = now
+    )
+
     def runInContext[A](effect: ZIO[ApiContext, Throwable, A], user: User): A = {
       val apiContext = ApiContext(
         api = cookingApi,
@@ -208,10 +432,23 @@ object DemoDataSeedRunner {
       val _ = runInContext(ingredients.create(garlic), rootUser)
       val _ = runInContext(ingredients.create(pasta), rootUser)
       val _ = runInContext(ingredients.create(oliveOil), rootUser)
+      val _ = runInContext(ingredients.create(onion), rootUser)
+      val _ = runInContext(ingredients.create(basil), rootUser)
+      val _ = runInContext(ingredients.create(parmesan), rootUser)
+      val _ = runInContext(ingredients.create(butter), rootUser)
+      val _ = runInContext(ingredients.create(lemon), rootUser)
+      val _ = runInContext(ingredients.create(chickenBreast), rootUser)
+      val _ = runInContext(ingredients.create(rice), rootUser)
+      val _ = runInContext(ingredients.create(blackPepper), rootUser)
+      val _ = runInContext(ingredients.create(salt), rootUser)
+      val _ = runInContext(ingredients.create(mushroom), rootUser)
 
       println("Seeding recipes...")
       val _ = runInContext(recipes.create(pastaRecipe), rootUser)
       val _ = runInContext(recipes.create(bruschettaRecipe), demoUser)
+      val _ = runInContext(recipes.create(lemonGarlicChickenRecipe), rootUser)
+      val _ = runInContext(recipes.create(mushroomRisottoRecipe), demoUser)
+      val _ = runInContext(recipes.create(basilTomatoPastaRecipe), demoUser)
 
       // Create one saved relationship so demo data includes social state as well.
       val _ = runInContext(recipes.save(pastaRecipe.id, demoUser.id), demoUser)

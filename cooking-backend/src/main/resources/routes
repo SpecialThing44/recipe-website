@@ -4,6 +4,8 @@ POST          /admin/ingredient-weights/process-events http.admin.AdminControlle
 POST          /admin/ingredient-weights/rebuild        http.admin.AdminController.rebuildIngredientWeights()
 GET           /admin/ingredient-weights/jobs/active http.admin.AdminController.activeIngredientWeightJobIds()
 GET           /admin/ingredient-weights/jobs/:jobId http.admin.AdminController.ingredientWeightJobStatus(jobId: String)
+GET           /admin/ingredient-weights/settings http.admin.AdminController.getIngredientWeightSettings()
+PUT           /admin/ingredient-weights/settings http.admin.AdminController.updateIngredientWeightSettings()
 
 GET           /user                                 http.users.UsersController.getCurrentUser()
 POST          /user/query                           http.users.UsersController.list()
