@@ -166,6 +166,8 @@ object FiltersConverter {
       case UserUserMode     => Some(userUserCoSavePart)
     }
 
+    val effectiveCoSaveActive = coSaveActive && coSavePartBuilderOpt.isDefined
+
     val tagPartBuilder = mode match {
       case RecipeRecipeMode => recipeRecipeTagPart
       case UserRecipeMode   => userRecipeTagPart
@@ -182,13 +184,13 @@ object FiltersConverter {
       includeCoSave = false
     )
     val coSavePart =
-      if (!coSaveActive || coSavePartBuilderOpt.isEmpty) ""
+      if (!effectiveCoSaveActive) ""
       else coSavePartBuilderOpt.get(nodeVar, coSaveCarry, coSaveMin)
 
     val tagCarryBase = carryFields(
       nodeVar,
       includeIngredient = ingredientActive,
-      includeCoSave = coSaveActive
+      includeCoSave = effectiveCoSaveActive
     )
     val tagPart =
       if (!tagActive) ""
@@ -199,7 +201,7 @@ object FiltersConverter {
       nodeVar,
       analyzedId,
       ingredientActive,
-      coSaveActive,
+      effectiveCoSaveActive,
       tagActive,
       ingredientMin,
       coSaveMin,
@@ -209,7 +211,7 @@ object FiltersConverter {
     val finalWith = buildFinalScoreWith(
       nodeVar,
       ingredientActive,
-      coSaveActive,
+      effectiveCoSaveActive,
       tagActive
     )
 

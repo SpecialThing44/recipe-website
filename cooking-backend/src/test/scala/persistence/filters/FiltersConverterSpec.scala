@@ -213,4 +213,25 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
 
     result shouldBe "ORDER BY score DESC"
   }
+
+  it should "not reference coSaveScore in user-to-recipe mode" in {
+    val userId = UUID.randomUUID()
+    val filters = Filters
+      .empty()
+      .copy(
+        analyzedUser = Some(userId),
+        ingredientSimilarity =
+          Some(domain.filters.SimilarityFilter(1.0, 0.0, 0.0, 0.0)),
+        coSaveSimilarity =
+          Some(domain.filters.SimilarityFilter(1.0, 0.0, 0.0, 0.0)),
+        tagSimilarity =
+          Some(domain.filters.SimilarityFilter(1.0, 0.0, 0.0, 0.0))
+      )
+
+    val result = FiltersConverter.toCypher(filters, "recipe")
+
+    result should include("ingredientScore")
+    result should include("tagScore")
+    result should not include "coSaveScore"
+  }
 }
