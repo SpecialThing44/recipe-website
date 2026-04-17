@@ -175,6 +175,35 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
     nameResults.map(_.id).toSet shouldBe Set(r2.id)
   }
 
+  it should "match recipes by ingredient substitutes when filtering by ingredients" in {
+    val allPurposeFlour = createTestIngredient(
+      IngredientInput(
+        name = "All-Purpose Flour",
+        aliases = Seq("ap flour"),
+        wikiLink = "https://en.wikipedia.org/wiki/Flour",
+        tags = Seq("baking")
+      )
+    )
+    val breadFlour = createTestIngredient(
+      IngredientInput(
+        name = "Bread Flour",
+        aliases = Seq("strong flour"),
+        wikiLink = "https://en.wikipedia.org/wiki/Flour",
+        tags = Seq("baking")
+      )
+    )
+
+    val recipeWithBreadFlour = createTestRecipe(
+      standardRecipeInput(Seq(breadFlour)).copy(name = "Bread Flour Recipe")
+    )
+
+    val filtered = listRecipes(
+      Filters.empty().copy(ingredients = Some(Seq(allPurposeFlour.name)))
+    )
+
+    filtered.map(_.id) should contain(recipeWithBreadFlour.id)
+  }
+
   it should "ingredient similarity filter returns two recipes ordered and filters out third by min score" in {
     val garlic = createTestIngredient(
       IngredientsIntegrationTestData.onion.copy(

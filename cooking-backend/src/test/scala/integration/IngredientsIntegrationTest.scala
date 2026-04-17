@@ -74,6 +74,20 @@ class IngredientsIntegrationTest extends IntegrationTestFramework {
     tags = Seq("meat", "protein")
   )
 
+  val allPurposeFlourInput = IngredientInput(
+    name = "All-Purpose Flour",
+    aliases = Seq("ap flour"),
+    wikiLink = "https://en.wikipedia.org/wiki/Flour",
+    tags = Seq("baking")
+  )
+
+  val breadFlourInput = IngredientInput(
+    name = "Bread Flour",
+    aliases = Seq("strong flour"),
+    wikiLink = "https://en.wikipedia.org/wiki/Flour",
+    tags = Seq("baking")
+  )
+
   var user: User = _
 
   override def beforeEach(): Unit = {
@@ -163,5 +177,31 @@ class IngredientsIntegrationTest extends IntegrationTestFramework {
 
     val deletedIngredient = deleteIngredient(ingredient.id)
     deletedIngredient.id shouldBe ingredient.id
+  }
+
+  it should "allow duplicate wikiLinks and auto-create substitute relationships" in {
+    val ingredient1 = createTestIngredient(allPurposeFlourInput)
+    val ingredient2 = createTestIngredient(breadFlourInput)
+
+    ingredient1.wikiLink shouldBe ingredient2.wikiLink
+
+    val substitutesForFirst = listIngredientSubstitutes(ingredient1.id)
+    substitutesForFirst.map(_.id) should contain(ingredient2.id)
+
+    val substitutesForSecond = listIngredientSubstitutes(ingredient2.id)
+    substitutesForSecond.map(_.id) should contain(ingredient1.id)
+  }
+
+  it should "allow admins to register substitutes manually" in {
+    val tomato = createTestIngredient(tomatoIngredientInput)
+    val onion = createTestIngredient(onionIngredientInput)
+
+    addIngredientSubstitute(tomato.id, onion.id)
+
+    val tomatoSubstitutes = listIngredientSubstitutes(tomato.id)
+    tomatoSubstitutes.map(_.id) should contain(onion.id)
+
+    val onionSubstitutes = listIngredientSubstitutes(onion.id)
+    onionSubstitutes.map(_.id) should contain(tomato.id)
   }
 }

@@ -3,9 +3,13 @@ package http.ingredients
 import com.google.inject.{Inject, Singleton}
 import context.CookingApi
 import domain.ingredients.{Ingredient, IngredientInput, IngredientUpdateInput}
-import http.Requests
+import http.{ApiRunner, ErrorMapping, Requests}
+import io.circe.syntax.EncoderOps
 import play.api.libs.json.*
 import play.api.mvc.*
+import play.api.mvc.Results.{Created, Ok}
+
+import java.util.UUID
 
 @Singleton
 class IngredientsController @Inject() (
@@ -45,5 +49,38 @@ class IngredientsController @Inject() (
       .delete[Ingredient](id, request, cookingApi, cookingApi.ingredients)(
         Ingredient.encoder
       )
+  }
+
+  def substitutes(id: UUID): Action[AnyContent] = Action { request =>
+    val maybeUser = Requests.extractUser(request, cookingApi)
+    val response = cookingApi.ingredients.listSubstitutes(id).fold(
+      error => ErrorMapping.mapCustomErrorsToHttp(error),
+      result => Ok(s"{ \"Body\": ${Json.parse(result.asJson.noSpaces)}}")
+    )
+    ApiRunner.runResponseSafely(response, cookingApi, maybeUser)
+  }
+
+  def addSubstitute(
+      id: UUID,
+      substituteId: UUID
+  ): Action[AnyContent] = Action { request =>
+    val maybeUser = Requests.extractUser(request, cookingApi)
+    val response = cookingApi.ingredients.addSubstitute(id, substituteId).fold(
+      error => ErrorMapping.mapCustomErrorsToHttp(error),
+      _ => Created(Json.obj("message" -> "Substitute relationship created"))
+    )
+    ApiRunner.runResponseSafely(response, cookingApi, maybeUser)
+  }
+
+  def deleteSubstitute(
+      id: UUID,
+      substituteId: UUID
+  ): Action[AnyContent] = Action { request =>
+    val maybeUser = Requests.extractUser(request, cookingApi)
+    val response = cookingApi.ingredients.removeSubstitute(id, substituteId).fold(
+      error => ErrorMapping.mapCustomErrorsToHttp(error),
+      _ => Ok(Json.obj("message" -> "Substitute relationship removed"))
+    )
+    ApiRunner.runResponseSafely(response, cookingApi, maybeUser)
   }
 }

@@ -102,12 +102,12 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
     val result = FiltersConverter.toCypher(filters, "n")
 
     result should (
-      include(
-        "MATCH (n)-[:HAS_INGREDIENT]->(hasIngredient:Ingredient {name: 'Tomato'})"
-      ) and
-        include(
-          "MATCH (n)-[:HAS_INGREDIENT]->(hasIngredient:Ingredient {name: 'Cheese'})"
-        )
+      include("MATCH (targetIngredient0:Ingredient {name: 'Tomato'})") and
+        include("MATCH (targetIngredient1:Ingredient {name: 'Cheese'})") and
+        include("OPTIONAL MATCH (targetIngredient0)-[:SUBSTITUTE]-(substituteIngredient0:Ingredient)") and
+        include("OPTIONAL MATCH (targetIngredient1)-[:SUBSTITUTE]-(substituteIngredient1:Ingredient)") and
+        include("MATCH (n)-[:HAS_INGREDIENT]->(recipeIngredient0:Ingredient)") and
+        include("MATCH (n)-[:HAS_INGREDIENT]->(recipeIngredient1:Ingredient)")
     )
   }
 

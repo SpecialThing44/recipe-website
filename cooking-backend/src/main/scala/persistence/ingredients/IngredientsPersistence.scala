@@ -98,6 +98,7 @@ class IngredientsPersistence @Inject() (database: Database)
           }
         }
       )
+      _ <- syncAutoWikiLinkSubstitutes(entity.id, entity.wikiLink)
     } yield dbResult
   }
 
@@ -117,8 +118,10 @@ class IngredientsPersistence @Inject() (database: Database)
       useAliasSuffix = true
     )
 
-    database.writeTransaction(
-      s"""
+    for {
+      _ <- clearAutoWikiLinkSubstitutes(entity.id)
+      updated <- database.writeTransaction(
+        s"""
          |${MatchByIdStatement.apply(entity.id)}
          |SET $properties
          |${WithStatement.apply}
@@ -133,16 +136,18 @@ class IngredientsPersistence @Inject() (database: Database)
          |${WithStatement.apply}, user, collect(DISTINCT tag.name) as tags
          |${ReturnStatement.apply}, user as createdBy, tags
          |""".stripMargin,
-      (result: Result) => {
-        if (result.hasNext) {
-          attachUserAndTagsToRecord(result.next())
-        } else {
-          throw NoSuchEntityError(
-            s"Update for ${graph.nodeLabel} with id ${entity.id} has failed for some reason"
-          )
+        (result: Result) => {
+          if (result.hasNext) {
+            attachUserAndTagsToRecord(result.next())
+          } else {
+            throw NoSuchEntityError(
+              s"Update for ${graph.nodeLabel} with id ${entity.id} has failed for some reason"
+            )
+          }
         }
-      }
-    )
+      )
+      _ <- syncAutoWikiLinkSubstitutes(entity.id, entity.wikiLink)
+    } yield updated
   }
 
   override def delete(id: UUID): ZIO[ApiContext, Throwable, Ingredient] =
@@ -184,4 +189,83 @@ class IngredientsPersistence @Inject() (database: Database)
       (_: Result) => ()
     )
   } yield ()
+
+  override def listSubstitutes(
+      id: UUID
+  ): ZIO[ApiContext, Throwable, Seq[Ingredient]] = {
+    val nodeVar = "substitute"
+    database.readTransaction(
+      s"""
+         |MATCH (ingredient:Ingredient {id: '$id'})-[:SUBSTITUTE]-(substitute:Ingredient)
+         |OPTIONAL MATCH (substitute)-[:CREATED_BY]->(user:User)
+         |OPTIONAL MATCH (substitute)-[:HAS_TAG]->(tag:Tag)
+         |WITH $nodeVar, user, collect(DISTINCT tag.name) as tags
+         |RETURN $nodeVar, user as createdBy, tags
+         |ORDER BY $nodeVar.name
+         |""".stripMargin,
+      (result: Result) =>
+        result.asScala
+          .map(record => {
+            val ingredientMap =
+              new java.util.HashMap[String, Object](record.get(nodeVar).asMap())
+            val userMap = record.get("createdBy").asMap()
+            val tags = record.get("tags").asList().asScala.map(_.toString).toSeq
+            ingredientMap.put("createdBy", userMap)
+            ingredientMap.put("tags", tags)
+            IngredientConverter.toDomain(ingredientMap)
+          })
+          .toSeq
+    )
+  }
+
+  override def addSubstitute(
+      id: UUID,
+      substituteId: UUID
+  ): ZIO[ApiContext, Throwable, Unit] =
+    database.writeTransaction(
+      s"""
+         |MATCH (ingredient:Ingredient {id: '$id'})
+         |MATCH (substitute:Ingredient {id: '$substituteId'})
+         |MERGE (ingredient)-[:SUBSTITUTE {source: 'manual'}]-(substitute)
+         |""".stripMargin,
+      (_: Result) => ()
+    )
+
+  override def removeSubstitute(
+      id: UUID,
+      substituteId: UUID
+  ): ZIO[ApiContext, Throwable, Unit] =
+    database.writeTransaction(
+      s"""
+         |MATCH (ingredient:Ingredient {id: '$id'})-[rel:SUBSTITUTE]-(substitute:Ingredient {id: '$substituteId'})
+         |DELETE rel
+         |""".stripMargin,
+      (_: Result) => ()
+    )
+
+  private def syncAutoWikiLinkSubstitutes(
+      ingredientId: UUID,
+      wikiLink: String
+  ): ZIO[ApiContext, Throwable, Unit] =
+    database.writeTransaction(
+      s"""
+         |MATCH (ingredient:Ingredient {id: '$ingredientId'})
+         |MATCH (substitute:Ingredient {wikiLink: '${wikiLink.toLowerCase}'})
+         |WHERE substitute.id <> ingredient.id
+         |MERGE (ingredient)-[:SUBSTITUTE {source: 'wikiLink'}]-(substitute)
+         |""".stripMargin,
+      (_: Result) => ()
+    )
+
+  private def clearAutoWikiLinkSubstitutes(
+      ingredientId: UUID
+  ): ZIO[ApiContext, Throwable, Unit] =
+    database.writeTransaction(
+      s"""
+         |MATCH (ingredient:Ingredient {id: '$ingredientId'})-[rel:SUBSTITUTE]-(:Ingredient)
+         |WHERE rel.source = 'wikiLink'
+         |DELETE rel
+         |""".stripMargin,
+      (_: Result) => ()
+    )
 }

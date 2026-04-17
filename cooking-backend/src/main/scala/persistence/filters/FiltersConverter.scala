@@ -6,6 +6,24 @@ import persistence.users.UserConverter.lowerPrefix
 import persistence.filters.CypherScoringParts._
 
 object FiltersConverter {
+  private def ingredientMatchWithSubstitutesClause(
+      nodeVar: String,
+      ingredient: String,
+      index: Int
+  ): String = {
+    val targetAlias = s"targetIngredient$index"
+    val substituteAlias = s"substituteIngredient$index"
+    val recipeIngredientAlias = s"recipeIngredient$index"
+    s"""
+       |MATCH ($targetAlias:Ingredient {name: '$ingredient'})
+       |OPTIONAL MATCH ($targetAlias)-[:SUBSTITUTE]-($substituteAlias:Ingredient)
+       |WITH $nodeVar, $targetAlias, collect(DISTINCT $substituteAlias) AS substituteIngredients$index
+       |MATCH ($nodeVar)-[:HAS_INGREDIENT]->($recipeIngredientAlias:Ingredient)
+       |WHERE $recipeIngredientAlias IN ([$targetAlias] + substituteIngredients$index)
+       |WITH DISTINCT $nodeVar
+       |""".stripMargin
+  }
+
   private def similarityActive(filters: Filters): Boolean =
     (filters.ingredientSimilarity.isDefined || filters.coSaveSimilarity.isDefined || filters.tagSimilarity.isDefined) && (filters.analyzedRecipe.isDefined || filters.analyzedUser.isDefined)
 
@@ -260,9 +278,10 @@ object FiltersConverter {
     )
     val ingredientsClause = filters.ingredients.map(ingredients =>
       ingredients
-        .map(ingredient =>
-          s"MATCH ($nodeVar)-[:HAS_INGREDIENT]->(hasIngredient:Ingredient {name: '$ingredient'})"
-        )
+        .zipWithIndex
+        .map { case (ingredient, index) =>
+          ingredientMatchWithSubstitutesClause(nodeVar, ingredient, index)
+        }
         .mkString("\n")
     )
     val notIngredientsClause = filters.notIngredients.map(notIngredients =>
