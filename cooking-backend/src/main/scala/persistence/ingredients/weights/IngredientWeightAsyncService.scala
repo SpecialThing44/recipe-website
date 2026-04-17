@@ -146,6 +146,18 @@ class IngredientWeightAsyncService @Inject() (database: Database)
         }
     )
 
+  def getActiveJobIds(): Task[Seq[String]] =
+    database.readTransaction(
+      """
+        |MATCH (j:IngredientWeightJob)
+        |WHERE j.status IN ['queued', 'running']
+        |RETURN j.jobId AS jobId
+        |ORDER BY coalesce(j.createdAt, j.createdOn) DESC
+        |""".stripMargin,
+      (result: org.neo4j.driver.Result) =>
+        result.asScala.map(record => record.get("jobId").asString()).toSeq
+    )
+
   private def vectorFromRecipe(recipe: Recipe): Seq[IngredientVectorItem] = {
     val ingredientWeights = recipe.ingredients.map(instructionIngredient =>
       (

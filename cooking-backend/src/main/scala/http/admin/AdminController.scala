@@ -95,4 +95,22 @@ class AdminController @Inject() (
           Unauthorized(Json.obj("error" -> "Invalid or missing token"))
       }
   }
+
+  def activeIngredientWeightJobIds(): Action[AnyContent] = Action { request =>
+    val maybeUser = extractUser(request, cookingApi)
+    maybeUser match {
+      case Some(user) =>
+        domain.types.ZIORuntime.unsafeRun(AuthenticationInteractor.ensureIsAdmin(user).either) match {
+          case Right(_) =>
+            val jobIds = domain.types.ZIORuntime.unsafeRun(
+              ingredientWeightAsyncService.getActiveJobIds()
+            )
+            Ok(Json.obj("jobIds" -> jobIds))
+          case Left(_) =>
+            Forbidden(Json.obj("error" -> "Admin privileges required"))
+        }
+      case None =>
+        Unauthorized(Json.obj("error" -> "Invalid or missing token"))
+    }
+  }
 }

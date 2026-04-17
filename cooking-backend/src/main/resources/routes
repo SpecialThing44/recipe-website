@@ -2,6 +2,7 @@ GET           /                                     http.healthcheck.HealthCheck
 GET           /health                               http.healthcheck.HealthCheckController.check()
 POST          /admin/ingredient-weights/process-events http.admin.AdminController.processIngredientWeightEvents()
 POST          /admin/ingredient-weights/rebuild        http.admin.AdminController.rebuildIngredientWeights()
+GET           /admin/ingredient-weights/jobs/active http.admin.AdminController.activeIngredientWeightJobIds()
 GET           /admin/ingredient-weights/jobs/:jobId http.admin.AdminController.ingredientWeightJobStatus(jobId: String)
 
 GET           /user                                 http.users.UsersController.getCurrentUser()
