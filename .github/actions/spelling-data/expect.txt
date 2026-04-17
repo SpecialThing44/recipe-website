@@ -1,5 +1,7 @@
 admins
+Arborio
 authentik
+bruschetta
 ccc
 ccr
 combocanda
@@ -7,6 +9,7 @@ combocandb
 combotarget
 csrf
 datetime
+dente
 Gson
 guice
 hcursor
@@ -29,6 +32,7 @@ outsource
 pagecache
 Pathing
 pekko
+Pomodoro
 SAMEORIGIN
 savecanda
 savecandb
@@ -47,6 +51,7 @@ tagcandb
 tagtarget
 tcc
 tcr
+umami
 website
 Wikified
 workflows
