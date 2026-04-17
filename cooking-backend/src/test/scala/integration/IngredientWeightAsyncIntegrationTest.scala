@@ -114,6 +114,32 @@ class IngredientWeightAsyncIntegrationTest extends IntegrationTestFramework {
     onionWeight should be > 0.0
   }
 
+  it should "use default and allow updating meanRawPenaltyFactor" in {
+    val defaultFactor = Unsafe.unsafe { implicit unsafe =>
+      Runtime.default.unsafe
+        .run(ingredientWeightService.getMeanRawPenaltyFactor())
+        .getOrThrow()
+    }
+
+    defaultFactor shouldBe 3.0
+
+    val updatedFactor = Unsafe.unsafe { implicit unsafe =>
+      Runtime.default.unsafe
+        .run(ingredientWeightService.setMeanRawPenaltyFactor(5.5))
+        .getOrThrow()
+    }
+
+    updatedFactor shouldBe 5.5
+
+    val readBack = Unsafe.unsafe { implicit unsafe =>
+      Runtime.default.unsafe
+        .run(ingredientWeightService.getMeanRawPenaltyFactor())
+        .getOrThrow()
+    }
+
+    readBack shouldBe 5.5
+  }
+
   private def recipeInput(
       name: String,
       ingredients: Seq[domain.ingredients.Ingredient]
@@ -253,6 +279,12 @@ class IngredientWeightAsyncIntegrationTest extends IntegrationTestFramework {
           """
             |MATCH (l:IngredientWeightProcessorLock)
             |DETACH DELETE l
+            |""".stripMargin
+        )
+        tx.run(
+          """
+            |MATCH (s:IngredientWeightSettings)
+            |DETACH DELETE s
             |""".stripMargin
         )
         ()

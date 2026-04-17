@@ -10,13 +10,17 @@ import io.circe.parser.decode
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Encoder}
 import persistence.neo4j.Database
+import play.api.Configuration
 import zio.{Task, ZIO}
 
 import java.util.UUID
 import scala.jdk.CollectionConverters.*
 
 @Singleton
-class IngredientWeightAsyncService @Inject() (database: Database)
+class IngredientWeightAsyncService @Inject() (
+  database: Database,
+  config: Configuration
+)
     extends Logging {
 
   case class JobStatus(
@@ -61,6 +65,55 @@ class IngredientWeightAsyncService @Inject() (database: Database)
       .get("INGREDIENT_WEIGHT_BACKOFF_SECONDS")
       .flatMap(_.toIntOption)
       .getOrElse(15)
+  private val defaultMeanRawWeightFactor =
+    sys.env
+      .get("INGREDIENT_WEIGHT_MEAN_RAW_FACTOR")
+      .flatMap(_.toDoubleOption)
+      .orElse(config.getOptional[Double]("ingredientWeights.meanRawPenaltyFactor"))
+      .getOrElse(3.0)
+
+  def getMeanRawPenaltyFactor(): Task[Double] =
+    database.writeTransaction(
+      s"""
+         |MERGE (settings:IngredientWeightSettings {name: 'default'})
+         |ON CREATE SET settings.meanRawPenaltyFactor = $defaultMeanRawWeightFactor,
+         |              settings.updatedAt = datetime()
+         |RETURN coalesce(settings.meanRawPenaltyFactor, $defaultMeanRawWeightFactor) AS meanRawPenaltyFactor
+         |""".stripMargin,
+      (result: org.neo4j.driver.Result) => {
+        if (result.hasNext) {
+          result.next().get("meanRawPenaltyFactor").asDouble()
+        } else {
+          defaultMeanRawWeightFactor
+        }
+      }
+    )
+
+  def setMeanRawPenaltyFactor(factor: Double): Task[Double] = {
+    if (factor < 0.0) {
+      ZIO.fail(
+        new IllegalArgumentException(
+          "meanRawPenaltyFactor must be greater than or equal to 0"
+        )
+      )
+    } else {
+      database.writeTransaction(
+        s"""
+           |MERGE (settings:IngredientWeightSettings {name: 'default'})
+           |SET settings.meanRawPenaltyFactor = $factor,
+           |    settings.updatedAt = datetime()
+           |RETURN settings.meanRawPenaltyFactor AS meanRawPenaltyFactor
+           |""".stripMargin,
+        (result: org.neo4j.driver.Result) => {
+          if (result.hasNext) {
+            result.next().get("meanRawPenaltyFactor").asDouble()
+          } else {
+            factor
+          }
+        }
+      )
+    }
+  }
 
   def enqueueRecipeCreated(recipe: Recipe): Task[Unit] =
     enqueueEvent(
@@ -144,6 +197,18 @@ class IngredientWeightAsyncService @Inject() (database: Database)
             )
           )
         }
+    )
+
+  def getActiveJobIds(): Task[Seq[String]] =
+    database.readTransaction(
+      """
+        |MATCH (j:IngredientWeightJob)
+        |WHERE j.status IN ['queued', 'running']
+        |RETURN j.jobId AS jobId
+        |ORDER BY coalesce(j.createdAt, j.createdOn) DESC
+        |""".stripMargin,
+      (result: org.neo4j.driver.Result) =>
+        result.asScala.map(record => record.get("jobId").asString()).toSeq
     )
 
   private def vectorFromRecipe(recipe: Recipe): Seq[IngredientVectorItem] = {
@@ -234,34 +299,6 @@ class IngredientWeightAsyncService @Inject() (database: Database)
         (_: org.neo4j.driver.Result) => ()
       )
 
-    def loop(processed: Int): Task[Int] =
-      for {
-        pending <- claimPendingEvents(batchSize)
-        batchCount <-
-          if (pending.isEmpty) ZIO.succeed(0)
-          else
-            zio.ZIO
-              .foreach(pending) { event =>
-                processPendingEvent(event)
-                  .as(1)
-                  .catchAll(error => {
-                    logger.error(
-                      s"Failed processing ingredient weight event ${event.eventId}: ${error.getMessage}"
-                    )
-                    markEventRetryOrFailed(
-                      event.eventId,
-                      event.attempts,
-                      error.getMessage
-                    ).as(0)
-                  })
-              }
-              .map(_.sum)
-        totalProcessed = processed + batchCount
-        finalProcessed <-
-          if (pending.isEmpty) ZIO.succeed(totalProcessed)
-          else loop(totalProcessed)
-      } yield finalProcessed
-
     val run =
       for {
         lockAcquired <- tryAcquireProcessorLock(jobId)
@@ -270,8 +307,9 @@ class IngredientWeightAsyncService @Inject() (database: Database)
             markJobFailed(jobId, "Another processor is already running")
           else
             for {
+              meanRawPenaltyFactor <- getMeanRawPenaltyFactor()
               _ <- markRunning
-              processed <- loop(0)
+              processed <- loopWithFactor(0, meanRawPenaltyFactor)
               _ <- markJobDone(jobId, processed, s"{\"processedEvents\":$processed}")
             } yield ()
       } yield ()
@@ -280,6 +318,37 @@ class IngredientWeightAsyncService @Inject() (database: Database)
       markJobFailed(jobId, error.getMessage).orDie *> ZIO.fail(error)
     ).ensuring(releaseProcessorLock(jobId).ignore)
   }
+
+  private def loopWithFactor(
+      processed: Int,
+      meanRawPenaltyFactor: Double
+  ): Task[Int] =
+    for {
+      pending <- claimPendingEvents(batchSize)
+      batchCount <-
+        if (pending.isEmpty) ZIO.succeed(0)
+        else
+          zio.ZIO
+            .foreach(pending) { event =>
+              processPendingEvent(event, meanRawPenaltyFactor)
+                .as(1)
+                .catchAll(error => {
+                  logger.error(
+                    s"Failed processing ingredient weight event ${event.eventId}: ${error.getMessage}"
+                  )
+                  markEventRetryOrFailed(
+                    event.eventId,
+                    event.attempts,
+                    error.getMessage
+                  ).as(0)
+                })
+            }
+            .map(_.sum)
+      totalProcessed = processed + batchCount
+      finalProcessed <-
+        if (pending.isEmpty) ZIO.succeed(totalProcessed)
+        else loopWithFactor(totalProcessed, meanRawPenaltyFactor)
+    } yield finalProcessed
 
   private def runRebuildAllIngredientsJob(jobId: String): Task[Unit] = {
     val markRunning =
@@ -302,9 +371,10 @@ class IngredientWeightAsyncService @Inject() (database: Database)
             markJobFailed(jobId, "Another processor is already running")
           else
             for {
+              meanRawPenaltyFactor <- getMeanRawPenaltyFactor()
               _ <- markRunning
               ingredientIds <- getAllIngredientIds()
-              _ <- recomputeIngredientStats(ingredientIds)
+              _ <- recomputeIngredientStats(ingredientIds, meanRawPenaltyFactor)
               processed = ingredientIds.distinct.size
               _ <-
                 markJobDone(jobId, processed, s"{\"processedIngredients\":$processed}")
@@ -356,9 +426,15 @@ class IngredientWeightAsyncService @Inject() (database: Database)
   private def fromJsonVector(json: String): Seq[IngredientVectorItem] =
     decode[Seq[IngredientVectorItem]](Option(json).getOrElse("[]")).getOrElse(Seq.empty)
 
-  private def processPendingEvent(event: PendingEvent): Task[Unit] =
+  private def processPendingEvent(
+      event: PendingEvent,
+      meanRawPenaltyFactor: Double
+  ): Task[Unit] =
     for {
-      _ <- applyIngredientDeltas(deltasFrom(event.beforeVector, event.afterVector))
+      _ <- applyIngredientDeltas(
+        deltasFrom(event.beforeVector, event.afterVector),
+        meanRawPenaltyFactor
+      )
       _ <- markEventDone(event.eventId)
     } yield ()
 
@@ -388,7 +464,10 @@ class IngredientWeightAsyncService @Inject() (database: Database)
       .filter(delta => delta.recipeCountDelta != 0 || math.abs(delta.rawDelta) > 1e-12)
   }
 
-  private def applyIngredientDeltas(deltas: Seq[IngredientDelta]): Task[Unit] =
+  private def applyIngredientDeltas(
+      deltas: Seq[IngredientDelta],
+      meanRawPenaltyFactor: Double
+  ): Task[Unit] =
     if (deltas.isEmpty) ZIO.unit
     else
       zio.ZIO.foreach(deltas) { delta =>
@@ -411,7 +490,7 @@ class IngredientWeightAsyncService @Inject() (database: Database)
              |     CASE WHEN newRecipeCount = 0 THEN 0.0 ELSE newSumRaw / toFloat(newRecipeCount) END AS newMeanRaw
              |WITH ingredient, totalRecipes, newRecipeCount, newSumRaw, newMeanRaw,
              |     (log((toFloat(totalRecipes) + 1.0) / (toFloat(newRecipeCount) + 1.0)) + 1.0) AS idfWeight,
-             |     (1.0 / (1.0 + newMeanRaw)) AS quantityPenalty
+             |     (1.0 / (1.0 + ($meanRawPenaltyFactor * newMeanRaw))) AS quantityPenalty
              |SET ingredient.recipeCount = newRecipeCount,
              |    ingredient.sumRawNormalizedWeight = newSumRaw,
              |    ingredient.meanRawNormalizedWeight = newMeanRaw,
@@ -437,7 +516,10 @@ class IngredientWeightAsyncService @Inject() (database: Database)
         result.asScala.map(record => record.get("ingredientId").asString()).toSeq
     )
 
-  private def recomputeIngredientStats(ingredientIds: Seq[String]): Task[Unit] =
+  private def recomputeIngredientStats(
+      ingredientIds: Seq[String],
+      meanRawPenaltyFactor: Double
+  ): Task[Unit] =
     if (ingredientIds.isEmpty) ZIO.unit
     else {
       val ingredientIdsLiteral = ingredientIds.distinct.asJson.noSpaces
@@ -455,7 +537,7 @@ class IngredientWeightAsyncService @Inject() (database: Database)
            |     CASE WHEN recipeCount = 0 THEN 0.0 ELSE sumRawNormalizedWeight / toFloat(recipeCount) END AS meanRawNormalizedWeight
            |WITH ingredient, totalRecipes, recipeCount, sumRawNormalizedWeight, meanRawNormalizedWeight,
            |     (log((toFloat(totalRecipes) + 1.0) / (toFloat(recipeCount) + 1.0)) + 1.0) AS idfWeight,
-           |     (1.0 / (1.0 + meanRawNormalizedWeight)) AS quantityPenalty
+           |     (1.0 / (1.0 + ($meanRawPenaltyFactor * meanRawNormalizedWeight))) AS quantityPenalty
            |SET ingredient.recipeCount = recipeCount,
            |    ingredient.sumRawNormalizedWeight = sumRawNormalizedWeight,
            |    ingredient.meanRawNormalizedWeight = meanRawNormalizedWeight,

@@ -13,6 +13,7 @@ disablePlugins(PlayLayoutPlugin)
 
 // Running
 val runBackend = taskKey[Unit]("Run the backend.")
+val resetDbWithDemoData = taskKey[Unit]("Wipe the connected DB and seed demo data.")
 
 def runBackend(params: String) =
   Def.taskDyn {
@@ -21,6 +22,10 @@ def runBackend(params: String) =
 
 runBackend := {
   runBackend("").value
+}
+
+resetDbWithDemoData := {
+  (Compile / runMain).toTask(" initialization.DemoDataSeedRunner").value
 }
 
 def s(params: String) =
