@@ -260,7 +260,7 @@ object FiltersConverter {
         )
       )
     val aliasesOrNameClause = filters.aliasesOrName.map(aliasesList =>
-      s"ANY(searchTerm IN ${aliasesList.asJson} WHERE $nodeVar.name CONTAINS searchTerm OR " +
+      s"ANY(searchTerm IN ${aliasesList.asJson} WHERE $nodeVar.lowername CONTAINS searchTerm OR " +
         s"($nodeVar.aliases IS NOT NULL AND ANY(alias IN $nodeVar.aliases WHERE alias CONTAINS searchTerm)))"
     )
 
@@ -270,8 +270,6 @@ object FiltersConverter {
     val cookTimeClause = filters.cookTime.map(cookTimeFilter =>
       NumberFilterConverter.toCypher(cookTimeFilter, "cookTime", nodeVar)
     )
-    val publicClause =
-      filters.public.map(public => s"$nodeVar.public = $public")
 
     val tagsClause = filters.tags.map(tags =>
       tags
@@ -314,7 +312,6 @@ object FiltersConverter {
       emailClause,
       prepTimeClause,
       cookTimeClause,
-      publicClause,
       aliasesOrNameClause
     )
 

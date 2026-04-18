@@ -21,7 +21,7 @@ object RecipeAdapter {
       cookTime = recipe.cookTime,
       servings = recipe.servings,
       countryOfOrigin = recipe.countryOfOrigin,
-      public = recipe.public,
+      public = true,
       wikiLink = recipe.wikiLink,
       instructions = recipe.instructions,
       instructionImages = Seq.empty,
@@ -49,7 +49,7 @@ object RecipeAdapter {
       countryOfOrigin =
         if (input.countryOfOrigin.isDefined) input.countryOfOrigin
         else original.countryOfOrigin,
-      public = input.public.getOrElse(original.public),
+      public = true,
       wikiLink = input.wikiLink.orElse(original.wikiLink),
       instructions = input.instructions.getOrElse(original.instructions),
       instructionImages =

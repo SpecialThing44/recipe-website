@@ -22,13 +22,13 @@ class AuthenticationInteractor @Inject() (
 ) {
   private val issuer = config.get[String]("auth.issuer")
   private val jwksUrl = config.get[String]("auth.jwksUrl")
+  private lazy val jwkProvider = new UrlJwkProvider(new URL(jwksUrl))
 
   def validateAuthentikToken(
       token: String
   ): ZIO[ApiContext, Throwable, User] = {
     ZIO
       .attempt {
-        val jwkProvider = new UrlJwkProvider(new URL(jwksUrl))
         val decodedToken = JWT.decode(token)
         val jwk = jwkProvider.get(decodedToken.getKeyId)
         val algorithm =

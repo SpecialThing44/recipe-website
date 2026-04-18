@@ -76,7 +76,7 @@ class RecipeSavedIntegrationTest extends IntegrationTestFramework {
     savedForCreator.map(_.id) shouldBe Seq.empty
   }
 
-  it should "not allow saving private recipes and should return an error" in {
+  it should "allow saving recipes even when input public flag is false" in {
     val privateRecipe = createTestRecipe(
       buildRecipeInput(Seq(tomato), public = false, name = "Private Recipe")
     )
@@ -85,7 +85,7 @@ class RecipeSavedIntegrationTest extends IntegrationTestFramework {
       createTestUser(UserInput(name = "Saver2", email = "saver2@example.com"))
     login(saver.id)
 
-    val failed = scala.util.Try(saveRecipe(privateRecipe.id))
-    failed.isFailure shouldBe true
+    val saved = saveRecipe(privateRecipe.id)
+    saved.id shouldBe privateRecipe.id
   }
 }

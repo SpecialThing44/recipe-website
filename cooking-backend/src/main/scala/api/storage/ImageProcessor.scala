@@ -1,7 +1,7 @@
 package api.storage
 
 import com.sksamuel.scrimage.{ImmutableImage, ScaleMethod}
-import com.sksamuel.scrimage.nio.JpegWriter
+import com.sksamuel.scrimage.webp.WebpWriter
 import org.apache.pekko.util.ByteString
 import zio.{Task, ZIO}
 
@@ -13,12 +13,13 @@ case class ProcessedImage(
 )
 
 object ImageProcessor {
-  private val THUMBNAIL_SIZE = 150
+  private val THUMBNAIL_SIZE = 300
   private val MEDIUM_SIZE = 500
   private val MAX_SIZE = 2048
+  private val OUTPUT_EXTENSION = "webp"
 
-  private implicit val writer: JpegWriter =
-    JpegWriter.Default.withCompression(90)
+  private implicit val writer: WebpWriter =
+    WebpWriter.DEFAULT.withQ(95)
   def processImage(
       imageBytes: ByteString,
       contentType: String
@@ -30,8 +31,6 @@ object ImageProcessor {
     val image = ImmutableImage
       .loader()
       .fromBytes(imageBytes.toArray)
-
-    val extension = contentType.split("/").lastOption.getOrElse("jpg")
 
     val thumbnail = resizeImage(image, THUMBNAIL_SIZE)
 
@@ -47,7 +46,12 @@ object ImageProcessor {
     val mediumBytes = ByteString(medium.bytes(writer))
     val largeBytes = ByteString(large.bytes(writer))
 
-    ProcessedImage(thumbnailBytes, mediumBytes, largeBytes, extension)
+    ProcessedImage(
+      thumbnailBytes,
+      mediumBytes,
+      largeBytes,
+      OUTPUT_EXTENSION
+    )
   }
 
   private def resizeImage(
