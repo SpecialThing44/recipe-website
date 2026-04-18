@@ -1,5 +1,6 @@
 GET           /                                     http.healthcheck.HealthCheckController.check()
 GET           /health                               http.healthcheck.HealthCheckController.check()
+GET           /ai/health                            http.ai.AiController.check()
 POST          /admin/ingredient-weights/process-events http.admin.AdminController.processIngredientWeightEvents()
 POST          /admin/ingredient-weights/rebuild        http.admin.AdminController.rebuildIngredientWeights()
 GET           /admin/ingredient-weights/jobs/active http.admin.AdminController.activeIngredientWeightJobIds()
@@ -16,6 +17,7 @@ DELETE        /user/:id                             http.users.UsersController.d
 
 
 POST          /recipes/query                        http.recipes.RecipesController.list()
+POST          /recipes/parse                        http.ai.AiController.parseRecipe()
 POST          /recipes                              http.recipes.RecipesController.post()
 
 GET           /recipes/:id                          http.recipes.RecipesController.get(id: java.util.UUID)

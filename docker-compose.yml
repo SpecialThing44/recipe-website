@@ -110,6 +110,8 @@ services:
   #     - NEO4J_IS_EMBEDDED=false
   #     - SEAWEEDFS_MASTER_URL=http://seaweedfs-master:9333
   #     - SEAWEEDFS_FILER_URL=http://seaweedfs-filer:8888
+  #     - OLLAMA_URL=http://host.docker.internal:11434
+  #     - OLLAMA_MODEL=qwen3.5:9b
   #     - SECRET_KEY=your-secret-key-here
   #   networks:
   #     - recipe-network
