@@ -19,6 +19,64 @@ class AiService @Inject() (config: Configuration) {
   private val ollamaUrl = config.getOptional[String]("ollama.url").getOrElse("http://localhost:11434")
   private val model = config.getOptional[String]("ollama.model").getOrElse("qwen2.5:14b")
   private val chatTimeoutSeconds = config.getOptional[Int]("ollama.chatTimeoutSeconds").getOrElse(180)
+  private val recipePromptTemplate = config.getOptional[String]("ollama.recipePromptTemplate").getOrElse(
+    """You are a culinary AI turning unstructured text into a structured recipe.
+Output MUST be raw JSON only.
+Do not output explanations, analysis, or thinking.
+Do not output markdown.
+You MUST follow the schema exactly.
+
+Allowed Ingredients List (name, aliases, and id):
+%KNOWN_INGREDIENTS%
+Allowed Tags List: %KNOWN_TAGS%
+Allowed Units List: %KNOWN_UNITS%
+
+Rules for Ingredients:
+1. If an ingredient matches one in the "Allowed Ingredients List" (exact or alias), set `ingredientId` to that ingredient id and `ingredientName` to the canonical allowed ingredient name.
+2. If an ingredient is NOT in the list, set `ingredientId` to null and `ingredientName` to null.
+3. `ingredientId` and `ingredientName` must each be either a single string or null. Never return arrays/lists for these fields.
+4. Always provide `quantity` as an object with numeric `amount` and `unit` from the allowed units list.
+5. If no clear unit is present, use unit `piece`.
+6. For unknown ingredients, explicitly mention them at the end of the `instructions` field. If there are no unknown ingredients, do not mention anything.
+
+Rules for Tags:
+1. Only use tags exactly as they appear in the "Allowed Tags List". Skip any tags that don't match. Choose included tags that make sense based on the description of the recipe and its ingredients.
+
+Expected JSON Schema:
+{
+  "name": "Recipe Title",
+  "instructions": "Step 1...\\nStep 2...\\n\\nNote: Missing ingredients: unobtainium",
+  "prepTime": 15,
+  "cookTime": 30,
+  "servings": 4,
+  "tags": ["tag1", "tag2"],
+  "ingredients": [
+    {
+      "rawText": "1 cup diced tomatoes",
+      "ingredientId": "550e8400-e29b-41d4-a716-446655440000",
+      "ingredientName": "tomato",
+      "quantity": {
+        "amount": 1,
+        "unit": "cup"
+      },
+      "description": null
+    },
+    {
+      "rawText": "2 tbsp unobtainium extract",
+      "ingredientId": null,
+      "ingredientName": null,
+      "quantity": {
+        "amount": 2,
+        "unit": "tablespoon"
+      },
+      "description": "unobtainium extract"
+    }
+  ]
+}
+
+Recipe text to parse:
+%RECIPE_TEXT%"""
+  )
   private val chatTimeout = chatTimeoutSeconds.seconds
 
   private def ollamaConnectionError(action: String, cause: String): SystemError = {
@@ -85,62 +143,11 @@ class AiService @Inject() (config: Configuration) {
       .mkString("\n")
     val knownUnitsPrompt = IngredientUnit.values.map(_.name).mkString(", ")
 
-    val prompt = s"""
-      |You are a culinary AI turning unstructured text into a structured recipe.
-      |Output MUST be raw JSON only.
-      |Do not output explanations, analysis, or thinking.
-      |Do not output markdown.
-      |
-      |Allowed Ingredients List (name, aliases, and id):
-      |$knownIngredientsPrompt
-      |Allowed Tags List: ${knownTags.mkString(", ")}
-      |Allowed Units List: $knownUnitsPrompt
-      |
-      |Rules for Ingredients:
-      |1. If an ingredient matches one in the "Allowed Ingredients List" (exact or alias), set `ingredientId` to that ingredient id and `ingredientName` to the canonical allowed ingredient name.
-      |2. If an ingredient is NOT in the list, set `ingredientId` to null and `ingredientName` to null.
-      |3. Always provide `quantity` as an object with numeric `amount` and `unit` from the allowed units list.
-      |4. If no clear unit is present, use unit `piece`.
-      |5. For unknown ingredients, explicitly mention them at the end of the `instructions` field. If there are no unknown ingredients, do not mention anything.
-      |
-      |Rules for Tags:
-      |1. Only use tags exactly as they appear in the "Allowed Tags List". Skip any tags that don't match. Choose included tags that make sense based on the description of the recipe and its ingredients.
-      |
-      |Expected JSON Schema:
-      |{
-      |  "name": "Recipe Title",
-      |  "instructions": "Step 1...\\nStep 2...\\n\\nNote: Missing ingredients: unobtainium",
-      |  "prepTime": 15,
-      |  "cookTime": 30,
-      |  "servings": 4,
-      |  "tags": ["tag1", "tag2"],
-      |  "ingredients": [
-      |    {
-      |      "rawText": "1 cup diced tomatoes",
-      |      "ingredientId": "550e8400-e29b-41d4-a716-446655440000",
-      |      "ingredientName": "tomato",
-      |      "quantity": {
-      |        "amount": 1,
-      |        "unit": "cup"
-      |      },
-      |      "description": null
-      |    },
-      |    {
-      |      "rawText": "2 tbsp unobtainium extract",
-      |      "ingredientId": null,
-      |      "ingredientName": null,
-      |      "quantity": {
-      |        "amount": 2,
-      |        "unit": "tablespoon"
-      |      },
-      |      "description": "unobtainium extract"
-      |    }
-      |  ]
-      |}
-      |
-      |Recipe text to parse:
-      |$text
-      |""".stripMargin
+    val prompt = recipePromptTemplate
+      .replace("%KNOWN_INGREDIENTS%", knownIngredientsPrompt)
+      .replace("%KNOWN_TAGS%", knownTags.mkString(", "))
+      .replace("%KNOWN_UNITS%", knownUnitsPrompt)
+      .replace("%RECIPE_TEXT%", text)
 
     val payload = Json.obj(
       "model" -> Json.fromString(model),
