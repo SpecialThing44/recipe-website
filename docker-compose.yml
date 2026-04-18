@@ -112,6 +112,7 @@ services:
   #     - SEAWEEDFS_FILER_URL=http://seaweedfs-filer:8888
   #     - OLLAMA_URL=http://host.docker.internal:11434
   #     - OLLAMA_MODEL=qwen3.5:9b
+  #     - OLLAMA_RECIPE_PROMPT_TEMPLATE=You are a culinary AI...%RECIPE_TEXT%
   #     - SECRET_KEY=your-secret-key-here
   #   networks:
   #     - recipe-network
