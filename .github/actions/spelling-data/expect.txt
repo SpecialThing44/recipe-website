@@ -27,12 +27,15 @@ lowername
 mockito
 mserver
 mvc
+ollama
 openai
 outsource
 pagecache
 Pathing
 pekko
 Pomodoro
+qwen
+roma
 SAMEORIGIN
 savecanda
 savecandb
@@ -52,6 +55,7 @@ tagtarget
 tcc
 tcr
 umami
+unobtainium
 website
 Wikified
 workflows
