@@ -24,10 +24,6 @@ class RecipeSaveInteractor @Inject() (
         if (recipe.createdBy.id == user.id)
           ZIO.fail(InputError("Users cannot save their own recipes"))
         else ZIO.unit
-      _ <-
-        if (!recipe.public)
-          ZIO.fail(InputError("Users cannot save private recipes"))
-        else ZIO.unit
       saved <- persistence.save(recipeId, user.id)
     } yield saved
   }

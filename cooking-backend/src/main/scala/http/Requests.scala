@@ -34,9 +34,11 @@ object Requests {
   def list[Entity](
       request: Request[JsValue],
       cookingApi: CookingApi,
-      entityApi: Listing[Entity]
+      entityApi: Listing[Entity],
+      authenticate: Boolean = true
   )(implicit encoder: Encoder[Entity]): Result = {
-    val maybeUser = extractUser(request, cookingApi)
+    val maybeUser =
+      if (authenticate) extractUser(request, cookingApi) else None
     val entities: ZIO[ApiContext, Throwable, Seq[Entity]] = for {
       filters <- ZIO.fromEither(decode[Filters](request.body.toString))
       entities <- entityApi.list(filters)
@@ -56,9 +58,11 @@ object Requests {
       id: UUID,
       request: Request[AnyContent],
       cookingApi: CookingApi,
-      entityApi: Querying[Entity]
+      entityApi: Querying[Entity],
+      authenticate: Boolean = true
   )(implicit encoder: Encoder[Entity]): Result = {
-    val maybeUser = extractUser(request, cookingApi)
+    val maybeUser =
+      if (authenticate) extractUser(request, cookingApi) else None
     val maybeEntity: ZIO[ApiContext, Throwable, Entity] = for {
       entity <- entityApi.getById(id)
     } yield entity

@@ -270,8 +270,6 @@ object FiltersConverter {
     val cookTimeClause = filters.cookTime.map(cookTimeFilter =>
       NumberFilterConverter.toCypher(cookTimeFilter, "cookTime", nodeVar)
     )
-    val publicClause =
-      filters.public.map(public => s"$nodeVar.public = $public")
 
     val tagsClause = filters.tags.map(tags =>
       tags
@@ -314,7 +312,6 @@ object FiltersConverter {
       emailClause,
       prepTimeClause,
       cookTimeClause,
-      publicClause,
       aliasesOrNameClause
     )
 

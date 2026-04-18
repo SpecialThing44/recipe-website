@@ -76,12 +76,12 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
     result shouldBe "MATCH (n) WHERE  n.cookTime >= 30 AND n.cookTime <= 40"
   }
 
-  it should "convert a filter with public" in {
+  it should "ignore public filter in always-public model" in {
     val filters = Filters.empty().copy(public = Some(true))
 
     val result = FiltersConverter.toCypher(filters, "n")
 
-    result shouldBe "MATCH (n) WHERE  n.public = true"
+    result shouldBe ""
   }
 
   it should "convert a filter with tags" in {

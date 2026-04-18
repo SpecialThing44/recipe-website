@@ -80,7 +80,7 @@ class BelongsToIntegrationTest extends IntegrationTestFramework {
     resultsForB.map(_.id).toSet shouldBe Set(i3.id)
   }
 
-  it should "list only own or public recipes when filtering by belongsToUser and exclude private recipes of others" in {
+  it should "list all recipes in always-public model when not filtering by owner" in {
     val recipePublic1 = createTestRecipe(
       recipeInputWith(Seq(tomato), public = true, name = "A Public")
     )
@@ -118,7 +118,7 @@ class BelongsToIntegrationTest extends IntegrationTestFramework {
     login(user1.id)
     val visibleTo1 = listRecipes(Filters.empty())
     val visibleTo1Names = visibleTo1.map(_.name).toSet
-    visibleTo1Names should not contain ("B Private")
+    visibleTo1Names should contain("B Private")
     visibleTo1Names should contain("B Public")
   }
 }

@@ -23,7 +23,8 @@ class RecipesController @Inject() (
   implicit val ingredientDecoder: Decoder[Ingredient] = Ingredient.decoder
 
   def list(): Action[JsValue] = Action(parse.json) { request =>
-    Requests.list[Recipe](request, cookingApi, cookingApi.recipes)
+    Requests
+      .list[Recipe](request, cookingApi, cookingApi.recipes, authenticate = false)
   }
 
   def post(): Action[JsValue] = Action(parse.json) { request =>
@@ -35,9 +36,10 @@ class RecipesController @Inject() (
   }
 
   def get(id: java.util.UUID): Action[AnyContent] = Action { request =>
-    Requests.get[Recipe](id, request, cookingApi, cookingApi.recipes)(
-      Recipe.encoder
-    )
+    Requests
+      .get[Recipe](id, request, cookingApi, cookingApi.recipes, authenticate = false)(
+        Recipe.encoder
+      )
   }
 
   def put(id: java.util.UUID): Action[JsValue] = Action(parse.json) { request =>

@@ -27,6 +27,7 @@ object Graph {
     Constraint("name", className(Ingredient.getClass), Unique),
     Constraint(s"${lowerPrefix}name", className(Ingredient.getClass), Unique),
     Constraint("id", className(Ingredient.getClass), Unique),
+    Constraint("identity", className(User.getClass), Unique),
     Constraint("email", className(User.getClass), Unique),
     Constraint(s"${lowerPrefix}email", className(User.getClass), Unique),
     Constraint("id", className(User.getClass), Unique),

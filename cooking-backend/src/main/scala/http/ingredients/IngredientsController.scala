@@ -17,7 +17,13 @@ class IngredientsController @Inject() (
     cookingApi: CookingApi
 ) extends AbstractController(cc) {
   def list(): Action[JsValue] = Action(parse.json) { request =>
-    Requests.list[Ingredient](request, cookingApi, cookingApi.ingredients)
+    Requests
+      .list[Ingredient](
+        request,
+        cookingApi,
+        cookingApi.ingredients,
+        authenticate = false
+      )
   }
 
   def post(): Action[JsValue] = Action(parse.json) { request =>
@@ -30,7 +36,13 @@ class IngredientsController @Inject() (
 
   def get(id: java.util.UUID): Action[AnyContent] = Action { request =>
     Requests
-      .get[Ingredient](id, request, cookingApi, cookingApi.ingredients)(
+      .get[Ingredient](
+        id,
+        request,
+        cookingApi,
+        cookingApi.ingredients,
+        authenticate = false
+      )(
         Ingredient.encoder
       )
   }
