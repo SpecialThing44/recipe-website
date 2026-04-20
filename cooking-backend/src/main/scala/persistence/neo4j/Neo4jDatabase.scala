@@ -42,11 +42,12 @@ private[persistence] case class Neo4jDatabase @Inject() (
     ZIO.fromTry {
       Try {
         val session = driver.session
-        logger.info(s"Executing cypher: $cypher")
-        val result =
+        try {
+          logger.info(s"Executing cypher: $cypher")
           session.executeWrite(tx => logic(tx.run(cypher, params.asJava)))
-        session.close()
-        result
+        } finally {
+          session.close()
+        }
       }
     }
 
@@ -58,11 +59,12 @@ private[persistence] case class Neo4jDatabase @Inject() (
     ZIO.fromTry {
       Try {
         val session = driver.session
-        logger.info(s"Executing cypher: $cypher")
-        val result =
+        try {
+          logger.info(s"Executing cypher: $cypher")
           session.executeRead(tx => logic(tx.run(cypher, params.asJava)))
-        session.close()
-        result
+        } finally {
+          session.close()
+        }
       }
     }
 
