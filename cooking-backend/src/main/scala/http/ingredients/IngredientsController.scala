@@ -10,13 +10,16 @@ import play.api.mvc.*
 import play.api.mvc.Results.{Created, Ok}
 
 import java.util.UUID
+import scala.concurrent.ExecutionContext
 
 @Singleton
 class IngredientsController @Inject() (
     cc: ControllerComponents,
     cookingApi: CookingApi
 ) extends AbstractController(cc) {
-  def list(): Action[JsValue] = Action(parse.json) { request =>
+  private implicit val ec: ExecutionContext = cc.executionContext
+
+  def list(): Action[JsValue] = Action.async(parse.json) { request =>
     Requests
       .list[Ingredient](
         request,
@@ -26,7 +29,7 @@ class IngredientsController @Inject() (
       )
   }
 
-  def post(): Action[JsValue] = Action(parse.json) { request =>
+  def post(): Action[JsValue] = Action.async(parse.json) { request =>
     Requests.post[Ingredient, IngredientInput, IngredientUpdateInput](
       request,
       cookingApi,
@@ -34,7 +37,7 @@ class IngredientsController @Inject() (
     )
   }
 
-  def get(id: java.util.UUID): Action[AnyContent] = Action { request =>
+  def get(id: java.util.UUID): Action[AnyContent] = Action.async { request =>
     Requests
       .get[Ingredient](
         id,
@@ -47,58 +50,68 @@ class IngredientsController @Inject() (
       )
   }
 
-  def put(id: java.util.UUID): Action[JsValue] = Action(parse.json) { request =>
-    Requests.put[Ingredient, IngredientInput, IngredientUpdateInput](
-      id,
-      request,
-      cookingApi,
-      cookingApi.ingredients
-    )
+  def put(id: java.util.UUID): Action[JsValue] = Action.async(parse.json) {
+    request =>
+      Requests.put[Ingredient, IngredientInput, IngredientUpdateInput](
+        id,
+        request,
+        cookingApi,
+        cookingApi.ingredients
+      )
   }
 
-  def delete(id: java.util.UUID): Action[AnyContent] = Action { request =>
+  def delete(id: java.util.UUID): Action[AnyContent] = Action.async { request =>
     Requests
       .delete[Ingredient](id, request, cookingApi, cookingApi.ingredients)(
         Ingredient.encoder
       )
   }
 
-  def substitutes(id: UUID): Action[AnyContent] = Action { request =>
-    val maybeUser = Requests.extractUser(request, cookingApi)
+  def substitutes(id: UUID): Action[AnyContent] = Action.async { request =>
     val response = cookingApi.ingredients
       .listSubstitutes(id)
       .fold(
         error => ErrorMapping.mapCustomErrorsToHttp(error),
         result => Ok(s"{ \"Body\": ${Json.parse(result.asJson.noSpaces)}}")
       )
-    ApiRunner.runResponseSafely(response, cookingApi, maybeUser)
+    Requests
+      .extractUser(request, cookingApi)
+      .flatMap(maybeUser =>
+        ApiRunner.runResponseAsyncSafely(response, cookingApi, maybeUser)
+      )
   }
 
   def addSubstitute(
       id: UUID,
       substituteId: UUID
-  ): Action[AnyContent] = Action { request =>
-    val maybeUser = Requests.extractUser(request, cookingApi)
+  ): Action[AnyContent] = Action.async { request =>
     val response = cookingApi.ingredients
       .addSubstitute(id, substituteId)
       .fold(
         error => ErrorMapping.mapCustomErrorsToHttp(error),
         _ => Created(Json.obj("message" -> "Substitute relationship created"))
       )
-    ApiRunner.runResponseSafely(response, cookingApi, maybeUser)
+    Requests
+      .extractUser(request, cookingApi)
+      .flatMap(maybeUser =>
+        ApiRunner.runResponseAsyncSafely(response, cookingApi, maybeUser)
+      )
   }
 
   def deleteSubstitute(
       id: UUID,
       substituteId: UUID
-  ): Action[AnyContent] = Action { request =>
-    val maybeUser = Requests.extractUser(request, cookingApi)
+  ): Action[AnyContent] = Action.async { request =>
     val response = cookingApi.ingredients
       .removeSubstitute(id, substituteId)
       .fold(
         error => ErrorMapping.mapCustomErrorsToHttp(error),
         _ => Ok(Json.obj("message" -> "Substitute relationship removed"))
       )
-    ApiRunner.runResponseSafely(response, cookingApi, maybeUser)
+    Requests
+      .extractUser(request, cookingApi)
+      .flatMap(maybeUser =>
+        ApiRunner.runResponseAsyncSafely(response, cookingApi, maybeUser)
+      )
   }
 }

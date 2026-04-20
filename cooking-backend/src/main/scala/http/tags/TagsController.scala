@@ -6,12 +6,16 @@ import http.Requests
 import play.api.libs.json.*
 import play.api.mvc.*
 
+import scala.concurrent.ExecutionContext
+
 @Singleton
 class TagsController @Inject() (
     cc: ControllerComponents,
     cookingApi: CookingApi
 ) extends AbstractController(cc) {
-  def list(): Action[JsValue] = Action(parse.json) { request =>
+  private implicit val ec: ExecutionContext = cc.executionContext
+
+  def list(): Action[JsValue] = Action.async(parse.json) { request =>
     Requests.list[String](request, cookingApi, cookingApi.tags)
   }
 }

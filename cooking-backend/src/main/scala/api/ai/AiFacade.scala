@@ -16,7 +16,9 @@ class AiFacade @Inject() (
   def pingOllama(): ZIO[ApiContext, Throwable, Unit] =
     aiInteractor.pingOllama()
 
-  def parseRecipe(text: String): ZIO[ApiContext, Throwable, AiRecipeParseResponse] =
+  def parseRecipe(
+      text: String
+  ): ZIO[ApiContext, Throwable, AiRecipeParseResponse] =
     for {
       ingredients <- ingredientsApi.list(Filters.empty())
       tags <- tagsApi.list(Filters.empty())

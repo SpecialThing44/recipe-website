@@ -26,7 +26,6 @@ class RichTextSanitizer @Inject() (moderationClient: OpenAIModerationClient) {
   )
 
   def validateAndSanitize(instructionsJson: String): Task[String] = for {
-    // First, check content moderation
     plainText <- ZIO.succeed(toPlainText(instructionsJson))
     moderationResult <- moderationClient.moderateText(plainText)
     _ <- moderationResult match {
@@ -36,7 +35,6 @@ class RichTextSanitizer @Inject() (moderationClient: OpenAIModerationClient) {
         ZIO.unit
     }
 
-    // Then validate JSON and sanitize
     sanitized <- ZIO.attempt {
       if (instructionsJson.length > MAX_INSTRUCTIONS_LENGTH) {
         throw new IllegalArgumentException(
