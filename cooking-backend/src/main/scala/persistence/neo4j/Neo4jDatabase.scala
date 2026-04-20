@@ -43,7 +43,8 @@ private[persistence] case class Neo4jDatabase @Inject() (
       Try {
         val session = driver.session
         logger.info(s"Executing cypher: $cypher")
-        val result = session.executeWrite(tx => logic(tx.run(cypher, params.asJava)))
+        val result =
+          session.executeWrite(tx => logic(tx.run(cypher, params.asJava)))
         session.close()
         result
       }
@@ -58,7 +59,8 @@ private[persistence] case class Neo4jDatabase @Inject() (
       Try {
         val session = driver.session
         logger.info(s"Executing cypher: $cypher")
-        val result = session.executeRead(tx => logic(tx.run(cypher, params.asJava)))
+        val result =
+          session.executeRead(tx => logic(tx.run(cypher, params.asJava)))
         session.close()
         result
       }

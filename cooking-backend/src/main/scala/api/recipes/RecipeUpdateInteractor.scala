@@ -13,28 +13,31 @@ import persistence.recipes.Recipes
 import zio.ZIO
 
 class RecipeUpdateInteractor @Inject() (
-                                         persistence: Recipes,
-                                         tagValidationService: TagValidationInteractor,
-                                         wikipediaCheck: WikipediaCheck,
-                                         ingredientPersistence: Ingredients,
-                                         richTextSanitizer: RichTextSanitizer,
-                                         ingredientWeightAsyncService: IngredientWeightAsyncService
+    persistence: Recipes,
+    tagValidationInteractor: TagValidationInteractor,
+    wikipediaCheck: WikipediaCheck,
+    ingredientPersistence: Ingredients,
+    richTextSanitizer: RichTextSanitizer,
+    ingredientWeightAsyncService: IngredientWeightAsyncService
 ) {
   def update(
-      input: RecipeUpdateInput,
+      recipeInput: RecipeUpdateInput,
       originalRecipe: Recipe
   ): ZIO[ApiContext, Throwable, Recipe] = {
     for {
-      _ <- RecipeValidator.validateRecipeUpdateInput(input, originalRecipe)
+      _ <- RecipeValidator.validateRecipeUpdateInput(
+        recipeInput,
+        originalRecipe
+      )
       context <- ZIO.service[ApiContext]
       _ <- AuthenticationInteractor.ensureAuthenticatedAndMatchingUser(
         context.applicationContext.user,
         originalRecipe.createdBy.id
       )
 
-      _ <- input.tags match {
+      _ <- recipeInput.tags match {
         case Some(tags) if tags.nonEmpty =>
-          tagValidationService.validateNoUnauthorizedNewTags(
+          tagValidationInteractor.validateNoUnauthorizedNewTags(
             tags,
             context.applicationContext.user.exists(_.admin)
           )
@@ -42,7 +45,7 @@ class RecipeUpdateInteractor @Inject() (
       }
 
       // Validate and sanitize instructions if updated
-      sanitizedInstructions <- input.instructions match {
+      sanitizedInstructions <- recipeInput.instructions match {
         case Some(instructions) =>
           richTextSanitizer.validateAndSanitize(instructions).map(Some(_))
         case None => ZIO.succeed(None)
@@ -54,10 +57,11 @@ class RecipeUpdateInteractor @Inject() (
       }
 
       _ <-
-        if (input.wikiLink.isDefined)
-          wikipediaCheck.validateWikiLink(input.wikiLink.get)
+        if (recipeInput.wikiLink.isDefined)
+          wikipediaCheck.validateWikiLink(recipeInput.wikiLink.get)
         else ZIO.unit
-      resolved <- input.ingredients match {
+
+      resolvedIngredientInstructions <- recipeInput.ingredients match {
         case Some(list) =>
           zio.ZIO
             .foreach(list) { instructionIngredient =>
@@ -75,7 +79,8 @@ class RecipeUpdateInteractor @Inject() (
         case None => ZIO.succeed(None)
       }
       _ <- {
-        val ingredientsToCheck = resolved.getOrElse(originalRecipe.ingredients)
+        val ingredientsToCheck =
+          resolvedIngredientInstructions.getOrElse(originalRecipe.ingredients)
         val anyNonPredefinedUnit =
           ingredientsToCheck.exists(instructionIngredient =>
             !Unit.isPredefined(instructionIngredient.quantity.unit)
@@ -88,19 +93,20 @@ class RecipeUpdateInteractor @Inject() (
           )
         else ZIO.unit
       }
-      inputWithSanitized = input.copy(
-        instructions = sanitizedInstructions.orElse(input.instructions),
-        instructionImages = extractedImageUrls.orElse(input.instructionImages)
+      sanitizedRecipe = recipeInput.copy(
+        instructions = sanitizedInstructions.orElse(recipeInput.instructions),
+        instructionImages =
+          extractedImageUrls.orElse(recipeInput.instructionImages)
       )
       updated = RecipeAdapter.adaptUpdate(
-        inputWithSanitized,
+        sanitizedRecipe,
         originalRecipe,
-        resolved
+        resolvedIngredientInstructions
       )
-      result <- persistence.update(updated, originalRecipe)
+      recipe <- persistence.update(updated, originalRecipe)
       _ <- ingredientWeightAsyncService
-        .enqueueRecipeUpdated(originalRecipe, result)
+        .enqueueRecipeUpdated(originalRecipe, recipe)
         .catchAll(_ => ZIO.unit)
-    } yield result
+    } yield recipe
   }
 }

@@ -1,12 +1,11 @@
 package http.admin
 
+import api.users.AuthenticationInteractor
 import com.google.inject.{Inject, Singleton}
 import context.CookingApi
 import http.Requests.extractUser
-import api.users.AuthenticationInteractor
 import persistence.ingredients.weights.IngredientWeightAsyncService
-import play.api.libs.json.{JsValue, Json}
-import play.api.libs.json.Reads
+import play.api.libs.json.{JsValue, Json, Reads}
 import play.api.mvc.*
 
 @Singleton
@@ -17,14 +16,17 @@ class AdminController @Inject() (
 ) extends AbstractController(cc) {
 
   private case class IngredientWeightSettingsInput(meanRawPenaltyFactor: Double)
-  private implicit val ingredientWeightSettingsReads: Reads[IngredientWeightSettingsInput] =
+  private implicit val ingredientWeightSettingsReads
+      : Reads[IngredientWeightSettingsInput] =
     Json.reads[IngredientWeightSettingsInput]
 
   def processIngredientWeightEvents(): Action[AnyContent] = Action { request =>
     val maybeUser = extractUser(request, cookingApi)
     maybeUser match {
       case Some(user) =>
-        domain.types.ZIORuntime.unsafeRun(AuthenticationInteractor.ensureIsAdmin(user).either) match {
+        domain.types.ZIORuntime.unsafeRun(
+          AuthenticationInteractor.ensureIsAdmin(user).either
+        ) match {
           case Right(_) =>
             val jobId = domain.types.ZIORuntime.unsafeRun(
               ingredientWeightAsyncService.triggerProcessPendingEvents(user.id)
@@ -47,7 +49,9 @@ class AdminController @Inject() (
     val maybeUser = extractUser(request, cookingApi)
     maybeUser match {
       case Some(user) =>
-        domain.types.ZIORuntime.unsafeRun(AuthenticationInteractor.ensureIsAdmin(user).either) match {
+        domain.types.ZIORuntime.unsafeRun(
+          AuthenticationInteractor.ensureIsAdmin(user).either
+        ) match {
           case Right(_) =>
             val jobId = domain.types.ZIORuntime.unsafeRun(
               ingredientWeightAsyncService.triggerRebuildAllIngredients(user.id)
@@ -71,7 +75,9 @@ class AdminController @Inject() (
       val maybeUser = extractUser(request, cookingApi)
       maybeUser match {
         case Some(user) =>
-          domain.types.ZIORuntime.unsafeRun(AuthenticationInteractor.ensureIsAdmin(user).either) match {
+          domain.types.ZIORuntime.unsafeRun(
+            AuthenticationInteractor.ensureIsAdmin(user).either
+          ) match {
             case Right(_) =>
               val jobStatus = domain.types.ZIORuntime.unsafeRun(
                 ingredientWeightAsyncService.getJobStatus(jobId)
@@ -105,7 +111,9 @@ class AdminController @Inject() (
     val maybeUser = extractUser(request, cookingApi)
     maybeUser match {
       case Some(user) =>
-        domain.types.ZIORuntime.unsafeRun(AuthenticationInteractor.ensureIsAdmin(user).either) match {
+        domain.types.ZIORuntime.unsafeRun(
+          AuthenticationInteractor.ensureIsAdmin(user).either
+        ) match {
           case Right(_) =>
             val jobIds = domain.types.ZIORuntime.unsafeRun(
               ingredientWeightAsyncService.getActiveJobIds()
@@ -123,7 +131,9 @@ class AdminController @Inject() (
     val maybeUser = extractUser(request, cookingApi)
     maybeUser match {
       case Some(user) =>
-        domain.types.ZIORuntime.unsafeRun(AuthenticationInteractor.ensureIsAdmin(user).either) match {
+        domain.types.ZIORuntime.unsafeRun(
+          AuthenticationInteractor.ensureIsAdmin(user).either
+        ) match {
           case Right(_) =>
             val meanRawPenaltyFactor =
               domain.types.ZIORuntime.unsafeRun(
@@ -147,7 +157,9 @@ class AdminController @Inject() (
       val maybeUser = extractUser(request, cookingApi)
       maybeUser match {
         case Some(user) =>
-          domain.types.ZIORuntime.unsafeRun(AuthenticationInteractor.ensureIsAdmin(user).either) match {
+          domain.types.ZIORuntime.unsafeRun(
+            AuthenticationInteractor.ensureIsAdmin(user).either
+          ) match {
             case Right(_) =>
               request.body
                 .validate[IngredientWeightSettingsInput]

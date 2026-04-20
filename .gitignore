@@ -9,6 +9,7 @@ src_managed/
 project/boot/
 project/plugins/project/
 project/local-plugins.sbt
+cooking-backend/project/target
 .history
 .ensime
 .ensime_cache/

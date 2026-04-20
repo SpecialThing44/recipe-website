@@ -1,5 +1,6 @@
 package services.ai
 
+import api.ai.AiResponseValidator
 import domain.ai.{AiParsedIngredient, AiParsedQuantity, AiRecipeParseResponse}
 import domain.ingredients.Ingredient
 import domain.users.User

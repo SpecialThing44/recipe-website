@@ -7,7 +7,7 @@ import domain.types.InputError
 import persistence.tags.Tags
 import zio.ZIO
 
-class TagValidationInteractor @Inject()(
+class TagValidationInteractor @Inject() (
     tagsPersistence: Tags,
 ) {
   def validateNoUnauthorizedNewTags(
@@ -21,9 +21,7 @@ class TagValidationInteractor @Inject()(
         existingTags <- tagsPersistence.list(
           Filters
             .empty()
-            .copy(name =
-              Some(StringFilter.empty().copy(anyOf = Some(tags)))
-            )
+            .copy(name = Some(StringFilter.empty().copy(anyOf = Some(tags))))
         )
         newTags = tags.filterNot(existingTags.contains)
         _ <-

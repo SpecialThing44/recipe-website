@@ -28,7 +28,8 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
       tags: Seq[String],
       includeWithUser: Boolean
   ): CypherFragment = {
-    val withLine = if (includeWithUser) s"\n${WithStatement.apply}, user\n" else "\n"
+    val withLine =
+      if (includeWithUser) s"\n${WithStatement.apply}, user\n" else "\n"
     val fragments = tags.zipWithIndex.map { case (tag, index) =>
       val alias = s"tag$index"
       val tagNameParam = s"recipe_tag_name_$index"
@@ -48,7 +49,8 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
       entity: Recipe,
       includeWithUser: Boolean
   ): CypherFragment = {
-    val withLine = if (includeWithUser) s"\n${WithStatement.apply}, user\n" else "\n"
+    val withLine =
+      if (includeWithUser) s"\n${WithStatement.apply}, user\n" else "\n"
     val standardizedWeights = entity.ingredients.map(ii =>
       Unit.toStandardizedAmount(ii.quantity.unit, ii.quantity.amount)
     )

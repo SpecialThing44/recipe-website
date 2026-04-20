@@ -20,8 +20,8 @@ private[persistence] trait Database {
   ): zio.Task[A]
 
   def readTransaction[A](cypher: String, logic: Result => A): zio.Task[A] =
-        readTransaction(cypher, Map.empty, logic)
+    readTransaction(cypher, Map.empty, logic)
 
   def writeTransaction[A](cypher: String, logic: Result => A): zio.Task[A] =
-        writeTransaction(cypher, Map.empty, logic)
+    writeTransaction(cypher, Map.empty, logic)
 }

@@ -1,7 +1,7 @@
 package api.storage
 
-import com.sksamuel.scrimage.{ImmutableImage, ScaleMethod}
 import com.sksamuel.scrimage.webp.WebpWriter
+import com.sksamuel.scrimage.{ImmutableImage, ScaleMethod}
 import org.apache.pekko.util.ByteString
 import zio.{Task, ZIO}
 

@@ -1,7 +1,7 @@
 package persistence.filters
 
 import domain.filters.Filters
-import persistence.filters.CypherScoringParts._
+import persistence.filters.CypherScoringParts.*
 import persistence.users.UserConverter.lowerPrefix
 
 import scala.jdk.CollectionConverters.SeqHasAsJava
@@ -356,8 +356,7 @@ object FiltersConverter {
     })
 
     val ingredientsClause = filters.ingredients.map(ingredients => {
-      val ingredientClauses = ingredients
-        .zipWithIndex
+      val ingredientClauses = ingredients.zipWithIndex
         .map { case (ingredient, index) =>
           ingredientMatchWithSubstitutesClause(nodeVar, ingredient, index)
         }
@@ -368,12 +367,13 @@ object FiltersConverter {
     })
 
     val notIngredientsClause = filters.notIngredients.map(notIngredients => {
-      val clauses = notIngredients.zipWithIndex.map { case (notIngredient, index) =>
-        val param = s"${nodeVar}_not_ingredient_$index"
-        CypherFragment(
-          s"MATCH ($nodeVar) WHERE NOT ($nodeVar)-[:HAS_INGREDIENT]->(:Ingredient {lowername: $$${param}})",
-          Map(param -> notIngredient.toLowerCase)
-        )
+      val clauses = notIngredients.zipWithIndex.map {
+        case (notIngredient, index) =>
+          val param = s"${nodeVar}_not_ingredient_$index"
+          CypherFragment(
+            s"MATCH ($nodeVar) WHERE NOT ($nodeVar)-[:HAS_INGREDIENT]->(:Ingredient {lowername: $$${param}})",
+            Map(param -> notIngredient.toLowerCase)
+          )
       }
       CypherFragment(clauses.map(_.cypher).mkString("\n"), mergeParams(clauses))
     })
@@ -423,7 +423,8 @@ object FiltersConverter {
 
     val ingredientMinParam =
       ingredientMin.map(_ => s"${nodeVar}_ingredient_similarity_min")
-    val coSaveMinParam = coSaveMin.map(_ => s"${nodeVar}_co_save_similarity_min")
+    val coSaveMinParam =
+      coSaveMin.map(_ => s"${nodeVar}_co_save_similarity_min")
     val tagMinParam = tagMin.map(_ => s"${nodeVar}_tag_similarity_min")
 
     resolveSimilarityMode(filters, nodeVar)
@@ -433,9 +434,13 @@ object FiltersConverter {
           analyzedIdParam -> analyzedId
         ) ++ ingredientMinParam
           .zip(ingredientMin)
-          .map { case (param, value) => param -> Double.box(value) } ++ coSaveMinParam
+          .map { case (param, value) =>
+            param -> Double.box(value)
+          } ++ coSaveMinParam
           .zip(coSaveMin)
-          .map { case (param, value) => param -> Double.box(value) } ++ tagMinParam
+          .map { case (param, value) =>
+            param -> Double.box(value)
+          } ++ tagMinParam
           .zip(tagMin)
           .map { case (param, value) => param -> Double.box(value) }
 

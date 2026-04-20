@@ -13,7 +13,9 @@ object NumberFilterConverter extends Cypher[NumberFilter] {
     val lessParam = s"${paramPrefix}_lessOrEqual"
 
     val clauses = Seq(
-      filter.greaterOrEqual.map(_ => s"$nodeVar.$property >= $$${greaterParam}"),
+      filter.greaterOrEqual.map(_ =>
+        s"$nodeVar.$property >= $$${greaterParam}"
+      ),
       filter.lessOrEqual.map(_ => s"$nodeVar.$property <= $$${lessParam}"),
     ).flatten
 

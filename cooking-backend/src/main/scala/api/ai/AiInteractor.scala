@@ -1,20 +1,20 @@
-package services.ai
+package api.ai
 
 import com.google.inject.{Inject, Singleton}
 import domain.ai.AiRecipeParseResponse
 import domain.ingredients.{Ingredient, Unit as IngredientUnit}
 import domain.types.SystemError
 import io.circe.Json
-import io.circe.parser._
+import io.circe.parser.*
 import play.api.Configuration
-import sttp.client3._
+import sttp.client3.*
 import zio.ZIO
 
 import scala.concurrent.duration.*
 import scala.util.control.NonFatal
 
 @Singleton
-class AiService @Inject() (config: Configuration) {
+class AiInteractor @Inject()(config: Configuration) {
   private val backend = HttpClientSyncBackend()
   private val ollamaUrl = config.getOptional[String]("ollama.url").getOrElse("http://localhost:11434")
   private val model = config.getOptional[String]("ollama.model").getOrElse("qwen2.5:14b")

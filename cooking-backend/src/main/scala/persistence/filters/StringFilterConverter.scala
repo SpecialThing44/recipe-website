@@ -22,11 +22,15 @@ object StringFilterConverter extends Cypher[StringFilter] {
     val clauses = Seq(
       sanitized.equals.map(_ => s"$nodeVar.$property = $$${equalsParam}"),
       sanitized.anyOf.map(_ => s"$nodeVar.$property IN $$${anyOfParam}"),
-      sanitized.contains.map(_ => s"$nodeVar.$property CONTAINS $$${containsParam}"),
+      sanitized.contains.map(_ =>
+        s"$nodeVar.$property CONTAINS $$${containsParam}"
+      ),
       sanitized.startsWith.map(_ =>
         s"$nodeVar.$property STARTS WITH $$${startsWithParam}"
       ),
-      sanitized.endsWith.map(_ => s"$nodeVar.$property ENDS WITH $$${endsWithParam}")
+      sanitized.endsWith.map(_ =>
+        s"$nodeVar.$property ENDS WITH $$${endsWithParam}"
+      )
     ).flatten
 
     val params = Seq(

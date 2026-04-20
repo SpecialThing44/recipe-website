@@ -65,10 +65,12 @@ class IngredientsController @Inject() (
 
   def substitutes(id: UUID): Action[AnyContent] = Action { request =>
     val maybeUser = Requests.extractUser(request, cookingApi)
-    val response = cookingApi.ingredients.listSubstitutes(id).fold(
-      error => ErrorMapping.mapCustomErrorsToHttp(error),
-      result => Ok(s"{ \"Body\": ${Json.parse(result.asJson.noSpaces)}}")
-    )
+    val response = cookingApi.ingredients
+      .listSubstitutes(id)
+      .fold(
+        error => ErrorMapping.mapCustomErrorsToHttp(error),
+        result => Ok(s"{ \"Body\": ${Json.parse(result.asJson.noSpaces)}}")
+      )
     ApiRunner.runResponseSafely(response, cookingApi, maybeUser)
   }
 
@@ -77,10 +79,12 @@ class IngredientsController @Inject() (
       substituteId: UUID
   ): Action[AnyContent] = Action { request =>
     val maybeUser = Requests.extractUser(request, cookingApi)
-    val response = cookingApi.ingredients.addSubstitute(id, substituteId).fold(
-      error => ErrorMapping.mapCustomErrorsToHttp(error),
-      _ => Created(Json.obj("message" -> "Substitute relationship created"))
-    )
+    val response = cookingApi.ingredients
+      .addSubstitute(id, substituteId)
+      .fold(
+        error => ErrorMapping.mapCustomErrorsToHttp(error),
+        _ => Created(Json.obj("message" -> "Substitute relationship created"))
+      )
     ApiRunner.runResponseSafely(response, cookingApi, maybeUser)
   }
 
@@ -89,10 +93,12 @@ class IngredientsController @Inject() (
       substituteId: UUID
   ): Action[AnyContent] = Action { request =>
     val maybeUser = Requests.extractUser(request, cookingApi)
-    val response = cookingApi.ingredients.removeSubstitute(id, substituteId).fold(
-      error => ErrorMapping.mapCustomErrorsToHttp(error),
-      _ => Ok(Json.obj("message" -> "Substitute relationship removed"))
-    )
+    val response = cookingApi.ingredients
+      .removeSubstitute(id, substituteId)
+      .fold(
+        error => ErrorMapping.mapCustomErrorsToHttp(error),
+        _ => Ok(Json.obj("message" -> "Substitute relationship removed"))
+      )
     ApiRunner.runResponseSafely(response, cookingApi, maybeUser)
   }
 }

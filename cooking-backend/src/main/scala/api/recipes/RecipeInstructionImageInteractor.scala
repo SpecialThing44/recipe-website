@@ -15,9 +15,6 @@ class RecipeInstructionImageInteractor @Inject() (
     seaweedFSClient: SeaweedFSClient
 ) {
 
-  /** Upload an image to be used inline in recipe instructions. Returns the URL
-    * of the uploaded image.
-    */
   def uploadInstructionImage(
       recipeId: UUID,
       fileBytes: ByteString,
@@ -25,8 +22,6 @@ class RecipeInstructionImageInteractor @Inject() (
   ): ZIO[ApiContext, Throwable, String] = for {
     context <- ZIO.service[ApiContext]
     recipe <- persistence.getById(recipeId)
-
-    // Ensure user is authenticated and owns the recipe
     user <- AuthenticationInteractor.ensureIsLoggedIn(
       context.applicationContext.user
     )
@@ -35,11 +30,8 @@ class RecipeInstructionImageInteractor @Inject() (
       recipe.createdBy.id
     )
 
-    // Process the image (resize to reasonable size for inline use)
     processedImage <- ImageProcessor.processImage(fileBytes, contentType)
 
-    // Upload medium size for instruction images (balance between quality and file size)
-    // Generate unique filename for instruction image
     imageId = UUID.randomUUID()
     extension = processedImage.extension
     uploadPath = s"/recipes/$recipeId/instructions/$imageId.$extension"
@@ -51,18 +43,12 @@ class RecipeInstructionImageInteractor @Inject() (
     )
   } yield imageUrl
 
-  /** Delete an instruction image. This should be called when cleaning up
-    * orphaned images.
-    */
   def deleteInstructionImage(
       imageUrl: String
   ): ZIO[ApiContext, Throwable, Unit] = {
     seaweedFSClient.deleteFile(imageUrl).catchAll(_ => ZIO.unit)
   }
 
-  /** Clean up instruction images that are no longer referenced in the recipe.
-    * Called when a recipe is updated.
-    */
   def cleanupOrphanedImages(
       recipeId: UUID,
       oldImages: Seq[String],

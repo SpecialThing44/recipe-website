@@ -45,7 +45,7 @@ object CypherScoringParts {
        |WITH $nodeVar, target, targetVector, collect({ingredientId: ciIngr.id, weight: coalesce(ci.rawNormalizedWeight, ci.normalizedWeight, 0.0) * coalesce(ciIngr.globalWeight, 1.0)}) AS candidateVector
        |""".stripMargin + ingredientCosineScoreTail(nodeVar) + appendMinWhere(
       "ingredientScore",
-        ingredientMinParam
+      ingredientMinParam
     )
 
   def userRecipeIngredientPart(
@@ -65,7 +65,7 @@ object CypherScoringParts {
        |WITH $nodeVar, target, targetVector, collect({ingredientId: ciIngr.id, weight: coalesce(ci.rawNormalizedWeight, ci.normalizedWeight, 0.0) * coalesce(ciIngr.globalWeight, 1.0)}) AS candidateVector
        |""".stripMargin + ingredientCosineScoreTail(nodeVar) + appendMinWhere(
       "ingredientScore",
-        ingredientMinParam
+      ingredientMinParam
     )
 
   def userUserIngredientPart(
@@ -93,7 +93,7 @@ object CypherScoringParts {
        |WITH $nodeVar, target, targetVector, collect({ingredientId: ingrIdC, weight: weightC}) AS candidateVector
        |""".stripMargin + ingredientCosineScoreTail(nodeVar) + appendMinWhere(
       "ingredientScore",
-        ingredientMinParam
+      ingredientMinParam
     )
 
   def recipeRecipeCoSavePart(

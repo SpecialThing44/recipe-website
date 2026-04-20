@@ -13,19 +13,19 @@ import persistence.recipes.Recipes
 import zio.ZIO
 
 class RecipeCreateInteractor @Inject() (
-                                         persistence: Recipes,
-                                         tagValidationService: TagValidationInteractor,
-                                         wikipediaCheck: WikipediaCheck,
-                                         ingredientPersistence: Ingredients,
-                                         richTextSanitizer: RichTextSanitizer,
-                                         ingredientWeightAsyncService: IngredientWeightAsyncService
+    persistence: Recipes,
+    tagValidationInteractor: TagValidationInteractor,
+    wikipediaCheck: WikipediaCheck,
+    ingredientPersistence: Ingredients,
+    richTextSanitizer: RichTextSanitizer,
+    ingredientWeightAsyncService: IngredientWeightAsyncService
 ) {
   def create(input: RecipeInput): ZIO[ApiContext, Throwable, Recipe] = {
     for {
       _ <- RecipeValidator.validateRecipeInput(input)
       maybeUser <- ZIO.service[ApiContext].map(_.applicationContext.user)
       user <- AuthenticationInteractor.ensureIsLoggedIn(maybeUser)
-      _ <- tagValidationService.validateNoUnauthorizedNewTags(
+      _ <- tagValidationInteractor.validateNoUnauthorizedNewTags(
         input.tags,
         user.admin
       )

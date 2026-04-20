@@ -1,4 +1,4 @@
-package services.ai
+package api.ai
 
 import domain.ai.{AiParsedIngredient, AiRecipeParseResponse}
 import domain.ingredients.{Ingredient, Unit as IngredientUnit}

@@ -24,7 +24,12 @@ class RecipesController @Inject() (
 
   def list(): Action[JsValue] = Action(parse.json) { request =>
     Requests
-      .list[Recipe](request, cookingApi, cookingApi.recipes, authenticate = false)
+      .list[Recipe](
+        request,
+        cookingApi,
+        cookingApi.recipes,
+        authenticate = false
+      )
   }
 
   def post(): Action[JsValue] = Action(parse.json) { request =>
@@ -37,7 +42,13 @@ class RecipesController @Inject() (
 
   def get(id: java.util.UUID): Action[AnyContent] = Action { request =>
     Requests
-      .get[Recipe](id, request, cookingApi, cookingApi.recipes, authenticate = false)(
+      .get[Recipe](
+        id,
+        request,
+        cookingApi,
+        cookingApi.recipes,
+        authenticate = false
+      )(
         Recipe.encoder
       )
   }
