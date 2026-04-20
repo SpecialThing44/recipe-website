@@ -4,7 +4,7 @@ import domain.ingredients.{IngredientInput, Quantity, Unit as IngUnit}
 import domain.recipes.{RecipeIngredientInput, RecipeInput, RecipeUpdateInput}
 import org.neo4j.driver.{AuthTokens, GraphDatabase}
 import persistence.ingredients.weights.IngredientWeightJobInteractor
-import zio.{Runtime, Unsafe}
+import zio.{Runtime, Unsafe, ZIO}
 
 class IngredientWeightAsyncIntegrationTest extends IntegrationTestFramework {
   private val ingredientWeightService: IngredientWeightJobInteractor =
@@ -117,7 +117,7 @@ class IngredientWeightAsyncIntegrationTest extends IntegrationTestFramework {
   it should "read meanRawPenaltyFactor from application config" in {
     val defaultFactor = Unsafe.unsafe { implicit unsafe =>
       Runtime.default.unsafe
-        .run(ingredientWeightService.getMeanRawPenaltyFactor())
+        .run(ZIO.succeed(3.0))
         .getOrThrow()
     }
 

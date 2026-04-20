@@ -92,9 +92,9 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
   override def list(query: Filters): ZIO[ApiContext, Throwable, Seq[Recipe]] = {
     val withLine =
       s"WITH ${graph.nodeVar}, user, collect(DISTINCT ${graph.tagVar}.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit, weight: ri.weight, rawNormalizedWeight: coalesce(ri.rawNormalizedWeight, ri.normalizedWeight, 0.0), normalizedWeight: coalesce(ri.normalizedWeight, ri.rawNormalizedWeight, 0.0), description: ri.description}) as ingredientQuantities"
-    val orderLine = FiltersConverter.getOrderLine(query, graph.nodeVar)
+    val orderLine = CypherFragment.getOrderLine(query, graph.nodeVar)
     val filterCypher = FiltersConverter.toCypher(query, graph.nodeVar)
-    val pagingCypher = FiltersConverter.limitAndSkipStatement(query)
+    val pagingCypher = CypherFragment.limitAndSkipStatement(query)
     database.readTransaction(
       s"""
          |${MatchStatement.apply}
@@ -106,7 +106,7 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
           "tag",
           graph.tagLabel
         )}
-         |${FiltersConverter.getWithScoreLine(query, withLine)}
+         |${CypherFragment.getWithScoreLine(query, withLine)}
          |$orderLine
          |${pagingCypher.cypher}
          |${ReturnStatement.apply}, user as createdBy, tags, ingredientQuantities

@@ -18,7 +18,7 @@ object IngredientWeightJobSupport {
       |     CASE WHEN recipeCount = 0 THEN 0.0 ELSE sumRawNormalizedWeight / toFloat(recipeCount) END AS meanRawNormalizedWeight
       |WITH ingredient, totalRecipes, recipeCount, sumRawNormalizedWeight, meanRawNormalizedWeight,
       |     (log((toFloat(totalRecipes) + 1.0) / (toFloat(recipeCount) + 1.0)) + 1.0) AS inverseDocumentFrequency,
-      |     (1.0 / (1.0 + ($$meanRawPenaltyFactor * meanRawNormalizedWeight))) AS quantityPenalty
+      |     (1.0 / (1.0 + ($meanRawPenaltyFactor * meanRawNormalizedWeight))) AS quantityPenalty
       |SET ingredient.recipeCount = recipeCount,
       |    ingredient.sumRawNormalizedWeight = sumRawNormalizedWeight,
       |    ingredient.meanRawNormalizedWeight = meanRawNormalizedWeight,

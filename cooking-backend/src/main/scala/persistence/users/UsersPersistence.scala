@@ -7,7 +7,7 @@ import domain.types.NoSuchEntityError
 import domain.users.User
 import org.neo4j.driver.Result
 import persistence.cypher.{MatchStatement, ReturnStatement}
-import persistence.filters.FiltersConverter
+import persistence.filters.{CypherFragment, FiltersConverter}
 import persistence.neo4j.Database
 import zio.ZIO
 
@@ -34,16 +34,16 @@ class UsersPersistence @Inject() (database: Database) extends Users {
        |DETACH DELETE ingredient""".stripMargin
 
   override def list(filters: Filters): ZIO[ApiContext, Throwable, Seq[User]] = {
-    val orderLine = FiltersConverter.getOrderLine(filters, graph.nodeVar)
+    val orderLine = CypherFragment.getOrderLine(filters, graph.nodeVar)
     val withLine = s"WITH ${graph.nodeVar}"
     val filterCypher = FiltersConverter.toCypher(filters, graph.nodeVar)
-    val pagingCypher = FiltersConverter.limitAndSkipStatement(filters)
+    val pagingCypher = CypherFragment.limitAndSkipStatement(filters)
     database.readTransaction(
       s"""
          |${MatchStatement.apply} WHERE NOT (user:DeletedUser)
          |${MatchStatement.apply}
          |${filterCypher.cypher}
-         |${FiltersConverter.getWithScoreLine(filters, withLine)}
+         |${CypherFragment.getWithScoreLine(filters, withLine)}
          |$orderLine
          |${pagingCypher.cypher}
          |${ReturnStatement.apply}

@@ -50,17 +50,17 @@ class IngredientsPersistence @Inject() (database: Database)
   override def list(
       query: Filters
   ): ZIO[ApiContext, Throwable, Seq[Ingredient]] = {
-    val orderLine = FiltersConverter.getOrderLine(query, graph.nodeVar)
+    val orderLine = CypherFragment.getOrderLine(query, graph.nodeVar)
     val withLine = s"WITH ${graph.nodeVar}"
     val filterCypher = FiltersConverter.toCypher(query, graph.nodeVar)
-    val pagingCypher = FiltersConverter.limitAndSkipStatement(query)
+    val pagingCypher = CypherFragment.limitAndSkipStatement(query)
     database.readTransaction(
       s"""
          |${MatchStatement.apply}
          |${filterCypher.cypher}
          |${MatchRelationship.outgoing("CREATED_BY", "user", "User")}
          |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
-         |${FiltersConverter.getWithScoreLine(
+         |${CypherFragment.getWithScoreLine(
           query,
           withLine
         )}, user, collect(DISTINCT tag.name) as tags

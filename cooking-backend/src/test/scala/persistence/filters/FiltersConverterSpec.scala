@@ -199,7 +199,7 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
   it should "return empty string when no orderBy is specified" in {
     val filters = Filters.empty()
 
-    val result = FiltersConverter.getOrderLine(filters, "n")
+    val result = CypherFragment.getOrderLine(filters, "n")
 
     result shouldBe ""
   }
@@ -208,7 +208,7 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
     val filters =
       Filters.empty().copy(orderBy = Some(OrderBy(name = Some(true))))
 
-    val result = FiltersConverter.getOrderLine(filters, "n")
+    val result = CypherFragment.getOrderLine(filters, "n")
 
     result shouldBe "ORDER BY n.name"
   }
@@ -217,7 +217,7 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
     val filters =
       Filters.empty().copy(orderBy = Some(OrderBy(name = Some(false))))
 
-    val result = FiltersConverter.getOrderLine(filters, "n")
+    val result = CypherFragment.getOrderLine(filters, "n")
 
     result shouldBe "ORDER BY n.name"
   }
@@ -233,7 +233,7 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
         orderBy = Some(OrderBy(name = Some(true)))
       )
 
-    val result = FiltersConverter.getOrderLine(filters, "recipe")
+    val result = CypherFragment.getOrderLine(filters, "recipe")
 
     result shouldBe "ORDER BY score DESC"
   }
