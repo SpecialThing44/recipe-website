@@ -330,4 +330,14 @@ class RecipePersistence @Inject() (database: Database) extends Recipes {
       (_: org.neo4j.driver.Result) => ()
     )
   } yield ()
+
+  def getTotalRecipeCount(): zio.Task[Int] =
+    database.readTransaction(
+      """
+        |MATCH (recipe:Recipe)
+        |RETURN count(recipe) AS totalRecipes
+        |""".stripMargin,
+      (result: org.neo4j.driver.Result) =>
+        if (result.hasNext) result.next().get("totalRecipes").asInt() else 0
+    )
 }

@@ -6,8 +6,8 @@ import context.CookingApi
 import domain.users.User
 import http.Requests.extractUser
 import http.{ApiRunner, Requests}
-import persistence.ingredients.weights.IngredientWeightAsyncService
-import play.api.libs.json.{JsValue, Json, Reads}
+import persistence.ingredients.weights.IngredientWeightJobInteractor
+import play.api.libs.json.Json
 import play.api.mvc.*
 import zio.ZIO
 
@@ -15,16 +15,11 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class AdminController @Inject() (
-    cc: ControllerComponents,
-    cookingApi: CookingApi,
-    ingredientWeightAsyncService: IngredientWeightAsyncService
+                                  cc: ControllerComponents,
+                                  cookingApi: CookingApi,
+                                  ingredientWeightJobInteractor: IngredientWeightJobInteractor
 ) extends AbstractController(cc) {
   private implicit val ec: ExecutionContext = cc.executionContext
-
-  private case class IngredientWeightSettingsInput(meanRawPenaltyFactor: Double)
-  private implicit val ingredientWeightSettingsReads
-      : Reads[IngredientWeightSettingsInput] =
-    Json.reads[IngredientWeightSettingsInput]
 
   private def withAdminUser(request: RequestHeader)(
       onAuthorized: User => ZIO[context.ApiContext, Throwable, Result]
@@ -53,7 +48,7 @@ class AdminController @Inject() (
   def processIngredientWeightEvents(): Action[AnyContent] = Action.async {
     request =>
       withAdminUser(request) { user =>
-        ingredientWeightAsyncService
+        ingredientWeightJobInteractor
           .triggerProcessPendingEvents(user.id)
           .map(jobId =>
             Accepted(
@@ -68,7 +63,7 @@ class AdminController @Inject() (
 
   def rebuildIngredientWeights(): Action[AnyContent] = Action.async { request =>
     withAdminUser(request) { user =>
-      ingredientWeightAsyncService
+      ingredientWeightJobInteractor
         .triggerRebuildAllIngredients(user.id)
         .map(jobId =>
           Accepted(
@@ -84,7 +79,7 @@ class AdminController @Inject() (
   def ingredientWeightJobStatus(jobId: String): Action[AnyContent] =
     Action.async { request =>
       withAdminUser(request) { _ =>
-        ingredientWeightAsyncService.getJobStatus(jobId).map {
+        ingredientWeightJobInteractor.getJobStatus(jobId).map {
           case Some(job) =>
             Ok(
               Json.obj(
@@ -107,56 +102,9 @@ class AdminController @Inject() (
   def activeIngredientWeightJobIds(): Action[AnyContent] = Action.async {
     request =>
       withAdminUser(request) { _ =>
-        ingredientWeightAsyncService
+        ingredientWeightJobInteractor
           .getActiveJobIds()
           .map(jobIds => Ok(Json.obj("jobIds" -> jobIds)))
       }
   }
-
-  def getIngredientWeightSettings(): Action[AnyContent] = Action.async {
-    request =>
-      withAdminUser(request) { _ =>
-        ingredientWeightAsyncService.getMeanRawPenaltyFactor().map {
-          meanRawPenaltyFactor =>
-            Ok(
-              Json.obj(
-                "meanRawPenaltyFactor" -> meanRawPenaltyFactor
-              )
-            )
-        }
-      }
-  }
-
-  def updateIngredientWeightSettings(): Action[JsValue] =
-    Action.async(parse.json) { request =>
-      request.body
-        .validate[IngredientWeightSettingsInput]
-        .fold(
-          errors =>
-            Future.successful(
-              BadRequest(
-                Json.obj(
-                  "error" -> "Invalid request body",
-                  "details" -> errors.toString
-                )
-              )
-            ),
-          payload => {
-            withAdminUser(request) { _ =>
-              ingredientWeightAsyncService
-                .setMeanRawPenaltyFactor(payload.meanRawPenaltyFactor)
-                .map(meanRawPenaltyFactor =>
-                  Ok(
-                    Json.obj(
-                      "meanRawPenaltyFactor" -> meanRawPenaltyFactor
-                    )
-                  )
-                )
-                .catchSome { case e: IllegalArgumentException =>
-                  ZIO.succeed(BadRequest(Json.obj("error" -> e.getMessage)))
-                }
-            }
-          }
-        )
-    }
 }

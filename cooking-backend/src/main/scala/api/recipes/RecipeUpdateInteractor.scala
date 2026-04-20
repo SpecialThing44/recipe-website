@@ -8,17 +8,17 @@ import context.ApiContext
 import domain.ingredients.Unit
 import domain.recipes.{Recipe, RecipeUpdateInput}
 import persistence.ingredients.Ingredients
-import persistence.ingredients.weights.IngredientWeightAsyncService
+import persistence.ingredients.weights.IngredientWeightEventInteractor
 import persistence.recipes.Recipes
 import zio.ZIO
 
 class RecipeUpdateInteractor @Inject() (
-    persistence: Recipes,
-    tagValidationInteractor: TagValidationInteractor,
-    wikipediaCheck: WikipediaCheck,
-    ingredientPersistence: Ingredients,
-    richTextSanitizer: RichTextSanitizer,
-    ingredientWeightAsyncService: IngredientWeightAsyncService
+                                         persistence: Recipes,
+                                         tagValidationInteractor: TagValidationInteractor,
+                                         wikipediaCheck: WikipediaCheck,
+                                         ingredientPersistence: Ingredients,
+                                         richTextSanitizer: RichTextSanitizer,
+                                         ingredientWeightEventInteractor: IngredientWeightEventInteractor
 ) {
   def update(
       recipeInput: RecipeUpdateInput,
@@ -104,7 +104,7 @@ class RecipeUpdateInteractor @Inject() (
         resolvedIngredientInstructions
       )
       recipe <- persistence.update(updated, originalRecipe)
-      _ <- ingredientWeightAsyncService
+      _ <- ingredientWeightEventInteractor
         .enqueueRecipeUpdated(originalRecipe, recipe)
         .catchAll(_ => ZIO.unit)
     } yield recipe
