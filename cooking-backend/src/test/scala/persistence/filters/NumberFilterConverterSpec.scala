@@ -12,9 +12,10 @@ class NumberFilterConverterSpec extends AnyFlatSpec with Matchers {
       lessOrEqual = None
     )
 
-    val result = NumberFilterConverter.toCypher(filter, "age", "n")
+    val result = NumberFilterConverter.toCypher(filter, "age", "n", "age")
 
-    result shouldBe "n.age >= 10"
+    result.cypher shouldBe "n.age >= $age_greaterOrEqual"
+    result.params shouldBe Map("age_greaterOrEqual" -> Int.box(10))
   }
 
   it should "convert a filter with lessOrEqual clause" in {
@@ -23,9 +24,10 @@ class NumberFilterConverterSpec extends AnyFlatSpec with Matchers {
       lessOrEqual = Some(20)
     )
 
-    val result = NumberFilterConverter.toCypher(filter, "age", "n")
+    val result = NumberFilterConverter.toCypher(filter, "age", "n", "age")
 
-    result shouldBe "n.age <= 20"
+    result.cypher shouldBe "n.age <= $age_lessOrEqual"
+    result.params shouldBe Map("age_lessOrEqual" -> Int.box(20))
   }
 
   it should "combine both clauses with AND" in {
@@ -34,9 +36,13 @@ class NumberFilterConverterSpec extends AnyFlatSpec with Matchers {
       lessOrEqual = Some(20)
     )
 
-    val result = NumberFilterConverter.toCypher(filter, "age", "n")
+    val result = NumberFilterConverter.toCypher(filter, "age", "n", "age")
 
-    result shouldBe "n.age >= 10 AND n.age <= 20"
+    result.cypher shouldBe "n.age >= $age_greaterOrEqual AND n.age <= $age_lessOrEqual"
+    result.params shouldBe Map(
+      "age_greaterOrEqual" -> Int.box(10),
+      "age_lessOrEqual" -> Int.box(20)
+    )
   }
 
   it should "return empty string for empty filter" in {
@@ -45,8 +51,8 @@ class NumberFilterConverterSpec extends AnyFlatSpec with Matchers {
       lessOrEqual = None
     )
 
-    val result = NumberFilterConverter.toCypher(filter, "age", "n")
+    val result = NumberFilterConverter.toCypher(filter, "age", "n", "age")
 
-    result shouldBe ""
+    result shouldBe CypherFragment.empty
   }
 }

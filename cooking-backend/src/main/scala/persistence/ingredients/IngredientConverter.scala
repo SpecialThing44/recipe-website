@@ -2,13 +2,13 @@ package persistence.ingredients
 
 import domain.ingredients.Ingredient
 import domain.users.User
-import io.circe.syntax.EncoderOps
 import persistence.Converter
 import persistence.users.UserConverter
 
 import java.util
 import java.util.UUID
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
+import scala.jdk.CollectionConverters.SeqHasAsJava
 
 object IngredientConverter extends Converter[Ingredient] {
   private val aliasesField = "aliases"
@@ -18,7 +18,7 @@ object IngredientConverter extends Converter[Ingredient] {
       idField -> ingredient.id.toString,
       nameField -> ingredient.name,
       s"$lowerPrefix$nameField" -> ingredient.name.toLowerCase,
-      aliasesField -> ingredient.aliases.map(_.toLowerCase).asJson,
+      aliasesField -> ingredient.aliases.map(_.toLowerCase).asJava,
       wikiLinkField -> ingredient.wikiLink.toLowerCase
     )
 
