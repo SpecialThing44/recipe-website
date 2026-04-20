@@ -13,14 +13,16 @@ import scala.jdk.CollectionConverters.*
 class TagsPersistence @Inject() (database: Database) extends Tags {
   override def list(
       query: Filters
-  ): ZIO[ApiContext, Throwable, Seq[String]] =
+  ): ZIO[ApiContext, Throwable, Seq[String]] = {
+    val filterCypher = FiltersConverter.toCypher(query, "tag")
     database.readTransaction(
       s"""
          |MATCH (tag:Tag)
-         |${FiltersConverter.toCypher(query, "tag")}
+         |${filterCypher.cypher}
          |WITH collect(tag.name) as tags
          |RETURN DISTINCT tags
          |""".stripMargin,
+      filterCypher.params,
       (result: Result) =>
         result.asScala
           .map(record => {
@@ -29,4 +31,5 @@ class TagsPersistence @Inject() (database: Database) extends Tags {
           .toSeq
           .flatten
     )
+  }
 }

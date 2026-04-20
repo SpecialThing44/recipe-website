@@ -76,10 +76,11 @@ class IngredientWeightAsyncService @Inject() (
     database.writeTransaction(
       s"""
          |MERGE (settings:IngredientWeightSettings {name: 'default'})
-         |ON CREATE SET settings.meanRawPenaltyFactor = $defaultMeanRawWeightFactor,
+         |ON CREATE SET settings.meanRawPenaltyFactor = $$defaultMeanRawWeightFactor,
          |              settings.updatedAt = datetime()
-         |RETURN coalesce(settings.meanRawPenaltyFactor, $defaultMeanRawWeightFactor) AS meanRawPenaltyFactor
+         |RETURN coalesce(settings.meanRawPenaltyFactor, $$defaultMeanRawWeightFactor) AS meanRawPenaltyFactor
          |""".stripMargin,
+      Map("defaultMeanRawWeightFactor" -> Double.box(defaultMeanRawWeightFactor)),
       (result: org.neo4j.driver.Result) => {
         if (result.hasNext) {
           result.next().get("meanRawPenaltyFactor").asDouble()
@@ -100,10 +101,11 @@ class IngredientWeightAsyncService @Inject() (
       database.writeTransaction(
         s"""
            |MERGE (settings:IngredientWeightSettings {name: 'default'})
-           |SET settings.meanRawPenaltyFactor = $factor,
+           |SET settings.meanRawPenaltyFactor = $$factor,
            |    settings.updatedAt = datetime()
            |RETURN settings.meanRawPenaltyFactor AS meanRawPenaltyFactor
            |""".stripMargin,
+        Map("factor" -> Double.box(factor)),
         (result: org.neo4j.driver.Result) => {
           if (result.hasNext) {
             result.next().get("meanRawPenaltyFactor").asDouble()
@@ -162,7 +164,7 @@ class IngredientWeightAsyncService @Inject() (
   def getJobStatus(jobId: String): Task[Option[JobStatus]] =
     database.readTransaction(
       s"""
-         |MATCH (j:IngredientWeightJob {jobId: '$jobId'})
+         |MATCH (j:IngredientWeightJob {jobId: $$jobId})
          |RETURN j.jobId AS jobId,
          |       j.status AS status,
          |       coalesce(j.processedEvents, 0) AS processedEvents,
@@ -172,6 +174,7 @@ class IngredientWeightAsyncService @Inject() (
          |       CASE WHEN coalesce(j.startedAt, j.startedOn) IS NULL THEN NULL ELSE toString(coalesce(j.startedAt, j.startedOn)) END AS startedAt,
          |       CASE WHEN coalesce(j.finishedAt, j.finishedOn) IS NULL THEN NULL ELSE toString(coalesce(j.finishedAt, j.finishedOn)) END AS finishedAt
          |""".stripMargin,
+      Map("jobId" -> jobId),
       (result: org.neo4j.driver.Result) =>
         if (!result.hasNext) None
         else {
@@ -251,17 +254,24 @@ class IngredientWeightAsyncService @Inject() (
     database.writeTransaction(
       s"""
          |CREATE (e:IngredientWeightEvent {
-         |  eventId: '$eventId',
-         |  eventType: '$eventType',
-         |  recipeId: '${recipeId.toString}',
-         |  beforeVector: '$beforeVectorJson',
-         |  afterVector: '$afterVectorJson',
+         |  eventId: $$eventId,
+         |  eventType: $$eventType,
+         |  recipeId: $$recipeId,
+         |  beforeVector: $$beforeVector,
+         |  afterVector: $$afterVector,
          |  createdAt: datetime(),
          |  status: 'pending',
          |  attempts: 0
          |})
          |RETURN e.eventId AS eventId
          |""".stripMargin,
+      Map(
+        "eventId" -> eventId,
+        "eventType" -> eventType,
+        "recipeId" -> recipeId.toString,
+        "beforeVector" -> beforeVectorJson,
+        "afterVector" -> afterVectorJson
+      ),
       (_: org.neo4j.driver.Result) => ()
     )
   }
@@ -274,15 +284,20 @@ class IngredientWeightAsyncService @Inject() (
     database.writeTransaction(
       s"""
          |CREATE (j:IngredientWeightJob {
-         |  jobId: '$jobId',
-         |  jobType: '$jobType',
+         |  jobId: $$jobId,
+         |  jobType: $$jobType,
          |  status: 'queued',
-         |  requestedBy: '${requestedBy.toString}',
+         |  requestedBy: $$requestedBy,
          |  createdAt: datetime(),
          |  createdOn: datetime()
          |})
          |RETURN j.jobId AS jobId
          |""".stripMargin,
+      Map(
+        "jobId" -> jobId,
+        "jobType" -> jobType,
+        "requestedBy" -> requestedBy.toString
+      ),
       (_: org.neo4j.driver.Result) => ()
     )
 
@@ -290,12 +305,13 @@ class IngredientWeightAsyncService @Inject() (
     val markRunning =
       database.writeTransaction(
         s"""
-           |MATCH (j:IngredientWeightJob {jobId: '$jobId'})
+           |MATCH (j:IngredientWeightJob {jobId: $$jobId})
            |SET j.status = 'running',
            |    j.startedAt = datetime(),
            |    j.startedOn = datetime()
            |RETURN j.jobId AS jobId
            |""".stripMargin,
+        Map("jobId" -> jobId),
         (_: org.neo4j.driver.Result) => ()
       )
 
@@ -354,12 +370,13 @@ class IngredientWeightAsyncService @Inject() (
     val markRunning =
       database.writeTransaction(
         s"""
-           |MATCH (j:IngredientWeightJob {jobId: '$jobId'})
+           |MATCH (j:IngredientWeightJob {jobId: $$jobId})
            |SET j.status = 'running',
            |    j.startedAt = datetime(),
            |    j.startedOn = datetime()
            |RETURN j.jobId AS jobId
            |""".stripMargin,
+        Map("jobId" -> jobId),
         (_: org.neo4j.driver.Result) => ()
       )
 
@@ -394,10 +411,10 @@ class IngredientWeightAsyncService @Inject() (
          |  e.status = 'pending' OR
          |  (e.status = 'retry' AND coalesce(e.nextEligibleAt, e.nextRetryOn) IS NOT NULL AND coalesce(e.nextEligibleAt, e.nextRetryOn) <= datetime())
          |)
-         |  AND coalesce(e.attempts, 0) < $maxAttempts
+         |  AND coalesce(e.attempts, 0) < $$maxAttempts
          |WITH e
          |ORDER BY coalesce(e.createdAt, e.createdOn) ASC
-         |LIMIT $limit
+         |LIMIT $$limit
          |SET e.status = 'processing',
          |    e.startedAt = datetime(),
          |    e.startedOn = datetime(),
@@ -407,6 +424,10 @@ class IngredientWeightAsyncService @Inject() (
          |       e.afterVector AS afterVector,
          |       e.attempts AS attempts
          |""".stripMargin,
+      Map(
+        "maxAttempts" -> Int.box(maxAttempts),
+        "limit" -> Int.box(limit)
+      ),
       (result: org.neo4j.driver.Result) =>
         result.asScala
           .map(record => {
@@ -471,15 +492,14 @@ class IngredientWeightAsyncService @Inject() (
     if (deltas.isEmpty) ZIO.unit
     else
       zio.ZIO.foreach(deltas) { delta =>
-        val ingredientId = delta.ingredientId.replace("'", "")
         database.writeTransaction(
           s"""
              |MATCH (allRecipes:Recipe)
              |WITH count(allRecipes) AS totalRecipes
-             |MATCH (ingredient:Ingredient {id: '$ingredientId'})
+             |MATCH (ingredient:Ingredient {id: $$ingredientId})
              |WITH ingredient, totalRecipes,
-             |     ${delta.recipeCountDelta} AS recipeCountDelta,
-             |     ${delta.rawDelta} AS rawDelta
+             |     $$recipeCountDelta AS recipeCountDelta,
+             |     $$rawDelta AS rawDelta
              |WITH ingredient, totalRecipes,
              |     CASE
              |       WHEN coalesce(ingredient.recipeCount, 0) + recipeCountDelta < 0 THEN 0
@@ -490,7 +510,7 @@ class IngredientWeightAsyncService @Inject() (
              |     CASE WHEN newRecipeCount = 0 THEN 0.0 ELSE newSumRaw / toFloat(newRecipeCount) END AS newMeanRaw
              |WITH ingredient, totalRecipes, newRecipeCount, newSumRaw, newMeanRaw,
              |     (log((toFloat(totalRecipes) + 1.0) / (toFloat(newRecipeCount) + 1.0)) + 1.0) AS idfWeight,
-             |     (1.0 / (1.0 + ($meanRawPenaltyFactor * newMeanRaw))) AS quantityPenalty
+             |     (1.0 / (1.0 + ($$meanRawPenaltyFactor * newMeanRaw))) AS quantityPenalty
              |SET ingredient.recipeCount = newRecipeCount,
              |    ingredient.sumRawNormalizedWeight = newSumRaw,
              |    ingredient.meanRawNormalizedWeight = newMeanRaw,
@@ -502,6 +522,12 @@ class IngredientWeightAsyncService @Inject() (
              |    ingredient.weightVersion = coalesce(ingredient.weightVersion, 0) + 1
              |RETURN count(ingredient) AS updatedCount
              |""".stripMargin,
+          Map(
+            "ingredientId" -> delta.ingredientId,
+            "recipeCountDelta" -> Int.box(delta.recipeCountDelta),
+            "rawDelta" -> Double.box(delta.rawDelta),
+            "meanRawPenaltyFactor" -> Double.box(meanRawPenaltyFactor)
+          ),
           (_: org.neo4j.driver.Result) => ()
         )
       }.unit
@@ -522,12 +548,11 @@ class IngredientWeightAsyncService @Inject() (
   ): Task[Unit] =
     if (ingredientIds.isEmpty) ZIO.unit
     else {
-      val ingredientIdsLiteral = ingredientIds.distinct.asJson.noSpaces
       database.writeTransaction(
         s"""
            |MATCH (allRecipes:Recipe)
            |WITH count(allRecipes) AS totalRecipes
-           |UNWIND $ingredientIdsLiteral AS ingredientId
+           |UNWIND $$ingredientIds AS ingredientId
            |MATCH (ingredient:Ingredient {id: ingredientId})
            |OPTIONAL MATCH (recipe:Recipe)-[ri:HAS_INGREDIENT]->(ingredient)
            |WITH ingredient, totalRecipes,
@@ -537,7 +562,7 @@ class IngredientWeightAsyncService @Inject() (
            |     CASE WHEN recipeCount = 0 THEN 0.0 ELSE sumRawNormalizedWeight / toFloat(recipeCount) END AS meanRawNormalizedWeight
            |WITH ingredient, totalRecipes, recipeCount, sumRawNormalizedWeight, meanRawNormalizedWeight,
            |     (log((toFloat(totalRecipes) + 1.0) / (toFloat(recipeCount) + 1.0)) + 1.0) AS idfWeight,
-           |     (1.0 / (1.0 + ($meanRawPenaltyFactor * meanRawNormalizedWeight))) AS quantityPenalty
+           |     (1.0 / (1.0 + ($$meanRawPenaltyFactor * meanRawNormalizedWeight))) AS quantityPenalty
            |SET ingredient.recipeCount = recipeCount,
            |    ingredient.sumRawNormalizedWeight = sumRawNormalizedWeight,
            |    ingredient.meanRawNormalizedWeight = meanRawNormalizedWeight,
@@ -549,6 +574,10 @@ class IngredientWeightAsyncService @Inject() (
            |    ingredient.weightVersion = coalesce(ingredient.weightVersion, 0) + 1
            |RETURN count(ingredient) AS updatedCount
            |""".stripMargin,
+        Map(
+          "ingredientIds" -> ingredientIds.distinct.asJava,
+          "meanRawPenaltyFactor" -> Double.box(meanRawPenaltyFactor)
+        ),
         (_: org.neo4j.driver.Result) => ()
       )
     }
@@ -556,12 +585,13 @@ class IngredientWeightAsyncService @Inject() (
   private def markEventDone(eventId: String): Task[Unit] =
     database.writeTransaction(
       s"""
-         |MATCH (e:IngredientWeightEvent {eventId: '$eventId'})
+         |MATCH (e:IngredientWeightEvent {eventId: $$eventId})
          |SET e.status = 'done',
          |    e.completedAt = datetime(),
          |    e.completedOn = datetime()
          |RETURN e.eventId AS eventId
          |""".stripMargin,
+      Map("eventId" -> eventId),
       (_: org.neo4j.driver.Result) => ()
     )
 
@@ -570,17 +600,21 @@ class IngredientWeightAsyncService @Inject() (
       attempts: Int,
       error: String
   ): Task[Unit] = {
-    val sanitized = Option(error).getOrElse("unknown").replace("'", "")
+    val sanitized = Option(error).getOrElse("unknown")
     if (attempts >= maxAttempts) {
       database.writeTransaction(
         s"""
-           |MATCH (e:IngredientWeightEvent {eventId: '$eventId'})
+           |MATCH (e:IngredientWeightEvent {eventId: $$eventId})
            |SET e.status = 'failed',
-           |    e.lastError = '$sanitized',
+           |    e.lastError = $$lastError,
            |    e.failedAt = datetime(),
            |    e.failedOn = datetime()
            |RETURN e.eventId AS eventId
            |""".stripMargin,
+        Map(
+          "eventId" -> eventId,
+          "lastError" -> sanitized
+        ),
         (_: org.neo4j.driver.Result) => ()
       )
     } else {
@@ -588,13 +622,18 @@ class IngredientWeightAsyncService @Inject() (
         baseBackoffSeconds * math.pow(2.0, attempts.toDouble - 1.0).toInt
       database.writeTransaction(
         s"""
-           |MATCH (e:IngredientWeightEvent {eventId: '$eventId'})
+           |MATCH (e:IngredientWeightEvent {eventId: $$eventId})
            |SET e.status = 'retry',
-           |    e.lastError = '$sanitized',
-           |    e.nextEligibleAt = datetime() + duration({seconds: $backoffSeconds}),
-           |    e.nextRetryOn = datetime() + duration({seconds: $backoffSeconds})
+           |    e.lastError = $$lastError,
+           |    e.nextEligibleAt = datetime() + duration({seconds: $$backoffSeconds}),
+           |    e.nextRetryOn = datetime() + duration({seconds: $$backoffSeconds})
            |RETURN e.eventId AS eventId
            |""".stripMargin,
+        Map(
+          "eventId" -> eventId,
+          "lastError" -> sanitized,
+          "backoffSeconds" -> Int.box(backoffSeconds)
+        ),
         (_: org.neo4j.driver.Result) => ()
       )
     }
@@ -607,10 +646,11 @@ class IngredientWeightAsyncService @Inject() (
          |WITH l
          |WHERE coalesce(l.locked, false) = false
          |SET l.locked = true,
-         |    l.holderJobId = '$jobId',
+         |    l.holderJobId = $$jobId,
          |    l.lockedOn = datetime()
          |RETURN l.name AS lockName
          |""".stripMargin,
+      Map("jobId" -> jobId),
       (result: org.neo4j.driver.Result) => result.hasNext
     )
 
@@ -618,12 +658,13 @@ class IngredientWeightAsyncService @Inject() (
     database.writeTransaction(
       s"""
          |MATCH (l:IngredientWeightProcessorLock {name: 'default'})
-         |WHERE l.holderJobId = '$jobId'
+         |WHERE l.holderJobId = $$jobId
          |SET l.locked = false,
          |    l.holderJobId = NULL,
          |    l.lockedOn = NULL
          |RETURN l.name AS lockName
          |""".stripMargin,
+      Map("jobId" -> jobId),
       (_: org.neo4j.driver.Result) => ()
     )
 
@@ -634,28 +675,37 @@ class IngredientWeightAsyncService @Inject() (
   ): Task[Unit] =
     database.writeTransaction(
       s"""
-         |MATCH (j:IngredientWeightJob {jobId: '$jobId'})
+         |MATCH (j:IngredientWeightJob {jobId: $$jobId})
          |SET j.status = 'done',
-         |    j.processedEvents = $processedEvents,
-         |    j.statsJson = '$statsJson',
+         |    j.processedEvents = $$processedEvents,
+         |    j.statsJson = $$statsJson,
          |    j.finishedAt = datetime(),
          |    j.finishedOn = datetime()
          |RETURN j.jobId AS jobId
          |""".stripMargin,
+      Map(
+        "jobId" -> jobId,
+        "processedEvents" -> Int.box(processedEvents),
+        "statsJson" -> statsJson
+      ),
       (_: org.neo4j.driver.Result) => ()
     )
 
   private def markJobFailed(jobId: String, error: String): Task[Unit] = {
-    val sanitized = Option(error).getOrElse("unknown").replace("'", "")
+    val sanitized = Option(error).getOrElse("unknown")
     database.writeTransaction(
       s"""
-         |MATCH (j:IngredientWeightJob {jobId: '$jobId'})
+         |MATCH (j:IngredientWeightJob {jobId: $$jobId})
          |SET j.status = 'failed',
-         |    j.error = '$sanitized',
+         |    j.error = $$error,
          |    j.finishedAt = datetime(),
          |    j.finishedOn = datetime()
          |RETURN j.jobId AS jobId
          |""".stripMargin,
+      Map(
+        "jobId" -> jobId,
+        "error" -> sanitized
+      ),
       (_: org.neo4j.driver.Result) => ()
     )
   }

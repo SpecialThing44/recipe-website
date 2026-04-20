@@ -1,8 +1,11 @@
 package persistence.filters
 
 object CypherScoringParts {
-  private def appendMinWhere(scoreName: String, min: Option[Double]): String =
-    min.map(minValue => s"\nWHERE $scoreName >= $minValue ").getOrElse("")
+  private def appendMinWhere(
+      scoreName: String,
+      minParam: Option[String]
+  ): String =
+    minParam.map(param => s"\nWHERE $scoreName >= $$${param} ").getOrElse("")
 
   private def ingredientCosineScoreTail(nodeVar: String): String =
     s"""
@@ -33,7 +36,7 @@ object CypherScoringParts {
 
   def recipeRecipeIngredientPart(
       nodeVar: String,
-      ingredientMin: Option[Double]
+      ingredientMinParam: Option[String]
   ): String =
     s"""
        |MATCH (target)-[tr:HAS_INGREDIENT]->(ti:Ingredient)
@@ -42,12 +45,12 @@ object CypherScoringParts {
        |WITH $nodeVar, target, targetVector, collect({ingredientId: ciIngr.id, weight: coalesce(ci.rawNormalizedWeight, ci.normalizedWeight, 0.0) * coalesce(ciIngr.globalWeight, 1.0)}) AS candidateVector
        |""".stripMargin + ingredientCosineScoreTail(nodeVar) + appendMinWhere(
       "ingredientScore",
-      ingredientMin
+        ingredientMinParam
     )
 
   def userRecipeIngredientPart(
       nodeVar: String,
-      ingredientMin: Option[Double]
+      ingredientMinParam: Option[String]
   ): String =
     s"""
        |OPTIONAL MATCH (target)<-[:SAVED_BY]-(tr:Recipe)
@@ -62,12 +65,12 @@ object CypherScoringParts {
        |WITH $nodeVar, target, targetVector, collect({ingredientId: ciIngr.id, weight: coalesce(ci.rawNormalizedWeight, ci.normalizedWeight, 0.0) * coalesce(ciIngr.globalWeight, 1.0)}) AS candidateVector
        |""".stripMargin + ingredientCosineScoreTail(nodeVar) + appendMinWhere(
       "ingredientScore",
-      ingredientMin
+        ingredientMinParam
     )
 
   def userUserIngredientPart(
       nodeVar: String,
-      ingredientMin: Option[Double]
+      ingredientMinParam: Option[String]
   ): String =
     s"""
        |OPTIONAL MATCH (ts:Recipe)-[:SAVED_BY]->(target)
@@ -90,13 +93,13 @@ object CypherScoringParts {
        |WITH $nodeVar, target, targetVector, collect({ingredientId: ingrIdC, weight: weightC}) AS candidateVector
        |""".stripMargin + ingredientCosineScoreTail(nodeVar) + appendMinWhere(
       "ingredientScore",
-      ingredientMin
+        ingredientMinParam
     )
 
   def recipeRecipeCoSavePart(
       nodeVar: String,
       coSaveCarry: String,
-      coSaveMin: Option[Double]
+      coSaveMinParam: Option[String]
   ): String =
     s"""
        |WITH $coSaveCarry
@@ -112,12 +115,12 @@ object CypherScoringParts {
       "sizeT",
       "sizeC",
       "coSaveScore"
-    ) + appendMinWhere("coSaveScore", coSaveMin)
+    ) + appendMinWhere("coSaveScore", coSaveMinParam)
 
   def userUserCoSavePart(
       nodeVar: String,
       coSaveCarry: String,
-      coSaveMin: Option[Double]
+      coSaveMinParam: Option[String]
   ): String =
     s"""
        |WITH $coSaveCarry
@@ -135,12 +138,12 @@ object CypherScoringParts {
       "sizeT",
       "sizeC",
       "coSaveScore"
-    ) + appendMinWhere("coSaveScore", coSaveMin)
+    ) + appendMinWhere("coSaveScore", coSaveMinParam)
 
   def recipeRecipeTagPart(
       nodeVar: String,
       tagCarryBase: String,
-      tagMin: Option[Double]
+      tagMinParam: Option[String]
   ): String =
     s"""
        |WITH $tagCarryBase
@@ -156,12 +159,12 @@ object CypherScoringParts {
       "sizeTargetTags",
       "sizeCandidateTags",
       "tagScore"
-    ) + appendMinWhere("tagScore", tagMin)
+    ) + appendMinWhere("tagScore", tagMinParam)
 
   def userRecipeTagPart(
       nodeVar: String,
       tagCarryBase: String,
-      tagMin: Option[Double]
+      tagMinParam: Option[String]
   ): String =
     s"""
        |WITH $tagCarryBase
@@ -182,12 +185,12 @@ object CypherScoringParts {
       "sizeTargetTags",
       "sizeCandidateTags",
       "tagScore"
-    ) + appendMinWhere("tagScore", tagMin)
+    ) + appendMinWhere("tagScore", tagMinParam)
 
   def userUserTagPart(
       nodeVar: String,
       tagCarryBase: String,
-      tagMin: Option[Double]
+      tagMinParam: Option[String]
   ): String =
     s"""
        |WITH $tagCarryBase
@@ -215,5 +218,5 @@ object CypherScoringParts {
       "sizeTargetTags",
       "sizeCandidateTags",
       "tagScore"
-    ) + appendMinWhere("tagScore", tagMin)
+    ) + appendMinWhere("tagScore", tagMinParam)
 }

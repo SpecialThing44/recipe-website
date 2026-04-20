@@ -1,25 +1,24 @@
 package api.recipes
 
+import api.tags.TagValidationInteractor
 import api.users.AuthenticationInteractor
 import api.wiki.WikipediaCheck
 import com.google.inject.Inject
 import context.ApiContext
-import domain.filters.{Filters, StringFilter}
 import domain.ingredients.Unit
 import domain.recipes.{Recipe, RecipeUpdateInput}
 import persistence.ingredients.Ingredients
 import persistence.ingredients.weights.IngredientWeightAsyncService
 import persistence.recipes.Recipes
-import persistence.tags.Tags
 import zio.ZIO
 
 class RecipeUpdateInteractor @Inject() (
-    persistence: Recipes,
-    tagsPersistence: Tags,
-    wikipediaCheck: WikipediaCheck,
-    ingredientPersistence: Ingredients,
-  richTextSanitizer: RichTextSanitizer,
-  ingredientWeightAsyncService: IngredientWeightAsyncService
+                                         persistence: Recipes,
+                                         tagValidationService: TagValidationInteractor,
+                                         wikipediaCheck: WikipediaCheck,
+                                         ingredientPersistence: Ingredients,
+                                         richTextSanitizer: RichTextSanitizer,
+                                         ingredientWeightAsyncService: IngredientWeightAsyncService
 ) {
   def update(
       input: RecipeUpdateInput,
@@ -35,29 +34,10 @@ class RecipeUpdateInteractor @Inject() (
 
       _ <- input.tags match {
         case Some(tags) if tags.nonEmpty =>
-          for {
-            existingTags <- tagsPersistence.list(
-              Filters
-                .empty()
-                .copy(name =
-                  Some(StringFilter.empty().copy(anyOf = Some(tags)))
-                )
-            )
-            newTags = tags.filterNot(existingTags.contains)
-            _ <-
-              if (
-                newTags.nonEmpty && !context.applicationContext.user
-                  .exists(_.admin)
-              ) {
-                ZIO.fail(
-                  domain.types.InputError(
-                    s"Only admins can create new tags: ${newTags.mkString(", ")}"
-                  )
-                )
-              } else {
-                ZIO.unit
-              }
-          } yield ()
+          tagValidationService.validateNoUnauthorizedNewTags(
+            tags,
+            context.applicationContext.user.exists(_.admin)
+          )
         case _ => ZIO.unit
       }
 

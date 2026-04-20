@@ -7,7 +7,7 @@ import domain.ingredients.Ingredient
 import domain.types.NoSuchEntityError
 import org.neo4j.driver.Result
 import persistence.cypher.*
-import persistence.filters.FiltersConverter
+import persistence.filters.{CypherFragment, FiltersConverter}
 import persistence.neo4j.Database
 import zio.ZIO
 
@@ -18,15 +18,45 @@ class IngredientsPersistence @Inject() (database: Database)
     extends Ingredients {
   private implicit val graph: IngredientGraph = IngredientGraph()
 
+  private def mergeFragments(fragments: Seq[CypherFragment]): CypherFragment =
+    CypherFragment(
+      fragments.map(_.cypher).mkString("\n"),
+      fragments.foldLeft(Map.empty[String, AnyRef])((acc, fragment) =>
+        acc ++ fragment.params
+      )
+    )
+
+  private def createTagStatementsFor(
+      tags: Seq[String],
+      includeWithUser: Boolean
+  ): CypherFragment = {
+    val withLine = if (includeWithUser) s"\n${WithStatement.apply}, user\n" else "\n"
+    val fragments = tags.zipWithIndex.map { case (tag, index) =>
+      val alias = s"tag$index"
+      val tagNameParam = s"ingredient_tag_name_$index"
+      val tagLowerNameParam = s"ingredient_tag_lower_name_$index"
+      CypherFragment(
+        s"""
+           |MERGE ($alias:${graph.tagLabel} {name: $$${tagNameParam}, lowername: $$${tagLowerNameParam}})
+           |CREATE (${graph.nodeVar})-[:${graph.tagRelation}]->($alias)
+           |$withLine""".stripMargin,
+        Map(tagNameParam -> tag, tagLowerNameParam -> tag.toLowerCase)
+      )
+    }
+    mergeFragments(fragments)
+  }
+
   override def list(
       query: Filters
   ): ZIO[ApiContext, Throwable, Seq[Ingredient]] = {
     val orderLine = FiltersConverter.getOrderLine(query, graph.nodeVar)
     val withLine = s"WITH ${graph.nodeVar}"
+    val filterCypher = FiltersConverter.toCypher(query, graph.nodeVar)
+    val pagingCypher = FiltersConverter.limitAndSkipStatement(query)
     database.readTransaction(
       s"""
          |${MatchStatement.apply}
-         |${FiltersConverter.toCypher(query, graph.nodeVar)}
+         |${filterCypher.cypher}
          |${MatchRelationship.outgoing("CREATED_BY", "user", "User")}
          |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
          |${FiltersConverter.getWithScoreLine(
@@ -34,9 +64,10 @@ class IngredientsPersistence @Inject() (database: Database)
           withLine
         )}, user, collect(DISTINCT tag.name) as tags
          |$orderLine
-         |${FiltersConverter.limitAndSkipStatement(query)}
+         |${pagingCypher.cypher}
          |${ReturnStatement.apply}, user as createdBy, tags
          |""".stripMargin,
+      filterCypher.params ++ pagingCypher.params,
       (result: Result) =>
         result.asScala
           .map(record => {
@@ -62,32 +93,33 @@ class IngredientsPersistence @Inject() (database: Database)
   override def create(
       entity: Ingredient
   ): ZIO[ApiContext, Throwable, Ingredient] = {
-    val properties = IngredientConverter
-      .convert(entity)
+    val ingredientProperties = IngredientConverter.toGraph(entity).asJava
 
-    val createTagStatements = graph.createTagStatementsFor(
-      graph.nodeVar,
-      graph.tagRelation,
-      graph.tagLabel,
+    val createTagStatements = createTagStatementsFor(
       entity.tags,
       includeWithUser = true,
-      useAliasSuffix = false
     )
+    val params =
+      Map(
+        "ingredientProperties" -> ingredientProperties,
+        "createdById" -> entity.createdBy.id.toString
+      ) ++ createTagStatements.params
+
     for {
       dbResult <- database.writeTransaction(
         s"""
-             |CREATE (${graph.nodeVar}:${graph.nodeLabel} {
-             |$properties
-             |})
+             |CREATE (${graph.nodeVar}:${graph.nodeLabel})
+             |SET ${graph.nodeVar} = $$ingredientProperties
              |${WithStatement.apply}
-             |MATCH (user:User {id: '${entity.createdBy.id}'})
+             |MATCH (user:User {id: $$createdById})
              |CREATE (${graph.nodeVar})-[:CREATED_BY]->(user)
              |${WithStatement.apply}, user
-             |$createTagStatements
+             |${createTagStatements.cypher}
              |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
              |${WithStatement.apply}, user, collect(DISTINCT tag.name) as tags
              |${ReturnStatement.apply}, user as createdBy, tags
              |""".stripMargin,
+        params,
         (result: Result) => {
           if (result.hasNext) {
             attachUserAndTagsToRecord(result.next())
@@ -106,36 +138,37 @@ class IngredientsPersistence @Inject() (database: Database)
       entity: Ingredient,
       originalEntity: Ingredient
   ): ZIO[ApiContext, Throwable, Ingredient] = {
-    val properties = IngredientConverter
-      .convertForUpdate(graph.nodeVar, entity)
+    val ingredientProperties = IngredientConverter.toGraph(entity).asJava
 
-    val createTagStatements = graph.createTagStatementsFor(
-      graph.nodeVar,
-      graph.tagRelation,
-      graph.tagLabel,
+    val createTagStatements = createTagStatementsFor(
       entity.tags,
       includeWithUser = false,
-      useAliasSuffix = true
     )
+    val params =
+      Map(
+        "ingredientId" -> entity.id.toString,
+        "ingredientProperties" -> ingredientProperties
+      ) ++ createTagStatements.params
 
     for {
       _ <- clearAutoWikiLinkSubstitutes(entity.id)
       updated <- database.writeTransaction(
         s"""
-         |${MatchByIdStatement.apply(entity.id)}
-         |SET $properties
+         |MATCH (${graph.nodeVar}:${graph.nodeLabel} {id: $$ingredientId})
+         |SET ${graph.nodeVar} = $$ingredientProperties
          |${WithStatement.apply}
          |OPTIONAL MATCH (${graph.nodeVar})-[r:HAS_TAG]->()
          |DELETE r
          |${WithStatement.apply}
          |${MatchRelationship.outgoing("CREATED_BY", "user", "User")}
          |${WithStatement.apply}, user
-         |$createTagStatements
+         |${createTagStatements.cypher}
          |${WithStatement.apply}, user
          |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
          |${WithStatement.apply}, user, collect(DISTINCT tag.name) as tags
          |${ReturnStatement.apply}, user as createdBy, tags
          |""".stripMargin,
+        params,
         (result: Result) => {
           if (result.hasNext) {
             attachUserAndTagsToRecord(result.next())
@@ -155,9 +188,10 @@ class IngredientsPersistence @Inject() (database: Database)
       ingredient <- getById(id)
       dbResult <- database.writeTransaction(
         s"""
-           |${MatchByIdStatement.apply(id)}
+           |MATCH (${graph.nodeVar}:${graph.nodeLabel} {id: $$ingredientId})
            |${DeleteStatement.apply}
            |""".stripMargin,
+        Map("ingredientId" -> id.toString),
         (_: Result) => ()
       )
     } yield ingredient
@@ -165,12 +199,13 @@ class IngredientsPersistence @Inject() (database: Database)
   override def getById(id: UUID): ZIO[ApiContext, Throwable, Ingredient] =
     database.readTransaction(
       s"""
-         |${MatchByIdStatement.apply(id)}
+         |MATCH (${graph.nodeVar}:${graph.nodeLabel} {id: $$ingredientId})
          |${MatchRelationship.outgoing("CREATED_BY", "user", "User")}
          |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
          |${WithStatement.apply}, user, collect(DISTINCT tag.name) as tags
          |${ReturnStatement.apply}, user as createdBy, tags
          |""".stripMargin,
+      Map("ingredientId" -> id.toString),
       (result: Result) => {
         if (result.hasNext) {
           attachUserAndTagsToRecord(result.next())
@@ -196,13 +231,14 @@ class IngredientsPersistence @Inject() (database: Database)
     val nodeVar = "substitute"
     database.readTransaction(
       s"""
-         |MATCH (ingredient:Ingredient {id: '$id'})-[:SUBSTITUTE]-(substitute:Ingredient)
+         |MATCH (ingredient:Ingredient {id: $$ingredientId})-[:SUBSTITUTE]-(substitute:Ingredient)
          |OPTIONAL MATCH (substitute)-[:CREATED_BY]->(user:User)
          |OPTIONAL MATCH (substitute)-[:HAS_TAG]->(tag:Tag)
          |WITH $nodeVar, user, collect(DISTINCT tag.name) as tags
          |RETURN $nodeVar, user as createdBy, tags
          |ORDER BY $nodeVar.name
          |""".stripMargin,
+      Map("ingredientId" -> id.toString),
       (result: Result) =>
         result.asScala
           .map(record => {
@@ -224,10 +260,14 @@ class IngredientsPersistence @Inject() (database: Database)
   ): ZIO[ApiContext, Throwable, Unit] =
     database.writeTransaction(
       s"""
-         |MATCH (ingredient:Ingredient {id: '$id'})
-         |MATCH (substitute:Ingredient {id: '$substituteId'})
+         |MATCH (ingredient:Ingredient {id: $$ingredientId})
+         |MATCH (substitute:Ingredient {id: $$substituteId})
          |MERGE (ingredient)-[:SUBSTITUTE {source: 'manual'}]-(substitute)
          |""".stripMargin,
+      Map(
+        "ingredientId" -> id.toString,
+        "substituteId" -> substituteId.toString
+      ),
       (_: Result) => ()
     )
 
@@ -237,9 +277,13 @@ class IngredientsPersistence @Inject() (database: Database)
   ): ZIO[ApiContext, Throwable, Unit] =
     database.writeTransaction(
       s"""
-         |MATCH (ingredient:Ingredient {id: '$id'})-[rel:SUBSTITUTE]-(substitute:Ingredient {id: '$substituteId'})
+         |MATCH (ingredient:Ingredient {id: $$ingredientId})-[rel:SUBSTITUTE]-(substitute:Ingredient {id: $$substituteId})
          |DELETE rel
          |""".stripMargin,
+      Map(
+        "ingredientId" -> id.toString,
+        "substituteId" -> substituteId.toString
+      ),
       (_: Result) => ()
     )
 
@@ -249,11 +293,15 @@ class IngredientsPersistence @Inject() (database: Database)
   ): ZIO[ApiContext, Throwable, Unit] =
     database.writeTransaction(
       s"""
-         |MATCH (ingredient:Ingredient {id: '$ingredientId'})
-         |MATCH (substitute:Ingredient {wikiLink: '${wikiLink.toLowerCase}'})
+         |MATCH (ingredient:Ingredient {id: $$ingredientId})
+         |MATCH (substitute:Ingredient {wikiLink: $$wikiLink})
          |WHERE substitute.id <> ingredient.id
          |MERGE (ingredient)-[:SUBSTITUTE {source: 'wikiLink'}]-(substitute)
          |""".stripMargin,
+      Map(
+        "ingredientId" -> ingredientId.toString,
+        "wikiLink" -> wikiLink.toLowerCase
+      ),
       (_: Result) => ()
     )
 
@@ -262,10 +310,11 @@ class IngredientsPersistence @Inject() (database: Database)
   ): ZIO[ApiContext, Throwable, Unit] =
     database.writeTransaction(
       s"""
-         |MATCH (ingredient:Ingredient {id: '$ingredientId'})-[rel:SUBSTITUTE]-(:Ingredient)
+         |MATCH (ingredient:Ingredient {id: $$ingredientId})-[rel:SUBSTITUTE]-(:Ingredient)
          |WHERE rel.source = 'wikiLink'
          |DELETE rel
          |""".stripMargin,
+      Map("ingredientId" -> ingredientId.toString),
       (_: Result) => ()
     )
 }
