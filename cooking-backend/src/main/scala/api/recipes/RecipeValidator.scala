@@ -5,16 +5,18 @@ import domain.types.InputError
 import zio.ZIO
 
 object RecipeValidator {
-  
+
   def validateRecipeInput(input: RecipeInput): ZIO[Any, InputError, Unit] = {
     for {
-      _ <- validateIngredientQuantities(input.ingredients.map(_.quantity.amount))
+      _ <- validateIngredientQuantities(
+        input.ingredients.map(_.quantity.amount)
+      )
       _ <- validatePrepTime(input.prepTime)
       _ <- validateCookTime(input.cookTime)
       _ <- validateServings(input.servings)
     } yield ()
   }
-  
+
   def validateRecipeUpdateInput(
       input: RecipeUpdateInput,
       original: domain.recipes.Recipe
@@ -27,19 +29,19 @@ object RecipeValidator {
       }
       _ <- input.prepTime match {
         case Some(prepTime) => validatePrepTime(prepTime)
-        case None => ZIO.unit
+        case None           => ZIO.unit
       }
       _ <- input.cookTime match {
         case Some(cookTime) => validateCookTime(cookTime)
-        case None => ZIO.unit
+        case None           => ZIO.unit
       }
       _ <- input.servings match {
         case Some(servings) => validateServings(servings)
-        case None => ZIO.unit
+        case None           => ZIO.unit
       }
     } yield ()
   }
-  
+
   private def validateIngredientQuantities(
       quantities: Seq[Double]
   ): ZIO[Any, InputError, Unit] = {
@@ -54,7 +56,7 @@ object RecipeValidator {
       ZIO.unit
     }
   }
-  
+
   private def validatePrepTime(prepTime: Int): ZIO[Any, InputError, Unit] = {
     if (prepTime < 0) {
       ZIO.fail(
@@ -66,7 +68,7 @@ object RecipeValidator {
       ZIO.unit
     }
   }
-  
+
   private def validateCookTime(cookTime: Int): ZIO[Any, InputError, Unit] = {
     if (cookTime < 0) {
       ZIO.fail(
@@ -78,7 +80,7 @@ object RecipeValidator {
       ZIO.unit
     }
   }
-  
+
   private def validateServings(servings: Int): ZIO[Any, InputError, Unit] = {
     if (servings < 1) {
       ZIO.fail(

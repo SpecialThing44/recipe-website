@@ -5,6 +5,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.util.UUID
+import scala.jdk.CollectionConverters.SeqHasAsJava
 
 class FiltersConverterSpec extends AnyFlatSpec with Matchers {
 
@@ -14,7 +15,8 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
 
     val result = FiltersConverter.toCypher(filters, "n")
 
-    result shouldBe s"MATCH (n) WHERE  n.id = '$id'"
+    result.cypher shouldBe "MATCH (n) WHERE  n.id = $n_id"
+    result.params shouldBe Map("n_id" -> id.toString)
   }
 
   it should "convert a filter with ids" in {
@@ -24,12 +26,11 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
 
     val result = FiltersConverter.toCypher(filters, "n")
 
-    result should (
+    result.cypher should (
       include(s"MATCH (n) WHERE") and
-        include(s"n.id IN") and
-        include(id1.toString) and
-        include(id2.toString)
+        include("n.id IN $n_ids")
     )
+    result.params shouldBe Map("n_ids" -> List(id1.toString, id2.toString).asJava)
   }
 
   it should "convert a filter with name" in {
@@ -38,7 +39,8 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
 
     val result = FiltersConverter.toCypher(filters, "n")
 
-    result shouldBe "MATCH (n) WHERE  n.lowername = 'test'"
+    result.cypher shouldBe "MATCH (n) WHERE  n.lowername = $n_name_equals"
+    result.params shouldBe Map("n_name_equals" -> "test")
   }
 
   it should "convert a filter with email" in {
@@ -47,7 +49,8 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
     val filters = Filters.empty().copy(email = Some(emailFilter))
     val result = FiltersConverter.toCypher(filters, "n")
 
-    result shouldBe "MATCH (n) WHERE  n.loweremail = 'test@example.com'"
+    result.cypher shouldBe "MATCH (n) WHERE  n.loweremail = $n_email_equals"
+    result.params shouldBe Map("n_email_equals" -> "test@example.com")
   }
 
   it should "convert a filter with prepTime" in {
@@ -60,7 +63,11 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
 
     val result = FiltersConverter.toCypher(filters, "n")
 
-    result shouldBe "MATCH (n) WHERE  n.prepTime >= 10 AND n.prepTime <= 20"
+    result.cypher shouldBe "MATCH (n) WHERE  n.prepTime >= $n_prepTime_greaterOrEqual AND n.prepTime <= $n_prepTime_lessOrEqual"
+    result.params shouldBe Map(
+      "n_prepTime_greaterOrEqual" -> Int.box(10),
+      "n_prepTime_lessOrEqual" -> Int.box(20)
+    )
   }
 
   it should "convert a filter with cookTime" in {
@@ -73,7 +80,11 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
 
     val result = FiltersConverter.toCypher(filters, "n")
 
-    result shouldBe "MATCH (n) WHERE  n.cookTime >= 30 AND n.cookTime <= 40"
+    result.cypher shouldBe "MATCH (n) WHERE  n.cookTime >= $n_cookTime_greaterOrEqual AND n.cookTime <= $n_cookTime_lessOrEqual"
+    result.params shouldBe Map(
+      "n_cookTime_greaterOrEqual" -> Int.box(30),
+      "n_cookTime_lessOrEqual" -> Int.box(40)
+    )
   }
 
   it should "ignore public filter in always-public model" in {
@@ -81,7 +92,7 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
 
     val result = FiltersConverter.toCypher(filters, "n")
 
-    result shouldBe ""
+    result shouldBe CypherFragment.empty
   }
 
   it should "convert a filter with tags" in {
@@ -89,10 +100,11 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
 
     val result = FiltersConverter.toCypher(filters, "n")
 
-    result should (
-      include("MATCH (n)-[:HAS_TAG]->(tag:Italian:Tag)") and
-        include("MATCH (n)-[:HAS_TAG]->(tag:Pasta:Tag)")
+    result.cypher should (
+      include("MATCH (n)-[:HAS_TAG]->(tagFilter0:Tag {lowername: $n_tag_0})") and
+        include("MATCH (n)-[:HAS_TAG]->(tagFilter1:Tag {lowername: $n_tag_1})")
     )
+    result.params shouldBe Map("n_tag_0" -> "italian", "n_tag_1" -> "pasta")
   }
 
   it should "convert a filter with ingredients" in {
@@ -101,14 +113,15 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
 
     val result = FiltersConverter.toCypher(filters, "n")
 
-    result should (
-      include("MATCH (targetIngredient0:Ingredient {name: 'Tomato'})") and
-        include("MATCH (targetIngredient1:Ingredient {name: 'Cheese'})") and
+    result.cypher should (
+      include("MATCH (targetIngredient0:Ingredient {lowername: $n_ingredient_0})") and
+        include("MATCH (targetIngredient1:Ingredient {lowername: $n_ingredient_1})") and
         include("OPTIONAL MATCH (targetIngredient0)-[:SUBSTITUTE]-(substituteIngredient0:Ingredient)") and
         include("OPTIONAL MATCH (targetIngredient1)-[:SUBSTITUTE]-(substituteIngredient1:Ingredient)") and
         include("MATCH (n)-[:HAS_INGREDIENT]->(recipeIngredient0:Ingredient)") and
         include("MATCH (n)-[:HAS_INGREDIENT]->(recipeIngredient1:Ingredient)")
     )
+    result.params shouldBe Map("n_ingredient_0" -> "tomato", "n_ingredient_1" -> "cheese")
   }
 
   it should "convert a filter with notIngredients" in {
@@ -117,13 +130,17 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
 
     val result = FiltersConverter.toCypher(filters, "n")
 
-    result should (
+    result.cypher should (
       include(
-        "MATCH (n) WHERE NOT (n)-[:HAS_INGREDIENT]->(:Ingredient {name: 'Meat'})"
+        "MATCH (n) WHERE NOT (n)-[:HAS_INGREDIENT]->(:Ingredient {lowername: $n_not_ingredient_0})"
       ) and
         include(
-          "MATCH (n) WHERE NOT (n)-[:HAS_INGREDIENT]->(:Ingredient {name: 'Fish'})"
+          "MATCH (n) WHERE NOT (n)-[:HAS_INGREDIENT]->(:Ingredient {lowername: $n_not_ingredient_1})"
         )
+    )
+    result.params shouldBe Map(
+      "n_not_ingredient_0" -> "meat",
+      "n_not_ingredient_1" -> "fish"
     )
   }
 
@@ -133,9 +150,10 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
 
     val result = FiltersConverter.toCypher(filters, "n")
 
-    result should include(
-      s"MATCH (n)-[:BELONGS_TO|CREATED_BY]->(belongsToUser:User) WHERE belongsToUser.id = '$userId'"
+    result.cypher should include(
+      "MATCH (n)-[:BELONGS_TO|CREATED_BY]->(belongsToUser:User) WHERE belongsToUser.id = $n_belongs_to_user"
     )
+    result.params shouldBe Map("n_belongs_to_user" -> userId.toString)
   }
 
   it should "convert a filter with savedByUser" in {
@@ -144,9 +162,10 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
 
     val result = FiltersConverter.toCypher(filters, "n")
 
-    result should include(
-      s"MATCH (n)-[:SAVED_BY]->(savedUser:User) WHERE savedUser.id = '$userId'"
+    result.cypher should include(
+      "MATCH (n)-[:SAVED_BY]->(savedUser:User) WHERE savedUser.id = $n_saved_by_user"
     )
+    result.params shouldBe Map("n_saved_by_user" -> userId.toString)
   }
 
   it should "combine multiple filters" in {
@@ -166,16 +185,21 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
 
     val result = FiltersConverter.toCypher(filters, "n")
 
-    result should (
-      include("n.lowername = 'test'") and
-        include("n.prepTime >= 10 AND n.prepTime <= 20")
+    result.cypher should (
+      include("n.lowername = $n_name_equals") and
+        include("n.prepTime >= $n_prepTime_greaterOrEqual AND n.prepTime <= $n_prepTime_lessOrEqual")
+    )
+    result.params shouldBe Map(
+      "n_name_equals" -> "test",
+      "n_prepTime_greaterOrEqual" -> Int.box(10),
+      "n_prepTime_lessOrEqual" -> Int.box(20)
     )
   }
 
   it should "return empty string when no orderBy is specified" in {
     val filters = Filters.empty()
 
-    val result = FiltersConverter.getOrderLine(filters, "n")
+    val result = CypherFragment.getOrderLine(filters, "n")
 
     result shouldBe ""
   }
@@ -184,7 +208,7 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
     val filters =
       Filters.empty().copy(orderBy = Some(OrderBy(name = Some(true))))
 
-    val result = FiltersConverter.getOrderLine(filters, "n")
+    val result = CypherFragment.getOrderLine(filters, "n")
 
     result shouldBe "ORDER BY n.name"
   }
@@ -193,7 +217,7 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
     val filters =
       Filters.empty().copy(orderBy = Some(OrderBy(name = Some(false))))
 
-    val result = FiltersConverter.getOrderLine(filters, "n")
+    val result = CypherFragment.getOrderLine(filters, "n")
 
     result shouldBe "ORDER BY n.name"
   }
@@ -209,7 +233,7 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
         orderBy = Some(OrderBy(name = Some(true)))
       )
 
-    val result = FiltersConverter.getOrderLine(filters, "recipe")
+    val result = CypherFragment.getOrderLine(filters, "recipe")
 
     result shouldBe "ORDER BY score DESC"
   }
@@ -230,8 +254,8 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
 
     val result = FiltersConverter.toCypher(filters, "recipe")
 
-    result should include("ingredientScore")
-    result should include("tagScore")
-    result should not include "coSaveScore"
+    result.cypher should include("ingredientScore")
+    result.cypher should include("tagScore")
+    result.cypher should not include "coSaveScore"
   }
 }

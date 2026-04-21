@@ -1,55 +1,34 @@
 package api.recipes
 
+import api.tags.TagValidationInteractor
 import api.users.AuthenticationInteractor
 import api.wiki.WikipediaCheck
 import com.google.inject.Inject
 import context.ApiContext
-import domain.filters.{Filters, StringFilter}
 import domain.ingredients.Unit
 import domain.recipes.{Recipe, RecipeInput}
 import persistence.ingredients.Ingredients
-import persistence.ingredients.weights.IngredientWeightAsyncService
+import persistence.ingredients.weights.IngredientWeightEventInteractor
 import persistence.recipes.Recipes
-import persistence.tags.Tags
 import zio.ZIO
 
 class RecipeCreateInteractor @Inject() (
-    persistence: Recipes,
-    tagsPersistence: Tags,
-    wikipediaCheck: WikipediaCheck,
-    ingredientPersistence: Ingredients,
-  richTextSanitizer: RichTextSanitizer,
-  ingredientWeightAsyncService: IngredientWeightAsyncService
+                                         persistence: Recipes,
+                                         tagValidationInteractor: TagValidationInteractor,
+                                         wikipediaCheck: WikipediaCheck,
+                                         ingredientPersistence: Ingredients,
+                                         richTextSanitizer: RichTextSanitizer,
+                                         ingredientWeightEventInteractor: IngredientWeightEventInteractor
 ) {
   def create(input: RecipeInput): ZIO[ApiContext, Throwable, Recipe] = {
     for {
       _ <- RecipeValidator.validateRecipeInput(input)
       maybeUser <- ZIO.service[ApiContext].map(_.applicationContext.user)
       user <- AuthenticationInteractor.ensureIsLoggedIn(maybeUser)
-      _ <- if (input.tags.nonEmpty) {
-        for {
-          existingTags <- tagsPersistence.list(
-            Filters
-              .empty()
-              .copy(name =
-                Some(StringFilter.empty().copy(anyOf = Some(input.tags)))
-              )
-          )
-          newTags = input.tags.filterNot(existingTags.contains)
-          _ <-
-            if (newTags.nonEmpty && !user.admin) {
-              ZIO.fail(
-                domain.types.InputError(
-                  s"Only admins can create new tags: ${newTags.mkString(", ")}"
-                )
-              )
-            } else {
-              ZIO.unit
-            }
-        } yield ()
-      } else {
-        ZIO.unit
-      }
+      _ <- tagValidationInteractor.validateNoUnauthorizedNewTags(
+        input.tags,
+        user.admin
+      )
       _ <- input.wikiLink
         .map(wikipediaCheck.validateWikiLink)
         .getOrElse(ZIO.unit)
@@ -86,7 +65,7 @@ class RecipeCreateInteractor @Inject() (
       recipe = RecipeAdapter.adapt(recipeWithSanitized, ingredients, user)
       recipeWithImages = recipe.copy(instructionImages = extractedImageUrls)
       result <- persistence.create(recipeWithImages)
-      _ <- ingredientWeightAsyncService
+      _ <- ingredientWeightEventInteractor
         .enqueueRecipeCreated(result)
         .catchAll(_ => ZIO.unit)
     } yield result

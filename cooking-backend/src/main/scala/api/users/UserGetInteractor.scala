@@ -13,7 +13,13 @@ class UserGetInteractor @Inject() (
   def getById(id: java.util.UUID): ZIO[ApiContext, Throwable, User] = for {
     context <- ZIO.service[ApiContext]
     user <- persistence.getById(id)
-    safeToViewUser <- ZIO.succeed(if (context.applicationContext.user.fold(false)(loggedInUser => loggedInUser.id == user.id)) user else user.copy(email = ""))
+    safeToViewUser <- ZIO.succeed(
+      if (
+        context.applicationContext.user
+          .fold(false)(loggedInUser => loggedInUser.id == user.id)
+      ) user
+      else user.copy(email = "")
+    )
   } yield safeToViewUser
 
 }

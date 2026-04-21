@@ -9,26 +9,25 @@ import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Encoder}
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.Results.Ok
-import play.api.mvc.{AnyContent, Request, Result, Results}
+import play.api.mvc.*
 import zio.ZIO
 
 import java.util.UUID
+import scala.concurrent.{ExecutionContext, Future}
 
 object Requests {
   def extractUser(
-      request: Request[Any],
+      request: RequestHeader,
       cookingApi: CookingApi
-  ): Option[User] = {
+  )(implicit ec: ExecutionContext): Future[Option[User]] = {
     val authHeader = request.headers.get("Authorization")
-    try {
-      ApiRunner.runResponse[ApiContext, Throwable, Option[User]](
+    ApiRunner
+      .runResponseAsync[ApiContext, Throwable, Option[User]](
         cookingApi.users.authenticate(authHeader),
         cookingApi,
         None
       )
-    } catch {
-      case e: Throwable => None
-    }
+      .recover { case _: Throwable => None }
   }
 
   def list[Entity](
@@ -36,21 +35,22 @@ object Requests {
       cookingApi: CookingApi,
       entityApi: Listing[Entity],
       authenticate: Boolean = true
-  )(implicit encoder: Encoder[Entity]): Result = {
-    val maybeUser =
-      if (authenticate) extractUser(request, cookingApi) else None
-    val entities: ZIO[ApiContext, Throwable, Seq[Entity]] = for {
-      filters <- ZIO.fromEither(decode[Filters](request.body.toString))
-      entities <- entityApi.list(filters)
-    } yield entities
-    val response = entities.fold(
-      error => ErrorMapping.mapCustomErrorsToHttp(error),
-      result => Ok(s"{ \"Body\": ${Json.parse(result.asJson.noSpaces)}}")
-    )
-    ApiRunner.runResponseSafely[ApiContext](
-      response,
-      cookingApi,
-      maybeUser
+  )(implicit encoder: Encoder[Entity], ec: ExecutionContext): Future[Result] = {
+    val maybeUserFuture =
+      if (authenticate) extractUser(request, cookingApi)
+      else Future.successful(None)
+    val response =
+      for {
+        filters <- ZIO.fromEither(decode[Filters](request.body.toString))
+        entities <- entityApi.list(filters)
+      } yield Ok(s"{ \"Body\": ${Json.parse(entities.asJson.noSpaces)}}")
+
+    maybeUserFuture.flatMap(maybeUser =>
+      ApiRunner.runResponseAsyncSafely[ApiContext](
+        response,
+        cookingApi,
+        maybeUser
+      )
     )
   }
 
@@ -60,20 +60,20 @@ object Requests {
       cookingApi: CookingApi,
       entityApi: Querying[Entity],
       authenticate: Boolean = true
-  )(implicit encoder: Encoder[Entity]): Result = {
-    val maybeUser =
-      if (authenticate) extractUser(request, cookingApi) else None
-    val maybeEntity: ZIO[ApiContext, Throwable, Entity] = for {
-      entity <- entityApi.getById(id)
-    } yield entity
-    val response = maybeEntity.fold(
-      error => ErrorMapping.mapCustomErrorsToHttp(error),
-      result => Ok(s"{ \"Body\": ${Json.parse(result.asJson.noSpaces)} }")
-    )
-    ApiRunner.runResponseSafely[ApiContext](
-      response,
-      cookingApi,
-      maybeUser
+  )(implicit encoder: Encoder[Entity], ec: ExecutionContext): Future[Result] = {
+    val maybeUserFuture =
+      if (authenticate) extractUser(request, cookingApi)
+      else Future.successful(None)
+    val response = entityApi
+      .getById(id)
+      .map(entity => Ok(s"{ \"Body\": ${Json.parse(entity.asJson.noSpaces)} }"))
+
+    maybeUserFuture.flatMap(maybeUser =>
+      ApiRunner.runResponseAsyncSafely[ApiContext](
+        response,
+        cookingApi,
+        maybeUser
+      )
     )
   }
 
@@ -81,23 +81,23 @@ object Requests {
       request: Request[JsValue],
       cookingApi: CookingApi,
       entityApi: Persisting[Entity, EntityInput, EntityUpdateInput]
-  )(implicit encoder: Encoder[Entity]): Result = {
-    val maybeUser = extractUser(request, cookingApi)
-    val createdEntity: ZIO[ApiContext, Throwable, Entity] = for {
-      newEntity <- ZIO.fromEither(
-        decode[EntityInput](request.body.toString)
+  )(implicit encoder: Encoder[Entity], ec: ExecutionContext): Future[Result] = {
+    val response =
+      for {
+        newEntity <- ZIO.fromEither(
+          decode[EntityInput](request.body.toString)
+        )
+        createdEntity <- entityApi.create(newEntity)
+      } yield Results.Created(
+        s"{ \"Body\": ${Json.parse(createdEntity.asJson.noSpaces)} }"
       )
-      createdEntity <- entityApi.create(newEntity)
-    } yield createdEntity
-    val response = createdEntity.fold(
-      error => ErrorMapping.mapCustomErrorsToHttp(error),
-      result =>
-        Results.Created(s"{ \"Body\": ${Json.parse(result.asJson.noSpaces)} }")
-    )
-    ApiRunner.runResponseSafely[ApiContext](
-      response,
-      cookingApi,
-      maybeUser
+
+    extractUser(request, cookingApi).flatMap(maybeUser =>
+      ApiRunner.runResponseAsyncSafely[ApiContext](
+        response,
+        cookingApi,
+        maybeUser
+      )
     )
   }
 
@@ -108,26 +108,24 @@ object Requests {
       entityApi: Persisting[Entity, EntityInput, EntityUpdateInput] & Querying[
         Entity
       ]
-  )(implicit encoder: Encoder[Entity]): Result = {
-    val maybeUser = extractUser(request, cookingApi)
-    val maybeUpdatedEntity: ZIO[ApiContext, Throwable, Entity] = for {
-      newEntity <- ZIO.fromEither(
-        decode[EntityUpdateInput](request.body.toString)
-      )
-      originalEntity <- entityApi.getById(id)
-      updatedEntity <- entityApi.update(newEntity, originalEntity)
-    } yield updatedEntity
-    val response = maybeUpdatedEntity.fold(
-      error => ErrorMapping.mapCustomErrorsToHttp(error),
-      result =>
-        Results.Created(
-          s"{ \"ID\": \"$id\", \"Body\": ${Json.parse(result.asJson.noSpaces)}  }"
+  )(implicit encoder: Encoder[Entity], ec: ExecutionContext): Future[Result] = {
+    val response =
+      for {
+        newEntity <- ZIO.fromEither(
+          decode[EntityUpdateInput](request.body.toString)
         )
-    )
-    ApiRunner.runResponseSafely[ApiContext](
-      response,
-      cookingApi,
-      maybeUser
+        originalEntity <- entityApi.getById(id)
+        updatedEntity <- entityApi.update(newEntity, originalEntity)
+      } yield Results.Created(
+        s"{ \"ID\": \"$id\", \"Body\": ${Json.parse(updatedEntity.asJson.noSpaces)}  }"
+      )
+
+    extractUser(request, cookingApi).flatMap(maybeUser =>
+      ApiRunner.runResponseAsyncSafely[ApiContext](
+        response,
+        cookingApi,
+        maybeUser
+      )
     )
   }
 
@@ -136,22 +134,19 @@ object Requests {
       request: Request[AnyContent],
       cookingApi: CookingApi,
       entityApi: Persisting[Entity, ?, ?] & Querying[Entity]
-  )(implicit encoder: Encoder[Entity]): Result = {
-    val maybeUser = extractUser(request, cookingApi)
-    val maybeDeletedEntity: ZIO[ApiContext, Throwable, Entity] = for {
-      deletedEntity <- entityApi.delete(id)
-    } yield deletedEntity
-    val response = maybeDeletedEntity.fold(
-      error => ErrorMapping.mapCustomErrorsToHttp(error),
-      result =>
-        Results.Ok(
-          s"{ \"ID\": \"$id\", \"Body\": ${Json.parse(result.asJson.noSpaces)}  }"
-        )
-    )
-    ApiRunner.runResponseSafely[ApiContext](
-      response,
-      cookingApi,
-      maybeUser
+  )(implicit encoder: Encoder[Entity], ec: ExecutionContext): Future[Result] = {
+    val response = entityApi.delete(id).map { deletedEntity =>
+      Results.Ok(
+        s"{ \"ID\": \"$id\", \"Body\": ${Json.parse(deletedEntity.asJson.noSpaces)}  }"
+      )
+    }
+
+    extractUser(request, cookingApi).flatMap(maybeUser =>
+      ApiRunner.runResponseAsyncSafely[ApiContext](
+        response,
+        cookingApi,
+        maybeUser
+      )
     )
   }
 

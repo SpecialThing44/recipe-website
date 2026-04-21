@@ -1,7 +1,7 @@
 package persistence.recipes
 
 import domain.ingredients.{InstructionIngredient, Quantity, Unit}
-import domain.recipes.{ImageUrls, Recipe}
+import domain.recipes.Recipe
 import persistence.Converter
 import persistence.ingredients.IngredientConverter
 import persistence.users.UserConverter
@@ -107,7 +107,8 @@ object RecipeConverter extends Converter[Recipe] {
       ingredients = ingredients,
       prepTime = record.get(prepTimeField).toString.toInt,
       cookTime = record.get(cookTimeField).toString.toInt,
-      servings = Option(record.get(servingsField)).map(_.toString.toInt).getOrElse(1),
+      servings =
+        Option(record.get(servingsField)).map(_.toString.toInt).getOrElse(1),
       countryOfOrigin =
         Option(record.get(countryOfOriginField).toString).filter(_.nonEmpty),
       public = record.get(publicField).toString.toBoolean,

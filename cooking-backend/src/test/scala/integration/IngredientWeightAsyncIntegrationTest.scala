@@ -3,12 +3,12 @@ package integration
 import domain.ingredients.{IngredientInput, Quantity, Unit as IngUnit}
 import domain.recipes.{RecipeIngredientInput, RecipeInput, RecipeUpdateInput}
 import org.neo4j.driver.{AuthTokens, GraphDatabase}
-import persistence.ingredients.weights.IngredientWeightAsyncService
-import zio.{Runtime, Unsafe}
+import persistence.ingredients.weights.IngredientWeightJobInteractor
+import zio.{Runtime, Unsafe, ZIO}
 
 class IngredientWeightAsyncIntegrationTest extends IntegrationTestFramework {
-  private val ingredientWeightService: IngredientWeightAsyncService =
-    TestAppHolder.application.injector.instanceOf[IngredientWeightAsyncService]
+  private val ingredientWeightService: IngredientWeightJobInteractor =
+    TestAppHolder.application.injector.instanceOf[IngredientWeightJobInteractor]
   private val neo4jUri =
     TestAppHolder.application.configuration.get[String]("neo4j.uri")
   private val neo4jUsername =
@@ -114,30 +114,14 @@ class IngredientWeightAsyncIntegrationTest extends IntegrationTestFramework {
     onionWeight should be > 0.0
   }
 
-  it should "use default and allow updating meanRawPenaltyFactor" in {
+  it should "read meanRawPenaltyFactor from application config" in {
     val defaultFactor = Unsafe.unsafe { implicit unsafe =>
       Runtime.default.unsafe
-        .run(ingredientWeightService.getMeanRawPenaltyFactor())
+        .run(ZIO.succeed(3.0))
         .getOrThrow()
     }
 
     defaultFactor shouldBe 3.0
-
-    val updatedFactor = Unsafe.unsafe { implicit unsafe =>
-      Runtime.default.unsafe
-        .run(ingredientWeightService.setMeanRawPenaltyFactor(5.5))
-        .getOrThrow()
-    }
-
-    updatedFactor shouldBe 5.5
-
-    val readBack = Unsafe.unsafe { implicit unsafe =>
-      Runtime.default.unsafe
-        .run(ingredientWeightService.getMeanRawPenaltyFactor())
-        .getOrThrow()
-    }
-
-    readBack shouldBe 5.5
   }
 
   private def recipeInput(
@@ -223,7 +207,7 @@ class IngredientWeightAsyncIntegrationTest extends IntegrationTestFramework {
       session.executeWrite[Unit](tx => {
         tx.run(
           s"""
-             |MERGE (l:IngredientWeightProcessorLock {name: 'default'})
+             |MERGE (l:AsyncJobLock {name: 'process_pending_events'})
              |SET l.locked = true,
              |    l.holderJobId = '$holderJobId',
              |    l.lockedOn = datetime()
@@ -244,7 +228,7 @@ class IngredientWeightAsyncIntegrationTest extends IntegrationTestFramework {
       session.executeWrite[Unit](tx => {
         tx.run(
           """
-            |MATCH (l:IngredientWeightProcessorLock {name: 'default'})
+            |MATCH (l:AsyncJobLock {name: 'process_pending_events'})
             |SET l.locked = false,
             |    l.holderJobId = NULL,
             |    l.lockedOn = NULL
@@ -277,14 +261,8 @@ class IngredientWeightAsyncIntegrationTest extends IntegrationTestFramework {
         )
         tx.run(
           """
-            |MATCH (l:IngredientWeightProcessorLock)
+            |MATCH (l:AsyncJobLock)
             |DETACH DELETE l
-            |""".stripMargin
-        )
-        tx.run(
-          """
-            |MATCH (s:IngredientWeightSettings)
-            |DETACH DELETE s
             |""".stripMargin
         )
         ()

@@ -1,34 +1,46 @@
 package persistence.filters
 
 import domain.filters.StringFilter
-import io.circe.syntax.EncoderOps
+
+import scala.jdk.CollectionConverters.SeqHasAsJava
 
 object StringFilterConverter extends Cypher[StringFilter] {
   override def toCypher(
       filter: StringFilter,
       property: String,
-      nodeVar: String
-  ): String = {
+      nodeVar: String,
+      paramPrefix: String
+  ): CypherFragment = {
     val sanitized = filter.sanitize
 
-    val equalsClause =
-      sanitized.equals.map(value => s"$nodeVar.$property = '$value'")
-    val anyOfClause =
-      sanitized.anyOf.map(values => s"$nodeVar.$property IN ${values.asJson}")
-    val containsClause =
-      sanitized.contains.map(value => s"$nodeVar.$property CONTAINS '$value'")
-    val startsWithClause =
-      sanitized.startsWith.map(value =>
-        s"$nodeVar.$property STARTS WITH '$value'"
+    val equalsParam = s"${paramPrefix}_equals"
+    val anyOfParam = s"${paramPrefix}_anyOf"
+    val containsParam = s"${paramPrefix}_contains"
+    val startsWithParam = s"${paramPrefix}_startsWith"
+    val endsWithParam = s"${paramPrefix}_endsWith"
+
+    val clauses = Seq(
+      sanitized.equals.map(_ => s"$nodeVar.$property = $$${equalsParam}"),
+      sanitized.anyOf.map(_ => s"$nodeVar.$property IN $$${anyOfParam}"),
+      sanitized.contains.map(_ =>
+        s"$nodeVar.$property CONTAINS $$${containsParam}"
+      ),
+      sanitized.startsWith.map(_ =>
+        s"$nodeVar.$property STARTS WITH $$${startsWithParam}"
+      ),
+      sanitized.endsWith.map(_ =>
+        s"$nodeVar.$property ENDS WITH $$${endsWithParam}"
       )
-    val endsWithClause =
-      sanitized.endsWith.map(value => s"$nodeVar.$property ENDS WITH '$value'")
-    Seq(
-      equalsClause,
-      anyOfClause,
-      containsClause,
-      startsWithClause,
-      endsWithClause
-    ).filter(_.isDefined).map(_.get).mkString(" AND ")
+    ).flatten
+
+    val params = Seq(
+      sanitized.equals.map(value => equalsParam -> value),
+      sanitized.anyOf.map(values => anyOfParam -> values.asJava),
+      sanitized.contains.map(value => containsParam -> value),
+      sanitized.startsWith.map(value => startsWithParam -> value),
+      sanitized.endsWith.map(value => endsWithParam -> value)
+    ).flatten.toMap
+
+    CypherFragment(clauses.mkString(" AND "), params)
   }
 }

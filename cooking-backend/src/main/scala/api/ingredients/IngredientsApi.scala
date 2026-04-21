@@ -14,6 +14,12 @@ trait IngredientsApi
     with Querying[Ingredient] {
   def deleteAll(): ZIO[ApiContext, Throwable, Unit]
   def listSubstitutes(id: UUID): ZIO[ApiContext, Throwable, Seq[Ingredient]]
-  def addSubstitute(id: UUID, substituteId: UUID): ZIO[ApiContext, Throwable, Unit]
-  def removeSubstitute(id: UUID, substituteId: UUID): ZIO[ApiContext, Throwable, Unit]
+  def addSubstitute(
+      id: UUID,
+      substituteId: UUID
+  ): ZIO[ApiContext, Throwable, Unit]
+  def removeSubstitute(
+      id: UUID,
+      substituteId: UUID
+  ): ZIO[ApiContext, Throwable, Unit]
 }

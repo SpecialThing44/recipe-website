@@ -19,7 +19,7 @@ object Libraries {
 
     val scalaTestVersion = "3.2.19"
     val mockitoVersion = "5.18.0"
-    val testContainersVersion = "1.21.3"
+    val testContainersVersion = "1.21.4"
 
   }
   import Versions.*

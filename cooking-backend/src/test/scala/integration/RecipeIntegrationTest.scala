@@ -7,6 +7,9 @@ import domain.users.{User, UserInput}
 import org.neo4j.driver.{AuthTokens, GraphDatabase}
 
 class RecipeIntegrationTest extends IntegrationTestFramework {
+  private def normalizeInstructions(value: String): String =
+    value.replace("\\n", "\n")
+
   def recipesMatch(r1: Recipe, r2: Recipe): Unit = {
     r1.id shouldBe r2.id
     r1.name shouldBe r2.name
@@ -21,7 +24,9 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
     r1.countryOfOrigin shouldBe r2.countryOfOrigin
     r1.public shouldBe r2.public
     r1.wikiLink shouldBe r2.wikiLink
-    r1.instructions shouldBe r2.instructions.replace("\\n", "\n")
+    normalizeInstructions(r1.instructions) shouldBe normalizeInstructions(
+      r2.instructions
+    )
     r1.createdBy.id shouldBe r2.createdBy.id
   }
 
@@ -40,7 +45,9 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
     created.wikiLink.map(_.toLowerCase) shouldBe input.wikiLink.map(
       _.toLowerCase
     )
-    created.instructions shouldBe input.instructions.replace("\\n", "\n")
+    normalizeInstructions(created.instructions) shouldBe normalizeInstructions(
+      input.instructions
+    )
     created.ingredients.map(_.ingredient.id).toSet shouldBe ingredientIds.toSet
     created.ingredients.map(_.quantity.amount) shouldBe input.ingredients.map(
       _.quantity.amount
@@ -113,9 +120,8 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
     updated.wikiLink.map(_.toLowerCase()) shouldBe Some(
       "https://en.wikipedia.org/wiki/soup"
     )
-    updated.instructions shouldBe quillDelta("Chop and cook").replace(
-      "\\n",
-      "\n"
+    normalizeInstructions(updated.instructions) shouldBe normalizeInstructions(
+      quillDelta("Chop and cook")
     )
     updated.ingredients.head.description shouldBe Some("about one onion")
 
