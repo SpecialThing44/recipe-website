@@ -1,7 +1,5 @@
 package persistence.filters.scoring
 
-import persistence.filters.CypherFragment
-
 object CypherScoringSupport {
   def appendMinWhere(scoreName: String, minParam: Option[String]): String =
     minParam.map(param => s"\nWHERE $scoreName >= $$${param} ").getOrElse("")

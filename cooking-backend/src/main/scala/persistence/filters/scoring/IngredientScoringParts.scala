@@ -1,8 +1,4 @@
 package persistence.filters.scoring
-import CypherScoringSupport.{
-  appendMinWhere,
-  ingredientCosineScoreTail
-}
 
 object IngredientScoringParts {
   import CypherScoringSupport.{appendMinWhere, ingredientCosineScoreTail}

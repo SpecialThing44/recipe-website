@@ -22,6 +22,11 @@ class AiInteractor @Inject()(config: Configuration) {
   private val recipePromptTemplate = config.get[String]("ollama.recipePromptTemplate")
   private val chatTimeout = chatTimeoutSeconds.seconds
 
+  private final case class PromptIngredientRef(
+      promptId: String,
+      ingredient: Ingredient
+  )
+
   private def ollamaConnectionError(action: String, cause: String): SystemError = {
     SystemError(
       s"Ollama $action failed for URL '$ollamaUrl': $cause. " +
@@ -48,6 +53,72 @@ class AiInteractor @Inject()(config: Configuration) {
         throw ollamaConnectionError(action, s"transport error: ${e.getClass.getSimpleName}: ${e.getMessage}")
     }
   }
+
+  private def buildPromptIngredientRefs(
+      knownIngredients: Seq[Ingredient]
+  ): Seq[PromptIngredientRef] =
+    knownIngredients.zipWithIndex.map { case (ingredient, index) =>
+      PromptIngredientRef(promptId = (index + 1).toString, ingredient = ingredient)
+    }
+
+  private def promptIngredientIdMap(
+      refs: Seq[PromptIngredientRef]
+  ): Map[String, java.util.UUID] =
+    refs.map(ref => ref.promptId -> ref.ingredient.id).toMap
+
+  private def remapIngredientIdValue(
+      ingredientIdJson: Json,
+      idMap: Map[String, java.util.UUID]
+  ): Json = {
+    val mappedFromString = ingredientIdJson.asString
+      .map(_.trim)
+      .filter(_.nonEmpty)
+      .flatMap(idMap.get)
+
+    val mappedFromNumber = ingredientIdJson.asNumber
+      .flatMap(_.toInt.map(_.toString))
+      .flatMap(idMap.get)
+
+    mappedFromString
+      .orElse(mappedFromNumber)
+      .map(uuid => Json.fromString(uuid.toString))
+      .getOrElse(ingredientIdJson)
+  }
+
+  private def remapPromptIngredientIds(
+      parsedContent: Json,
+      idMap: Map[String, java.util.UUID]
+  ): Json =
+    parsedContent.asObject match {
+      case Some(rootObj) =>
+        val remappedIngredients = rootObj("ingredients")
+          .flatMap(_.asArray)
+          .map(ingredients =>
+            Json.fromValues(ingredients.map(ingredientJson =>
+              ingredientJson.asObject match {
+                case Some(ingredientObj) =>
+                  ingredientObj("ingredientId") match {
+                    case Some(idJson) =>
+                      Json.fromJsonObject(
+                        ingredientObj.add(
+                          "ingredientId",
+                          remapIngredientIdValue(idJson, idMap)
+                        )
+                      )
+                    case None => ingredientJson
+                  }
+                case None => ingredientJson
+              }
+            ))
+          )
+
+        val updatedRootObj = remappedIngredients
+          .map(remapped => rootObj.add("ingredients", remapped))
+          .getOrElse(rootObj)
+
+        Json.fromJsonObject(updatedRootObj)
+      case None => parsedContent
+    }
 
   def pingOllama(): ZIO[Any, Throwable, Unit] = ZIO.attemptBlocking {
     val parsedUrl = parseUrl("/api/tags", "health check")
@@ -81,8 +152,11 @@ class AiInteractor @Inject()(config: Configuration) {
   }
 
   def parseRecipe(text: String, knownIngredients: Seq[Ingredient], knownTags: Seq[String]): ZIO[Any, Throwable, AiRecipeParseResponse] = ZIO.attemptBlocking {
-    val knownIngredientsPrompt = knownIngredients
-      .map(i => s"- id: ${i.id}, name: ${i.name}, aliases: [${i.aliases.mkString(", ")}]" )
+    val promptIngredientRefs = buildPromptIngredientRefs(knownIngredients)
+    val promptIngredientMap = promptIngredientIdMap(promptIngredientRefs)
+
+    val knownIngredientsPrompt = promptIngredientRefs
+      .map(ref => s"- id: ${ref.promptId}, name: ${ref.ingredient.name}")
       .mkString("\n")
     val knownUnitsPrompt = IngredientUnit.values.map(_.name).mkString(", ")
 
@@ -124,7 +198,8 @@ class AiInteractor @Inject()(config: Configuration) {
         val parseResult = for {
           parsedBody <- parse(body)
           content <- parsedBody.hcursor.downField("message").downField("content").as[String]
-          parsedResponse <- parse(content).flatMap(_.as[AiRecipeParseResponse])
+          parsedContent <- parse(content)
+          parsedResponse <- remapPromptIngredientIds(parsedContent, promptIngredientMap).as[AiRecipeParseResponse]
         } yield parsedResponse
 
         parseResult match {
