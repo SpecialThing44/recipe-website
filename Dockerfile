@@ -1,13 +1,12 @@
 
-FROM eclipse-temurin:17-jdk AS builder
+FROM eclipse-temurin:21-jdk AS builder
 
 WORKDIR /app
 
 RUN apt-get update && \
-    apt-get install -y curl && \
-    echo "deb https://repo.scala-sbt.org/scalasbt/debian all main" | tee /etc/apt/sources.list.d/sbt.list && \
-    echo "deb https://repo.scala-sbt.org/scalasbt/debian /" | tee /etc/apt/sources.list.d/sbt_old.list && \
-    curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | apt-key add && \
+    apt-get install -y curl gnupg && \
+    curl -fsSL https://scala.jfrog.io/artifactory/debian/gpg | gpg --dearmor -o /usr/share/keyrings/sbt-archive-keyring.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/sbt-archive-keyring.gpg] https://scala.jfrog.io/artifactory/debian all main" | tee /etc/apt/sources.list.d/sbt.list && \
     apt-get update && \
     apt-get install -y sbt && \
     rm -rf /var/lib/apt/lists/*
@@ -19,7 +18,7 @@ COPY cooking-backend ./cooking-backend
 
 RUN sbt "project backend" clean stage
 
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
