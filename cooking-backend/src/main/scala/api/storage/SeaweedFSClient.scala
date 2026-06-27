@@ -5,7 +5,6 @@ import org.apache.pekko.util.ByteString
 import play.api.Configuration
 import sttp.client3.*
 import zio.{Task, ZIO}
-
 import java.util.UUID
 
 case class StorageAvatarUrls(
@@ -17,8 +16,32 @@ case class StorageAvatarUrls(
 @Singleton
 class SeaweedFSClient @Inject() (config: Configuration) {
   private val masterUrl = config.get[String]("seaweedfs.masterUrl")
-  private val filerUrl = config.get[String]("seaweedfs.filerUrl")
+  private val internalFilerUrl = config
+    .get[String]("seaweedfs.internalFilerUrl")
+    .stripSuffix("/")
+  private val publicFilerUrl = config
+    .get[String]("seaweedfs.publicFilerUrl")
+    .stripSuffix("/")
   private val backend = HttpClientSyncBackend()
+
+  private def urlFor(baseUrl: String, path: String): String =
+    s"$baseUrl/${path.stripPrefix("/")}"
+
+  private def internalUrlFor(path: String): String =
+    urlFor(internalFilerUrl, path)
+
+  private def publicUrlFor(path: String): String =
+    urlFor(publicFilerUrl, path)
+
+  private def pathFromUrl(fileUrl: String): String = {
+    require(
+      fileUrl.startsWith(publicFilerUrl) || fileUrl.startsWith(
+        internalFilerUrl
+      ) || !fileUrl.contains("://"),
+      s"Unexpected filer url: $fileUrl"
+    )
+    fileUrl.stripPrefix(publicFilerUrl).stripPrefix(internalFilerUrl)
+  }
 
   def uploadFile(
       fileBytes: ByteString,
@@ -31,35 +54,29 @@ class SeaweedFSClient @Inject() (config: Configuration) {
       .response(asString)
       .send(backend)
 
-    val fileId = assignResponse.body match {
-      case Right(body) =>
-        val fidPattern = """"fid":"([^"]+)"""".r
-        fidPattern.findFirstMatchIn(body) match {
-          case Some(m) => m.group(1)
-          case None => throw new Exception("Failed to get file ID from master")
+    assignResponse.body match {
+      case Right(_) =>
+        val uploadPath = s"/avatars/$userId/$fileName"
+        val fullUrl = internalUrlFor(uploadPath)
+        val uploadResponse = basicRequest
+          .put(uri"$fullUrl")
+          .body(fileBytes.toArray)
+          .contentType(contentType)
+          .response(asString)
+          .send(backend)
+
+        uploadResponse.body match {
+          case Right(_) => publicUrlFor(uploadPath)
+          case Left(error) =>
+            throw new Exception(s"Failed to upload file: $error")
         }
       case Left(error) =>
         throw new Exception(s"Failed to assign file ID: $error")
     }
-
-    val uploadPath = s"/avatars/$userId/$fileName"
-    val fullUrl = s"$filerUrl$uploadPath"
-    val uploadResponse = basicRequest
-      .put(uri"$fullUrl")
-      .body(fileBytes.toArray)
-      .contentType(contentType)
-      .response(asString)
-      .send(backend)
-
-    uploadResponse.body match {
-      case Right(_)    => fullUrl
-      case Left(error) => throw new Exception(s"Failed to upload file: $error")
-    }
   }
 
   def deleteFile(fileUrl: String): Task[Unit] = ZIO.attempt {
-    val path = fileUrl.replace(filerUrl, "")
-    val fullUrl = s"$filerUrl$path"
+    val fullUrl = internalUrlFor(pathFromUrl(fileUrl))
 
     val deleteResponse = basicRequest
       .delete(uri"$fullUrl")
@@ -105,13 +122,16 @@ class SeaweedFSClient @Inject() (config: Configuration) {
       extension: String = "jpg"
   ): Task[Unit] = {
     for {
-      _ <- deleteFile(s"$filerUrl/avatars/$userId/avatar-thumbnail.$extension")
-        .catchAll(_ => ZIO.unit)
-      _ <- deleteFile(s"$filerUrl/avatars/$userId/avatar-medium.$extension")
-        .catchAll(_ => ZIO.unit)
-      _ <- deleteFile(s"$filerUrl/avatars/$userId/avatar.$extension").catchAll(
-        _ => ZIO.unit
+      _ <- deleteFile(
+        publicUrlFor(s"/avatars/$userId/avatar-thumbnail.$extension")
       )
+        .catchAll(_ => ZIO.unit)
+      _ <- deleteFile(
+        publicUrlFor(s"/avatars/$userId/avatar-medium.$extension")
+      )
+        .catchAll(_ => ZIO.unit)
+      _ <- deleteFile(publicUrlFor(s"/avatars/$userId/avatar.$extension"))
+        .catchAll(_ => ZIO.unit)
     } yield ()
   }
 
@@ -150,28 +170,23 @@ class SeaweedFSClient @Inject() (config: Configuration) {
       .response(asString)
       .send(backend)
 
-    val fileId = assignResponse.body match {
-      case Right(body) =>
-        val fidPattern = """"fid":"([^"]+)"""".r
-        fidPattern.findFirstMatchIn(body) match {
-          case Some(m) => m.group(1)
-          case None => throw new Exception("Failed to get file ID from master")
+    assignResponse.body match {
+      case Right(_) =>
+        val fullUrl = internalUrlFor(uploadPath)
+        val uploadResponse = basicRequest
+          .put(uri"$fullUrl")
+          .body(fileBytes.toArray)
+          .contentType(contentType)
+          .response(asString)
+          .send(backend)
+
+        uploadResponse.body match {
+          case Right(_) => publicUrlFor(uploadPath)
+          case Left(error) =>
+            throw new Exception(s"Failed to upload file: $error")
         }
       case Left(error) =>
         throw new Exception(s"Failed to assign file ID: $error")
-    }
-
-    val fullUrl = s"$filerUrl$uploadPath"
-    val uploadResponse = basicRequest
-      .put(uri"$fullUrl")
-      .body(fileBytes.toArray)
-      .contentType(contentType)
-      .response(asString)
-      .send(backend)
-
-    uploadResponse.body match {
-      case Right(_)    => fullUrl
-      case Left(error) => throw new Exception(s"Failed to upload file: $error")
     }
   }
 
@@ -181,11 +196,14 @@ class SeaweedFSClient @Inject() (config: Configuration) {
   ): Task[Unit] = {
     for {
       _ <- deleteFile(
-        s"$filerUrl/recipes/$recipeId/recipe-thumbnail.$extension"
-      ).catchAll(_ => ZIO.unit)
-      _ <- deleteFile(s"$filerUrl/recipes/$recipeId/recipe-medium.$extension")
+        publicUrlFor(s"/recipes/$recipeId/recipe-thumbnail.$extension")
+      )
         .catchAll(_ => ZIO.unit)
-      _ <- deleteFile(s"$filerUrl/recipes/$recipeId/recipe.$extension")
+      _ <- deleteFile(
+        publicUrlFor(s"/recipes/$recipeId/recipe-medium.$extension")
+      )
+        .catchAll(_ => ZIO.unit)
+      _ <- deleteFile(publicUrlFor(s"/recipes/$recipeId/recipe.$extension"))
         .catchAll(_ => ZIO.unit)
     } yield ()
   }
