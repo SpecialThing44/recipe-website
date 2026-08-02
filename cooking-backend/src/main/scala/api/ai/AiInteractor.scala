@@ -129,6 +129,55 @@ class AiInteractor @Inject()(config: Configuration) {
     else trimmed
   }
 
+  private def recipeResponseSchema: Json =
+    Json.obj(
+      "type" -> Json.fromString("object"),
+      "required" -> Json.arr(
+        Json.fromString("name"),
+        Json.fromString("instructions"),
+        Json.fromString("prepTime"),
+        Json.fromString("cookTime"),
+        Json.fromString("servings"),
+        Json.fromString("tags"),
+        Json.fromString("ingredients")
+      ),
+      "properties" -> Json.obj(
+        "name" -> Json.obj("type" -> Json.fromString("string")),
+        "instructions" -> Json.obj("type" -> Json.fromString("string")),
+        "prepTime" -> Json.obj("type" -> Json.arr(Json.fromString("integer"), Json.fromString("null"))),
+        "cookTime" -> Json.obj("type" -> Json.arr(Json.fromString("integer"), Json.fromString("null"))),
+        "servings" -> Json.obj("type" -> Json.arr(Json.fromString("integer"), Json.fromString("null"))),
+        "tags" -> Json.obj("type" -> Json.fromString("array"), "items" -> Json.obj("type" -> Json.fromString("string"))),
+        "ingredients" -> Json.obj(
+          "type" -> Json.fromString("array"),
+          "items" -> Json.obj(
+            "type" -> Json.fromString("object"),
+            "required" -> Json.arr(
+              Json.fromString("rawText"),
+              Json.fromString("ingredientId"),
+              Json.fromString("ingredientName"),
+              Json.fromString("quantity"),
+              Json.fromString("description")
+            ),
+            "properties" -> Json.obj(
+              "rawText" -> Json.obj("type" -> Json.fromString("string")),
+              "ingredientId" -> Json.obj("type" -> Json.arr(Json.fromString("string"), Json.fromString("null"))),
+              "ingredientName" -> Json.obj("type" -> Json.arr(Json.fromString("string"), Json.fromString("null"))),
+              "quantity" -> Json.obj(
+                "type" -> Json.fromString("object"),
+                "required" -> Json.arr(Json.fromString("amount"), Json.fromString("unit")),
+                "properties" -> Json.obj(
+                  "amount" -> Json.obj("type" -> Json.fromString("number")),
+                  "unit" -> Json.obj("type" -> Json.fromString("string"))
+                )
+              ),
+              "description" -> Json.obj("type" -> Json.arr(Json.fromString("string"), Json.fromString("null")))
+            )
+          )
+        )
+      )
+    )
+
   def pingOllama(): ZIO[Any, Throwable, Unit] = ZIO.attemptBlocking {
     val parsedUrl = parseUrl("/api/tags", "health check")
 
@@ -184,7 +233,7 @@ class AiInteractor @Inject()(config: Configuration) {
         )
       ),
       "stream" -> Json.fromBoolean(false),
-      "format" -> Json.fromString("json"),
+      "format" -> recipeResponseSchema,
       "think" -> Json.fromBoolean(false),
       "options" -> Json.obj(
         "temperature" -> Json.fromDoubleOrNull(0.1),
