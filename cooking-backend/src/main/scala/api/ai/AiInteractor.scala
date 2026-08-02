@@ -120,6 +120,15 @@ class AiInteractor @Inject()(config: Configuration) {
       case None => parsedContent
     }
 
+  private def removeMarkdownCodeFence(content: String): String = {
+    val trimmed = content.trim
+    val firstLineEnd = trimmed.indexOf('\n')
+
+    if trimmed.startsWith("```") && firstLineEnd >= 0 && trimmed.endsWith("```") then
+      trimmed.substring(firstLineEnd + 1, trimmed.length - 3).trim
+    else trimmed
+  }
+
   def pingOllama(): ZIO[Any, Throwable, Unit] = ZIO.attemptBlocking {
     val parsedUrl = parseUrl("/api/tags", "health check")
 
@@ -198,7 +207,7 @@ class AiInteractor @Inject()(config: Configuration) {
         val parseResult = for {
           parsedBody <- parse(body)
           content <- parsedBody.hcursor.downField("message").downField("content").as[String]
-          parsedContent <- parse(content)
+          parsedContent <- parse(removeMarkdownCodeFence(content))
           parsedResponse <- remapPromptIngredientIds(parsedContent, promptIngredientMap).as[AiRecipeParseResponse]
         } yield parsedResponse
 
