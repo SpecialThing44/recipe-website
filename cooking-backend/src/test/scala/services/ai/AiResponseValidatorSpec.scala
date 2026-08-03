@@ -102,4 +102,27 @@ class AiResponseValidatorSpec extends AnyFlatSpec with Matchers {
         fail(s"Expected consistent ingredient result but got error: $err")
     }
   }
+
+  it should "resolve a qualified known ingredient from raw text" in {
+    val parsedIngredient = AiParsedIngredient(
+      rawText = "1/3 cup smooth tomato",
+      ingredientId = None,
+      ingredientName = None,
+      quantity = AiParsedQuantity(amount = 1.0 / 3.0, unit = "cup"),
+      description = Some("smooth tomato")
+    )
+
+    val result = AiResponseValidator.validateParsedRecipe(
+      baseResponseWithIngredient(parsedIngredient),
+      Seq(knownIngredient)
+    )
+
+    result match {
+      case Right(validated) =>
+        validated.ingredients.head.ingredientId shouldBe Some(knownIngredientId)
+        validated.ingredients.head.ingredientName shouldBe Some("tomato")
+      case Left(err) =>
+        fail(s"Expected qualified ingredient to resolve but got error: $err")
+    }
+  }
 }
