@@ -78,6 +78,37 @@ class RecipeUpdateInteractor @Inject() (
             .map(Some(_))
         case None => ZIO.succeed(None)
       }
+      _ <- recipeInput.recipeIngredients match {
+        case Some(recipeIngredients) =>
+          persistence
+            .wouldCreateCycle(
+              originalRecipe.id,
+              recipeIngredients.map(_.recipeId)
+            )
+            .flatMap(wouldCreateCycle =>
+              if (wouldCreateCycle)
+                ZIO.fail(
+                  domain.types.InputError(
+                    "Recipe components cannot create a dependency cycle"
+                  )
+                )
+              else ZIO.unit
+            )
+        case None => ZIO.unit
+      }
+      resolvedRecipeInstructions <- recipeInput.recipeIngredients match {
+        case Some(list) =>
+          ZIO.foreach(list) { component =>
+            persistence.getById(component.recipeId).map { recipe =>
+              domain.recipes.InstructionRecipe(
+                domain.recipes.RecipeReference(recipe.id, recipe.name),
+                component.quantity,
+                component.description
+              )
+            }
+          }.map(Some(_))
+        case None => ZIO.succeed(None)
+      }
       _ <- {
         val ingredientsToCheck =
           resolvedIngredientInstructions.getOrElse(originalRecipe.ingredients)
@@ -101,7 +132,8 @@ class RecipeUpdateInteractor @Inject() (
       updated = RecipeAdapter.adaptUpdate(
         sanitizedRecipe,
         originalRecipe,
-        resolvedIngredientInstructions
+        resolvedIngredientInstructions,
+        resolvedRecipeInstructions
       )
       recipe <- persistence.update(updated, originalRecipe)
       _ <- ingredientWeightEventInteractor

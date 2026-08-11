@@ -2,9 +2,11 @@ package integration
 
 import domain.filters.{Filters, StringFilter}
 import domain.ingredients.{Ingredient, IngredientInput, Quantity, Unit as IngUnit}
-import domain.recipes.{Recipe, RecipeIngredientInput, RecipeInput, RecipeUpdateInput}
+import domain.recipes.{Recipe, RecipeComponentInput, RecipeIngredientInput, RecipeInput, RecipeUpdateInput}
 import domain.users.{User, UserInput}
 import org.neo4j.driver.{AuthTokens, GraphDatabase}
+
+import scala.jdk.CollectionConverters.*
 
 class RecipeIntegrationTest extends IntegrationTestFramework {
   private def normalizeInstructions(value: String): String =
@@ -79,6 +81,101 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
 
     val fetched = getRecipeById(created.id)
     recipesMatch(created, fetched)
+  }
+
+  it should "use another recipe as an ingredient" in {
+    val sauce = createTestRecipe(
+      standardRecipeInput(Seq(tomato)).copy(name = "Tomato Sauce")
+    )
+    val pasta = createTestRecipe(
+      standardRecipeInput(Seq.empty).copy(
+        name = "Pasta with Sauce",
+        recipeIngredients = Seq(
+          RecipeComponentInput(
+            sauce.id,
+            Quantity(IngUnit("serving", false, ""), 2),
+            Some("prepared")
+          )
+        )
+      )
+    )
+
+    val fetched = getRecipeById(pasta.id)
+
+    fetched.recipeIngredients should have size 1
+    fetched.recipeIngredients.head.recipe.id shouldBe sauce.id
+    fetched.recipeIngredients.head.recipe.name shouldBe sauce.name
+    fetched.recipeIngredients.head.quantity.amount shouldBe 2
+    fetched.recipeIngredients.head.description shouldBe Some("prepared")
+  }
+
+  it should "flatten nested recipe ingredients using serving ratios" in {
+    val sauce = createTestRecipe(
+      standardRecipeInput(Seq(tomato)).copy(name = "Tomato Sauce", servings = 4)
+    )
+    val filling = createTestRecipe(
+      standardRecipeInput(Seq.empty).copy(
+        name = "Filling",
+        servings = 4,
+        recipeIngredients = Seq(
+          RecipeComponentInput(
+            sauce.id,
+            Quantity(IngUnit("serving", false, ""), 2)
+          )
+        )
+      )
+    )
+    val finishedRecipe = createTestRecipe(
+      standardRecipeInput(Seq(onion)).copy(
+        name = "Finished Recipe",
+        recipeIngredients = Seq(
+          RecipeComponentInput(
+            filling.id,
+            Quantity(IngUnit("serving", false, ""), 1)
+          )
+        )
+      )
+    )
+
+    val effectiveWeights = getEffectiveIngredientWeights(finishedRecipe.id)
+
+    effectiveWeights(tomato.id) shouldBe 0.125 +- 0.000001
+    effectiveWeights(onion.id) shouldBe 1.0 +- 0.000001
+  }
+
+  it should "prevent indirect recipe component cycles" in {
+    val firstRecipe = createTestRecipe(
+      standardRecipeInput(Seq(tomato)).copy(name = "First Recipe")
+    )
+    val secondRecipe = createTestRecipe(
+      standardRecipeInput(Seq.empty).copy(
+        name = "Second Recipe",
+        recipeIngredients = Seq(
+          RecipeComponentInput(
+            firstRecipe.id,
+            Quantity(IngUnit("serving", false, ""), 1)
+          )
+        )
+      )
+    )
+
+    val error = intercept[domain.types.InputError] {
+      updateRecipe(
+        firstRecipe,
+        RecipeUpdateInput(
+          recipeIngredients = Some(
+            Seq(
+              RecipeComponentInput(
+                secondRecipe.id,
+                Quantity(IngUnit("serving", false, ""), 1)
+              )
+            )
+          )
+        )
+      )
+    }
+
+    error.getMessage shouldBe "Recipe components cannot create a dependency cycle"
   }
 
   it should "update a recipe fields and ingredients" in {
@@ -519,6 +616,43 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
           .single()
           .get("count")
           .asLong()
+      )
+    } finally {
+      session.close()
+      driver.close()
+    }
+  }
+
+  private def getEffectiveIngredientWeights(
+      recipeId: java.util.UUID
+  ): Map[java.util.UUID, Double] = {
+    val neo4jUri =
+      TestAppHolder.application.configuration.get[String]("neo4j.uri")
+    val neo4jUsername =
+      TestAppHolder.application.configuration
+        .getOptional[String]("neo4j.username")
+        .getOrElse("neo4j")
+    val neo4jPassword =
+      TestAppHolder.application.configuration
+        .getOptional[String]("neo4j.password")
+        .getOrElse("Password!1")
+    val driver =
+      GraphDatabase.driver(neo4jUri, AuthTokens.basic(neo4jUsername, neo4jPassword))
+    val session = driver.session()
+    try {
+      session.executeRead[Map[java.util.UUID, Double]](tx =>
+        tx
+          .run(
+            s"MATCH (:Recipe {id: '$recipeId'})-[relationship:HAS_EFFECTIVE_INGREDIENT]->(ingredient:Ingredient) RETURN ingredient.id AS ingredientId, relationship.weight AS weight"
+          )
+          .list()
+          .asScala
+          .map(neo4jRecord => {
+            java.util.UUID.fromString(
+              neo4jRecord.get("ingredientId").asString()
+            ) -> neo4jRecord.get("weight").asDouble()
+          })
+          .toMap
       )
     } finally {
       session.close()

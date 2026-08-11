@@ -49,6 +49,15 @@ class RecipeCreateInteractor @Inject() (
           ii.description
         )
       }
+      recipeIngredients <- ZIO.foreach(input.recipeIngredients) { component =>
+        persistence.getById(component.recipeId).map { recipe =>
+          domain.recipes.InstructionRecipe(
+            domain.recipes.RecipeReference(recipe.id, recipe.name),
+            component.quantity,
+            component.description
+          )
+        }
+      }
       _ <- {
         val anyNonPredefinedUnit = ingredients.exists(instructionIngredient =>
           !Unit.isPredefined(instructionIngredient.quantity.unit)
@@ -62,7 +71,7 @@ class RecipeCreateInteractor @Inject() (
         else ZIO.unit
       }
       recipeWithSanitized = input.copy(instructions = sanitizedInstructions)
-      recipe = RecipeAdapter.adapt(recipeWithSanitized, ingredients, user)
+      recipe = RecipeAdapter.adapt(recipeWithSanitized, ingredients, recipeIngredients, user)
       recipeWithImages = recipe.copy(instructionImages = extractedImageUrls)
       result <- persistence.create(recipeWithImages)
       _ <- ingredientWeightEventInteractor

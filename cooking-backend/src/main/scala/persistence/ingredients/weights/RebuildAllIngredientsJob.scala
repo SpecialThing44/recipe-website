@@ -2,7 +2,7 @@ package persistence.ingredients.weights
 
 import com.google.inject.{Inject, Singleton}
 import persistence.neo4j.Database
-import persistence.recipes.RecipePersistence
+import persistence.recipes.{EffectiveIngredientsPersistence, RecipePersistence}
 import zio.{Task, ZIO}
 
 import scala.jdk.CollectionConverters.*
@@ -10,11 +10,13 @@ import scala.jdk.CollectionConverters.*
 @Singleton
 class RebuildAllIngredientsJob @Inject() (
     database: Database,
-  recipePersistence: RecipePersistence
+    recipePersistence: RecipePersistence,
+    effectiveIngredientsPersistence: EffectiveIngredientsPersistence
 ) {
 
   def run(meanRawPenaltyFactor: Double): Task[(Int, String)] =
     for {
+      _ <- effectiveIngredientsPersistence.refreshAll()
       totalRecipes <- recipePersistence.getTotalRecipeCount()
       ingredientIds <- getAllIngredientIds()
       _ <- recomputeIngredientStats(
@@ -46,7 +48,7 @@ class RebuildAllIngredientsJob @Inject() (
         s"""
            |UNWIND $$ingredientIds AS ingredientId
            |MATCH (ingredient:Ingredient {id: ingredientId})
-           |OPTIONAL MATCH (recipe:Recipe)-[ri:HAS_INGREDIENT]->(ingredient)
+           |OPTIONAL MATCH (recipe:Recipe)-[ri:HAS_EFFECTIVE_INGREDIENT]->(ingredient)
            |WITH ingredient, $$totalRecipes AS totalRecipes,
            |     count(DISTINCT recipe) AS recipeCount,
            |     coalesce(sum(coalesce(ri.rawNormalizedWeight, ri.normalizedWeight, 0.0)), 0.0) AS sumRawNormalizedWeight
