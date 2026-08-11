@@ -9,6 +9,7 @@ object RecipeAdapter {
   def adapt(
       recipe: RecipeInput,
       resolvedIngredients: Seq[domain.ingredients.InstructionIngredient],
+      resolvedRecipeIngredients: Seq[domain.recipes.InstructionRecipe],
       createdBy: domain.users.User
   ): Recipe = {
     val now = Instant.now
@@ -17,6 +18,7 @@ object RecipeAdapter {
       createdBy = createdBy,
       tags = recipe.tags,
       ingredients = resolvedIngredients,
+      recipeIngredients = resolvedRecipeIngredients,
       prepTime = recipe.prepTime,
       cookTime = recipe.cookTime,
       servings = recipe.servings,
@@ -35,7 +37,8 @@ object RecipeAdapter {
   def adaptUpdate(
       input: RecipeUpdateInput,
       original: Recipe,
-      resolvedIngredients: Option[Seq[domain.ingredients.InstructionIngredient]]
+      resolvedIngredients: Option[Seq[domain.ingredients.InstructionIngredient]],
+      resolvedRecipeIngredients: Option[Seq[domain.recipes.InstructionRecipe]]
   ): Recipe = {
     val now = Instant.now
     Recipe(
@@ -43,6 +46,7 @@ object RecipeAdapter {
       createdBy = original.createdBy,
       tags = input.tags.getOrElse(original.tags),
       ingredients = resolvedIngredients.getOrElse(original.ingredients),
+      recipeIngredients = resolvedRecipeIngredients.getOrElse(original.recipeIngredients),
       prepTime = input.prepTime.getOrElse(original.prepTime),
       cookTime = input.cookTime.getOrElse(original.cookTime),
       servings = input.servings.getOrElse(original.servings),

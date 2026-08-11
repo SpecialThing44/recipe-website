@@ -9,8 +9,9 @@ object RecipeValidator {
   def validateRecipeInput(input: RecipeInput): ZIO[Any, InputError, Unit] = {
     for {
       _ <- validateIngredientQuantities(
-        input.ingredients.map(_.quantity.amount)
+        input.ingredients.map(_.quantity.amount) ++ input.recipeIngredients.map(_.quantity.amount)
       )
+      _ <- validateHasIngredients(input.ingredients, input.recipeIngredients)
       _ <- validatePrepTime(input.prepTime)
       _ <- validateCookTime(input.cookTime)
       _ <- validateServings(input.servings)
@@ -27,6 +28,14 @@ object RecipeValidator {
           validateIngredientQuantities(ingredients.map(_.quantity.amount))
         case None => ZIO.unit
       }
+      _ <- input.recipeIngredients match {
+        case Some(recipes) => validateIngredientQuantities(recipes.map(_.quantity.amount))
+        case None          => ZIO.unit
+      }
+      _ <- validateHasIngredients(
+        input.ingredients.getOrElse(original.ingredients.map(i => domain.recipes.RecipeIngredientInput(i.ingredient.id, i.quantity, i.description))),
+        input.recipeIngredients.getOrElse(original.recipeIngredients.map(i => domain.recipes.RecipeComponentInput(i.recipe.id, i.quantity, i.description)))
+      )
       _ <- input.prepTime match {
         case Some(prepTime) => validatePrepTime(prepTime)
         case None           => ZIO.unit
@@ -41,6 +50,13 @@ object RecipeValidator {
       }
     } yield ()
   }
+
+  private def validateHasIngredients(
+      ingredients: Seq[domain.recipes.RecipeIngredientInput],
+      recipes: Seq[domain.recipes.RecipeComponentInput]
+  ): ZIO[Any, InputError, Unit] =
+    if (ingredients.nonEmpty || recipes.nonEmpty) ZIO.unit
+    else ZIO.fail(InputError("A recipe must include at least one ingredient or recipe"))
 
   private def validateIngredientQuantities(
       quantities: Seq[Double]

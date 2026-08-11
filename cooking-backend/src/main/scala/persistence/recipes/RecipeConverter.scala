@@ -1,7 +1,7 @@
 package persistence.recipes
 
 import domain.ingredients.{InstructionIngredient, Quantity, Unit}
-import domain.recipes.Recipe
+import domain.recipes.{InstructionRecipe, Recipe, RecipeReference}
 import persistence.Converter
 import persistence.ingredients.IngredientConverter
 import persistence.users.UserConverter
@@ -80,6 +80,31 @@ object RecipeConverter extends Converter[Recipe] {
         InstructionIngredient(ingredient, Quantity(unit, amount), description)
       }
 
+    val recipeIngredients = record.get("recipeQuantities") match {
+      case list: java.util.List[util.Map[String, AnyRef]] =>
+        list.asScala.toSeq.flatMap { recipeQuantity =>
+          Option(recipeQuantity.get("recipe")) collect {
+            case recipeMap: util.Map[String, AnyRef]
+                if Option(recipeMap.get("id")).exists(_.toString.nonEmpty) =>
+              val unitName = recipeQuantity.get("unit").toString
+              InstructionRecipe(
+                RecipeReference(
+                  UUID.fromString(recipeMap.get("id").toString),
+                  recipeMap.get("name").toString
+                ),
+                Quantity(
+                  Unit(unitName, volume = false, wikiLink = ""),
+                  recipeQuantity.get("amount").asInstanceOf[Number].doubleValue()
+                ),
+                Option(recipeQuantity.get("description"))
+                  .map(_.toString)
+                  .filter(_.nonEmpty)
+              )
+          }
+        }
+      case _ => Seq.empty
+    }
+
     val thumbnail = Option(record.get(imageThumbnailUrlField))
       .map(_.toString)
       .filter(_.nonEmpty)
@@ -105,6 +130,7 @@ object RecipeConverter extends Converter[Recipe] {
       createdBy = user,
       tags = tags,
       ingredients = ingredients,
+      recipeIngredients = recipeIngredients,
       prepTime = record.get(prepTimeField).toString.toInt,
       cookTime = record.get(cookTimeField).toString.toInt,
       servings =
