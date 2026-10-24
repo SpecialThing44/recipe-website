@@ -2,7 +2,7 @@ package domain.users
 
 import domain.shared.Identified
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, Encoder, Json}
 
 import java.time.Instant
 import java.util.UUID
@@ -47,6 +47,9 @@ object AvatarUrls {
 
 object User {
   implicit val encoder: Encoder[User] = deriveEncoder[User]
+  val publicEncoder: Encoder[User] = Encoder.instance(user =>
+    encoder(user).mapObject(_.add("email", Json.fromString("")).add("identity", Json.fromString("")))
+  )
   implicit val decoder: Decoder[User] = deriveDecoder[User]
 
   def empty(): User = {
