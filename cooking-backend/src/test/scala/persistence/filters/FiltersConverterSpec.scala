@@ -214,6 +214,18 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
     )
   }
 
+  it should "separate property filters from similarity clauses" in {
+    val filters = Filters.empty().copy(
+      id = Some(UUID.randomUUID()),
+      analyzedRecipe = Some(UUID.randomUUID()),
+      tagSimilarity = Some(domain.filters.SimilarityFilter(0.0, 0.0, 1.0, 0.0))
+    )
+
+    val result = FiltersConverter.toCypher(filters, "recipe")
+
+    result.cypher should include("$recipe_id\nWITH recipe")
+  }
+
   it should "return empty string when no orderBy is specified" in {
     val filters = Filters.empty()
 

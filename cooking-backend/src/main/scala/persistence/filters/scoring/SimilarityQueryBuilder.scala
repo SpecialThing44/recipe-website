@@ -232,7 +232,9 @@ object SimilarityQueryBuilder {
     )
 
     CypherFragment(
-      base.cypher + start + ingredientPart + coSavePart + tagPart + finalWhere + finalWith,
+      Seq(base.cypher, start, ingredientPart, coSavePart, tagPart, finalWhere, finalWith)
+        .filter(_.nonEmpty)
+        .mkString("\n"),
       base.params
     )
   }
