@@ -11,6 +11,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 object TestAppHolder {
   lazy val application = new GuiceApplicationBuilder()
     .configure("neo4j.isEmbedded" -> true)
+    .configure("neo4j.uri" -> "bolt://localhost:7687")
     .configure("openai.skipModeration" -> true)
     .configure(
       "auth.issuer" -> "https://authentik.example.com/application/o/cooking/"

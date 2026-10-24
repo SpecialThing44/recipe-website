@@ -7,7 +7,6 @@ import org.testcontainers.utility.DockerImageName
 import play.api.Configuration
 
 import scala.jdk.CollectionConverters.SeqHasAsJava
-import scala.util.{Failure, Success, Try}
 
 class EmbeddedDatabase @Inject() (
     config: Configuration,
@@ -24,14 +23,11 @@ class EmbeddedDatabase @Inject() (
 
       container.setPortBindings(portsAsString)
 
-      database = Some(container)
       logger.info(
         s"[${this.getClass.getName}]: DB requested, starting",
       )
-      Try(container.start()) match {
-        case Success(_) => ()
-        case Failure(_) => ()
-      }
+      container.start()
+      database = Some(container)
     } else {
       logger.info(
         s"[${this.getClass.getName}]: DB not requested, returning unit",
