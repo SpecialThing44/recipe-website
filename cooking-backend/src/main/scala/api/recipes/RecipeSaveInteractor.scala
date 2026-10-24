@@ -27,4 +27,11 @@ class RecipeSaveInteractor @Inject() (
       saved <- persistence.save(recipeId, user.id)
     } yield saved
   }
+  def unsave(recipeId: UUID): ZIO[ApiContext, Throwable, Unit] = for {
+    context <- ZIO.service[ApiContext]
+    user <- AuthenticationInteractor.ensureIsLoggedIn(context.applicationContext.user)
+    _ <- persistence.getById(recipeId)
+    _ <- persistence.unsave(recipeId, user.id)
+  } yield ()
+
 }

@@ -44,6 +44,9 @@ class RecipeFacade @Inject() (
   override def save(recipeId: UUID): ZIO[ApiContext, Throwable, Recipe] =
     saveInteractor.save(recipeId)
 
+  override def unsave(recipeId: UUID): ZIO[ApiContext, Throwable, Unit] =
+    saveInteractor.unsave(recipeId)
+
   override def deleteAll(): ZIO[ApiContext, Throwable, Unit] =
     persistence.deleteAll()
 
