@@ -38,8 +38,9 @@ class IngredientsPersistence @Inject() (database: Database)
       val tagLowerNameParam = s"ingredient_tag_lower_name_$index"
       CypherFragment(
         s"""
-           |MERGE ($alias:${graph.tagLabel} {name: $$${tagNameParam}, lowername: $$${tagLowerNameParam}})
-           |CREATE (${graph.nodeVar})-[:${graph.tagRelation}]->($alias)
+           |MERGE ($alias:${graph.tagLabel} {lowername: $$${tagLowerNameParam}})
+           |ON CREATE SET $alias.name = $$${tagNameParam}
+           |MERGE (${graph.nodeVar})-[:${graph.tagRelation}]->($alias)
            |$withLine""".stripMargin,
         Map(tagNameParam -> tag, tagLowerNameParam -> tag.toLowerCase)
       )
