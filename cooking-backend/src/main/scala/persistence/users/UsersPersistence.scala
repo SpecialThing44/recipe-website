@@ -111,7 +111,7 @@ class UsersPersistence @Inject() (database: Database) extends Users {
            |WITH DISTINCT user
            |$deleteUnusedIngredientsCreatedByUser
            |WITH DISTINCT user
-           |SET user.email = ""
+           |REMOVE user.email, user.loweremail
            |SET user.name = "Deleted User"
            |SET user.admin = false
            |SET user.updatedOn = $$updatedOn

@@ -48,7 +48,7 @@ object UserConverter extends Converter[User] {
     User(
       id = UUID.fromString(record.get(idField).toString),
       name = record.get(nameField).toString,
-      email = record.get(emailField).toString,
+      email = Option(record.get(emailField)).map(_.toString).getOrElse(""),
       identity =
         Option(record.get(identityField)).map(_.toString).getOrElse(""),
       countryOfOrigin =
