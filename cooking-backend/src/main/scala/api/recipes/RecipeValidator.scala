@@ -11,6 +11,7 @@ object RecipeValidator {
       _ <- validateIngredientQuantities(
         input.ingredients.map(_.quantity.amount) ++ input.recipeIngredients.map(_.quantity.amount)
       )
+      _ <- validateComponentUnits(input.recipeIngredients)
       _ <- validateHasIngredients(input.ingredients, input.recipeIngredients)
       _ <- validatePrepTime(input.prepTime)
       _ <- validateCookTime(input.cookTime)
@@ -29,7 +30,7 @@ object RecipeValidator {
         case None => ZIO.unit
       }
       _ <- input.recipeIngredients match {
-        case Some(recipes) => validateIngredientQuantities(recipes.map(_.quantity.amount))
+        case Some(recipes) => validateIngredientQuantities(recipes.map(_.quantity.amount)) *> validateComponentUnits(recipes)
         case None          => ZIO.unit
       }
       _ <- validateHasIngredients(
@@ -49,6 +50,12 @@ object RecipeValidator {
         case None           => ZIO.unit
       }
     } yield ()
+  }
+
+  private def validateComponentUnits(components: Seq[domain.recipes.RecipeComponentInput]): ZIO[Any, InputError, Unit] = {
+    val validUnits = Set(domain.ingredients.Unit.Piece, domain.ingredients.Unit.Serving)
+    if (components.forall(component => validUnits.contains(component.quantity.unit))) ZIO.unit
+    else ZIO.fail(InputError("Recipe components must use whole recipes or servings"))
   }
 
   private def validateHasIngredients(
