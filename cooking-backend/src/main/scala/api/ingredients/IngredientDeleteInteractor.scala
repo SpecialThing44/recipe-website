@@ -31,8 +31,7 @@ class IngredientDeleteInteractor @Inject() (
       ingredient: Ingredient
   ): ZIO[ApiContext, Throwable, Unit] = {
     for {
-      recipes <- ZIO.succeed(Seq.empty)
-      _ <- recipePersistence.list(
+      recipes <- recipePersistence.list(
         Filters.empty().copy(ingredients = Some(Seq(ingredient.name)))
       )
       _ <-
