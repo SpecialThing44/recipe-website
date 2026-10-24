@@ -196,6 +196,24 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
     )
   }
 
+  it should "separate relationship filters from property filters" in {
+    val userId = UUID.randomUUID()
+    val recipeId = UUID.randomUUID()
+    val filters = Filters.empty().copy(
+      savedByUser = Some(userId),
+      ids = Some(List(recipeId))
+    )
+
+    val result = FiltersConverter.toCypher(filters, "recipe")
+
+    result.cypher shouldBe
+      "MATCH (recipe)-[:SAVED_BY]->(savedUser:User) WHERE savedUser.id = $recipe_saved_by_user\nMATCH (recipe) WHERE  recipe.id IN $recipe_ids"
+    result.params shouldBe Map(
+      "recipe_saved_by_user" -> userId.toString,
+      "recipe_ids" -> List(recipeId.toString).asJava
+    )
+  }
+
   it should "return empty string when no orderBy is specified" in {
     val filters = Filters.empty()
 

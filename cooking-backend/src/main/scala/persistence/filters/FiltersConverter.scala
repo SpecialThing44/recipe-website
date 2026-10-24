@@ -23,7 +23,9 @@ object FiltersConverter {
       if (nonMatching.nonEmpty) s"MATCH ($nodeVar) WHERE  " else ""
 
     CypherFragment(
-      matchingCypher + wherePrefix + nonMatchingCypher,
+      Seq(matchingCypher, wherePrefix + nonMatchingCypher)
+        .filter(_.nonEmpty)
+        .mkString("\n"),
       mergeParams(matching ++ nonMatching)
     )
   }
