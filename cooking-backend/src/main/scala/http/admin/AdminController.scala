@@ -7,6 +7,7 @@ import domain.users.User
 import http.Requests.extractUser
 import http.{ApiRunner, Requests}
 import persistence.ingredients.weights.IngredientWeightJobInteractor
+import play.api.Configuration
 import play.api.libs.json.Json
 import play.api.mvc.*
 import zio.ZIO
@@ -17,7 +18,8 @@ import scala.concurrent.{ExecutionContext, Future}
 class AdminController @Inject() (
                                   cc: ControllerComponents,
                                   cookingApi: CookingApi,
-                                  ingredientWeightJobInteractor: IngredientWeightJobInteractor
+                                  ingredientWeightJobInteractor: IngredientWeightJobInteractor,
+                                  config: Configuration
 ) extends AbstractController(cc) {
   private implicit val ec: ExecutionContext = cc.executionContext
 
@@ -42,6 +44,12 @@ class AdminController @Inject() (
         Future.successful(
           Unauthorized(Json.obj("error" -> "Invalid or missing token"))
         )
+    }
+  }
+
+  def ingredientWeightSettings(): Action[AnyContent] = Action.async { request =>
+    withAdminUser(request) { _ =>
+      ZIO.succeed(Ok(Json.obj("meanRawPenaltyFactor" -> config.get[Double]("ingredientWeights.meanRawPenaltyFactor"))))
     }
   }
 
