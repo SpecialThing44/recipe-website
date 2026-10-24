@@ -161,7 +161,7 @@ class IngredientsPersistence @Inject() (database: Database)
          |${WithStatement.apply}
          |OPTIONAL MATCH (${graph.nodeVar})-[r:HAS_TAG]->()
          |DELETE r
-         |${WithStatement.apply}
+         |WITH DISTINCT ${graph.nodeVar}
          |${MatchRelationship.outgoing("CREATED_BY", "user", "User")}
          |${WithStatement.apply}, user
          |${createTagStatements.cypher}
