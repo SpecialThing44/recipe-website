@@ -51,14 +51,14 @@ object RecipeAdapter {
       cookTime = input.cookTime.getOrElse(original.cookTime),
       servings = input.servings.getOrElse(original.servings),
       countryOfOrigin =
-        if (input.countryOfOrigin.isDefined) input.countryOfOrigin
+        if (input.countryOfOrigin.isDefined) input.countryOfOrigin.filter(_.trim.nonEmpty)
         else original.countryOfOrigin,
       public = true,
-      wikiLink = input.wikiLink.orElse(original.wikiLink),
+      wikiLink = if (input.wikiLink.isDefined) input.wikiLink.filter(_.trim.nonEmpty) else original.wikiLink,
       instructions = input.instructions.getOrElse(original.instructions),
       instructionImages =
         input.instructionImages.getOrElse(original.instructionImages),
-      image = if (input.image.isDefined) input.image else original.image,
+      image = if (input.removeImage) None else input.image.orElse(original.image),
       createdOn = original.createdOn,
       updatedOn = now,
       id = original.id

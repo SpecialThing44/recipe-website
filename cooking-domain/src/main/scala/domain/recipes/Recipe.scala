@@ -61,6 +61,7 @@ case class RecipeUpdateInput(
     instructions: Option[String] = None, // Quill Delta JSON format
     instructionImages: Option[Seq[String]] = None,
     image: Option[ImageUrls] = None,
+    removeImage: Boolean = false,
 )
 
 object Recipe {

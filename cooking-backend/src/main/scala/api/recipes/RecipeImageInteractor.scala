@@ -74,7 +74,7 @@ class RecipeImageInteractor @Inject() (
       case None => ZIO.unit
     }
 
-    updateInput = RecipeUpdateInput(image = None)
+    updateInput = RecipeUpdateInput(removeImage = true)
     updatedRecipe <- updateInteractor.update(updateInput, recipe)
   } yield updatedRecipe
 }
