@@ -18,7 +18,7 @@ class UserGetInteractor @Inject() (
         context.applicationContext.user
           .fold(false)(loggedInUser => loggedInUser.id == user.id)
       ) user
-      else user.copy(email = "")
+      else user.copy(email = "", identity = "")
     )
   } yield safeToViewUser
 

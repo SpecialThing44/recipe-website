@@ -13,5 +13,5 @@ class UserFetchInteractor @Inject() (
   def list(query: Filters): ZIO[ApiContext, Throwable, Seq[User]] =
     persistence
       .list(query)
-      .map(userSeq => userSeq.map(user => user.copy(email = "")))
+      .map(userSeq => userSeq.map(user => user.copy(email = "", identity = "")))
 }
