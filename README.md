@@ -29,3 +29,5 @@ After I implement recipes, I should think about an endpoint to support more soci
 
 - I could maybe delegate more to fetch interactor
 - Persistence layer will likely become generic.
+
+Set `AUTH_AUDIENCE` to the access token audience accepted by this backend when configuring an OIDC client other than the default development client.

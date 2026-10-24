@@ -21,6 +21,7 @@ class AuthenticationInteractor @Inject() (
     userPersistence: Users
 ) {
   private val issuer = config.get[String]("auth.issuer")
+  private val audience = config.get[String]("auth.audience")
   private val jwksUrl = config.get[String]("auth.jwksUrl")
   private lazy val jwkProvider = new UrlJwkProvider(new URL(jwksUrl))
 
@@ -31,14 +32,7 @@ class AuthenticationInteractor @Inject() (
       .attempt {
         val decodedToken = JWT.decode(token)
         val jwk = jwkProvider.get(decodedToken.getKeyId)
-        val algorithm =
-          Algorithm.RSA256(jwk.getPublicKey.asInstanceOf[RSAPublicKey], null)
-
-        JWT
-          .require(algorithm)
-          .withIssuer(issuer)
-          .build()
-          .verify(token)
+        verifyToken(token, jwk.getPublicKey.asInstanceOf[RSAPublicKey])
       }
       .flatMap { decodedJwt =>
         val identity = decodedJwt.getSubject
@@ -46,6 +40,19 @@ class AuthenticationInteractor @Inject() (
         val name = decodedJwt.getClaim("preferred_username").asString()
         ensureUserExists(identity, email, name)
       }
+  }
+
+  private[users] def verifyToken(token: String, publicKey: RSAPublicKey): com.auth0.jwt.interfaces.DecodedJWT = {
+    val verified = JWT.require(Algorithm.RSA256(publicKey, null))
+      .withIssuer(issuer)
+      .withAudience(audience)
+      .withClaimPresence("exp")
+      .build()
+      .verify(token)
+    val requiredClaims = Seq(verified.getSubject, verified.getClaim("email").asString(), verified.getClaim("preferred_username").asString())
+    if (requiredClaims.exists(value => value == null || value.trim.isEmpty))
+      throw AuthenticationError("Token is missing required identity claims")
+    verified
   }
 
   private def ensureUserExists(
