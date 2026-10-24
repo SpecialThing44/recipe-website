@@ -81,5 +81,8 @@ object RecipeUpdateInput {
   implicit val encoder: Encoder[RecipeUpdateInput] =
     deriveEncoder[RecipeUpdateInput]
   implicit val decoder: Decoder[RecipeUpdateInput] =
-    deriveDecoder[RecipeUpdateInput]
+    deriveDecoder[RecipeUpdateInput].prepare(_.withFocus(_.mapObject(json =>
+      if (json("removeImage").isDefined) json
+      else json.add("removeImage", Json.fromBoolean(false))
+    )))
 }

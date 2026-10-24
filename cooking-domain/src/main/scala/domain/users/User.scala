@@ -68,7 +68,10 @@ object UserUpdateInput {
   implicit val encoder: Encoder[UserUpdateInput] =
     deriveEncoder[UserUpdateInput]
   implicit val decoder: Decoder[UserUpdateInput] =
-    deriveDecoder[UserUpdateInput]
+    deriveDecoder[UserUpdateInput].prepare(_.withFocus(_.mapObject(json =>
+      if (json("removeAvatar").isDefined) json
+      else json.add("removeAvatar", Json.fromBoolean(false))
+    )))
 }
 
 object LoginInput {
