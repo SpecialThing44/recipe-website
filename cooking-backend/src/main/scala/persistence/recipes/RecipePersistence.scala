@@ -139,7 +139,7 @@ class RecipePersistence @Inject() (
           "tag",
           graph.tagLabel
         )}
-         |${CypherFragment.getWithScoreLine(query, withLine)}
+         |${CypherFragment.getWithScoreLine(query, withLine, graph.nodeVar)}
          |$orderLine
          |${pagingCypher.cypher}
          |${ReturnStatement.apply}, user as createdBy, tags, ingredientQuantities, recipeQuantities

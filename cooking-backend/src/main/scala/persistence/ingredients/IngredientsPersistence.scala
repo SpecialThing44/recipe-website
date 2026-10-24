@@ -62,7 +62,8 @@ class IngredientsPersistence @Inject() (database: Database)
          |OPTIONAL ${MatchRelationship.outgoing("HAS_TAG", "tag", "Tag")}
          |${CypherFragment.getWithScoreLine(
           query,
-          withLine
+          withLine,
+          graph.nodeVar
         )}, user, collect(DISTINCT tag.name) as tags
          |$orderLine
          |${pagingCypher.cypher}

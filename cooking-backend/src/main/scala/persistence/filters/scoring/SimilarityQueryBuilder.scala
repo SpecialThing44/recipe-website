@@ -12,6 +12,12 @@ object SimilarityQueryBuilder {
   private case object UserRecipeMode extends SimilarityMode
   private case object UserUserMode extends SimilarityMode
 
+  def isActive(filters: Filters, nodeVar: String): Boolean =
+    resolveSimilarityMode(filters, nodeVar).exists { case (mode, _) =>
+      filters.ingredientSimilarity.isDefined || filters.tagSimilarity.isDefined ||
+      (mode != UserRecipeMode && filters.coSaveSimilarity.isDefined)
+    }
+
   private type IngredientPartBuilder = (String, Option[String]) => String
   private type CoSavePartBuilder = (String, String, Option[String]) => String
   private type TagPartBuilder = (String, String, Option[String]) => String
@@ -258,21 +264,24 @@ object SimilarityQueryBuilder {
   }
 
   def apply(base: CypherFragment, filters: Filters, nodeVar: String): CypherFragment = {
-    val flags = similarityFlags(filters, nodeVar)
+    if (!isActive(filters, nodeVar)) base
+    else {
+      val flags = similarityFlags(filters, nodeVar)
 
-    resolveSimilarityMode(filters, nodeVar)
-      .map { case (mode, analyzedId) =>
-        val analyzedIdParam = s"${nodeVar}_analyzed_id"
-        val similarityParams = buildSimilarityParams(analyzedIdParam, analyzedId, flags)
+      resolveSimilarityMode(filters, nodeVar)
+        .map { case (mode, analyzedId) =>
+          val analyzedIdParam = s"${nodeVar}_analyzed_id"
+          val similarityParams = buildSimilarityParams(analyzedIdParam, analyzedId, flags)
 
-        buildSimilarityCypher(
-          base = CypherFragment(base.cypher, base.params ++ similarityParams),
-          mode = mode,
-          nodeVar = nodeVar,
-          analyzedIdParam = analyzedIdParam,
-          flags = flags
-        )
-      }
-      .getOrElse(base)
+          buildSimilarityCypher(
+            base = CypherFragment(base.cypher, base.params ++ similarityParams),
+            mode = mode,
+            nodeVar = nodeVar,
+            analyzedIdParam = analyzedIdParam,
+            flags = flags
+          )
+        }
+        .getOrElse(base)
+    }
   }
 }
