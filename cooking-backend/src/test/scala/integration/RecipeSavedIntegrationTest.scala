@@ -111,4 +111,22 @@ class RecipeSavedIntegrationTest extends IntegrationTestFramework {
     listRecipes(filters.copy(page = Some(1))).map(_.id) shouldBe Seq(second.id)
     listRecipes(filters.copy(page = Some(2))) shouldBe empty
   }
+  it should "unsave only the current user's relationship and allow repeated removal" in {
+    val recipe = createTestRecipe(buildRecipeInput(Seq(tomato)))
+    val firstSaver = createTestUser(UserInput("First saver", "first-saver@example.com"))
+    val secondSaver = createTestUser(UserInput("Second saver", "second-saver@example.com"))
+    login(firstSaver.id)
+    saveRecipe(recipe.id)
+    login(secondSaver.id)
+    saveRecipe(recipe.id)
+    login(firstSaver.id)
+    zio.Unsafe.unsafe { implicit unsafe =>
+      zio.Runtime.default.unsafe.run(
+        (recipeFacade.unsave(recipe.id) *> recipeFacade.unsave(recipe.id)).provideLayer(createApiContext())
+      ).getOrThrowFiberFailure()
+    }
+    listSavedRecipes(firstSaver.id) shouldBe empty
+    listSavedRecipes(secondSaver.id).map(_.id) shouldBe Seq(recipe.id)
+  }
+
 }

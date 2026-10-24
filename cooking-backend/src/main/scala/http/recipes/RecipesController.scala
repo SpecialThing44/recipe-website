@@ -91,6 +91,12 @@ class RecipesController @Inject() (
     )
   }
 
+  def unsave(id: java.util.UUID): Action[AnyContent] = Action.async { request =>
+    extractUser(request, cookingApi).flatMap { user =>
+      ApiRunner.runResponseAsyncSafely(cookingApi.recipes.unsave(id).as(NoContent), cookingApi, user)
+    }
+  }
+
   def uploadImage(id: java.util.UUID): Action[AnyContent] = Action.async {
     request =>
       extractUser(request, cookingApi).flatMap { maybeUser =>

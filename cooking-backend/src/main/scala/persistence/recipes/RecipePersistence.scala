@@ -345,6 +345,13 @@ class RecipePersistence @Inject() (
       }
     )
 
+  override def unsave(recipeId: UUID, userId: UUID): ZIO[ApiContext, Throwable, scala.Unit] =
+    database.writeTransaction(
+      "MATCH (recipe:Recipe {id: $recipeId})-[saved:SAVED_BY]->(:User {id: $userId}) DELETE saved",
+      Map("recipeId" -> recipeId.toString, "userId" -> userId.toString),
+      result => { result.consume(); () }
+    )
+
   private def attachAllToRecord(record: org.neo4j.driver.Record): Recipe = {
     val recipeMap =
       new java.util.HashMap[String, Object](record.get(graph.nodeVar).asMap())
