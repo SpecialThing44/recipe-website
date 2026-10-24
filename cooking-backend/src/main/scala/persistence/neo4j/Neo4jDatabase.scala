@@ -9,7 +9,6 @@ import zio.ZIO
 
 import scala.compiletime.uninitialized
 import scala.jdk.CollectionConverters.MapHasAsJava
-import scala.util.Try
 
 @Singleton
 private[persistence] case class Neo4jDatabase @Inject() (
@@ -39,15 +38,13 @@ private[persistence] case class Neo4jDatabase @Inject() (
       params: Map[String, AnyRef],
       logic: Result => A
   ): zio.Task[A] =
-    ZIO.fromTry {
-      Try {
-        val session = driver.session
-        try {
-          logger.info(s"Executing cypher: $cypher")
-          session.executeWrite(tx => logic(tx.run(cypher, params.asJava)))
-        } finally {
-          session.close()
-        }
+    ZIO.attemptBlocking {
+      val session = driver.session
+      try {
+        logger.info(s"Executing cypher: $cypher")
+        session.executeWrite(tx => logic(tx.run(cypher, params.asJava)))
+      } finally {
+        session.close()
       }
     }
 
@@ -56,15 +53,13 @@ private[persistence] case class Neo4jDatabase @Inject() (
       params: Map[String, AnyRef],
       logic: Result => A
   ): zio.Task[A] =
-    ZIO.fromTry {
-      Try {
-        val session = driver.session
-        try {
-          logger.info(s"Executing cypher: $cypher")
-          session.executeRead(tx => logic(tx.run(cypher, params.asJava)))
-        } finally {
-          session.close()
-        }
+    ZIO.attemptBlocking {
+      val session = driver.session
+      try {
+        logger.info(s"Executing cypher: $cypher")
+        session.executeRead(tx => logic(tx.run(cypher, params.asJava)))
+      } finally {
+        session.close()
       }
     }
 
