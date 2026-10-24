@@ -10,6 +10,7 @@ import sttp.client3.{
   basicRequest
 }
 import sttp.model.StatusCode
+import scala.concurrent.duration.*
 import zio.ZIO
 import java.net.URI
 import scala.util.Try
@@ -32,7 +33,7 @@ class DefaultWikipediaCheck extends WikipediaCheck {
       ZIO.fail(InputError("Link is not well formed"))
     } else {
       ZIO
-        .attempt {
+        .attemptBlocking {
           wikiLinkIsReal(processedLink)
         }
         .flatMap {
@@ -62,7 +63,8 @@ class DefaultWikipediaCheck extends WikipediaCheck {
         "RecipeWebsite/1.0 (wiki validation for new ingredients)"
       )
       .followRedirects(false)
-      .send(backend)
+      .readTimeout(10.seconds)
+          .send(backend)
     response.code match {
       case StatusCode.Ok => true
       case _             => false
