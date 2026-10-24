@@ -57,7 +57,7 @@ class UsersController @Inject() (
     )
   }
 
-  def uploadAvatar(id: java.util.UUID): Action[AnyContent] = Action.async {
+  def uploadAvatar(id: java.util.UUID): Action[AnyContent] = Action.async(parse.anyContent(maxLength = Some(5L * 1024 * 1024))) {
     request =>
       extractUser(request, cookingApi).flatMap { maybeUser =>
         request.body.asRaw match {

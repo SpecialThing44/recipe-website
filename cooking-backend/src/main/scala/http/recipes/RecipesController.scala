@@ -97,7 +97,7 @@ class RecipesController @Inject() (
     }
   }
 
-  def uploadImage(id: java.util.UUID): Action[AnyContent] = Action.async {
+  def uploadImage(id: java.util.UUID): Action[AnyContent] = Action.async(parse.anyContent(maxLength = Some(5L * 1024 * 1024))) {
     request =>
       extractUser(request, cookingApi).flatMap { maybeUser =>
         request.body.asRaw match {
@@ -151,7 +151,7 @@ class RecipesController @Inject() (
   }
 
   def uploadInstructionImage(id: java.util.UUID): Action[AnyContent] =
-    Action.async { request =>
+    Action.async(parse.anyContent(maxLength = Some(5L * 1024 * 1024))) { request =>
       extractUser(request, cookingApi).flatMap { maybeUser =>
         request.body.asRaw match {
           case Some(raw) =>
