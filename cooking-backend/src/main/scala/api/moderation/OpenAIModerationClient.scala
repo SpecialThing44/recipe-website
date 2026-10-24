@@ -7,6 +7,7 @@ import io.circe.parser.*
 import io.circe.syntax.*
 import play.api.Configuration
 import sttp.client3.*
+import scala.concurrent.duration.*
 import zio.{Task, ZIO}
 
 case class ModerationRequest(input: String)
@@ -92,7 +93,7 @@ class OpenAIModerationClient @Inject() (config: Configuration) {
     * content is acceptable, or Some(ModerationViolation) if flagged.
     */
   def moderateText(text: String): Task[Option[ModerationViolation]] =
-    ZIO.attempt {
+    ZIO.attemptBlocking {
       if (skipModeration || text.trim.isEmpty) {
         None
       } else {
@@ -104,6 +105,7 @@ class OpenAIModerationClient @Inject() (config: Configuration) {
           .header("Content-Type", "application/json")
           .body(requestBody)
           .response(asString)
+          .readTimeout(10.seconds)
           .send(backend)
 
         response.body match {

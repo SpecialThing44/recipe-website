@@ -4,6 +4,7 @@ import com.google.inject.{Inject, Singleton}
 import org.apache.pekko.util.ByteString
 import play.api.Configuration
 import sttp.client3.*
+import scala.concurrent.duration.*
 import zio.{Task, ZIO}
 import java.util.UUID
 
@@ -48,11 +49,12 @@ class SeaweedFSClient @Inject() (config: Configuration) {
       contentType: String,
       userId: UUID,
       fileName: String
-  ): Task[String] = ZIO.attempt {
+  ): Task[String] = ZIO.attemptBlocking {
     val assignResponse = basicRequest
       .get(uri"$masterUrl/dir/assign")
       .response(asString)
-      .send(backend)
+      .readTimeout(10.seconds)
+          .send(backend)
 
     assignResponse.body match {
       case Right(_) =>
@@ -63,6 +65,7 @@ class SeaweedFSClient @Inject() (config: Configuration) {
           .body(fileBytes.toArray)
           .contentType(contentType)
           .response(asString)
+          .readTimeout(10.seconds)
           .send(backend)
 
         uploadResponse.body match {
@@ -75,13 +78,14 @@ class SeaweedFSClient @Inject() (config: Configuration) {
     }
   }
 
-  def deleteFile(fileUrl: String): Task[Unit] = ZIO.attempt {
+  def deleteFile(fileUrl: String): Task[Unit] = ZIO.attemptBlocking {
     val fullUrl = internalUrlFor(pathFromUrl(fileUrl))
 
     val deleteResponse = basicRequest
       .delete(uri"$fullUrl")
       .response(asString)
-      .send(backend)
+      .readTimeout(10.seconds)
+          .send(backend)
 
     deleteResponse.body match {
       case Right(_)    => ()
@@ -175,11 +179,12 @@ class SeaweedFSClient @Inject() (config: Configuration) {
       fileBytes: ByteString,
       contentType: String,
       uploadPath: String
-  ): Task[String] = ZIO.attempt {
+  ): Task[String] = ZIO.attemptBlocking {
     val assignResponse = basicRequest
       .get(uri"$masterUrl/dir/assign")
       .response(asString)
-      .send(backend)
+      .readTimeout(10.seconds)
+          .send(backend)
 
     assignResponse.body match {
       case Right(_) =>
@@ -189,6 +194,7 @@ class SeaweedFSClient @Inject() (config: Configuration) {
           .body(fileBytes.toArray)
           .contentType(contentType)
           .response(asString)
+          .readTimeout(10.seconds)
           .send(backend)
 
         uploadResponse.body match {

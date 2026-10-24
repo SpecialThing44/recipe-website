@@ -41,4 +41,40 @@ class AuthenticationInteractorSpec extends AnyFlatSpec with Matchers {
       .withExpiresAt(Instant.now().plusSeconds(60)).sign(algorithm)
     intercept[domain.types.AuthenticationError](interactor.verifyToken(incomplete, publicKey))
   }
+  it should "reuse the cached signing key across authenticated requests" in {
+    val requests = new java.util.concurrent.atomic.AtomicInteger()
+    val server = com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1", 0), 0)
+    def base64(number: java.math.BigInteger): String = {
+      val bytes = number.toByteArray.dropWhile(_ == 0.toByte)
+      java.util.Base64.getUrlEncoder.withoutPadding().encodeToString(bytes)
+    }
+    val jwks = s"""{"keys":[{"kty":"RSA","kid":"test-key","alg":"RS256","use":"sig","n":"${base64(publicKey.getModulus)}","e":"${base64(publicKey.getPublicExponent)}"}]}"""
+    server.createContext("/jwks", exchange => {
+      requests.incrementAndGet()
+      val bytes = jwks.getBytes(java.nio.charset.StandardCharsets.UTF_8)
+      exchange.sendResponseHeaders(200, bytes.length)
+      exchange.getResponseBody.write(bytes)
+      exchange.close()
+    })
+    server.start()
+    try {
+      val users = mock(classOf[Users])
+      org.mockito.Mockito.when(users.getByIdentity("user-identity")).thenReturn(zio.ZIO.succeed(Some(domain.users.User.empty())))
+      val cached = new AuthenticationInteractor(Configuration.from(Map(
+        "auth.issuer" -> "https://issuer.example/", "auth.audience" -> "recipe-api",
+        "auth.jwksUrl" -> s"http://127.0.0.1:${server.getAddress.getPort}/jwks"
+      )), users)
+      val signed = JWT.create().withKeyId("test-key").withIssuer("https://issuer.example/").withAudience("recipe-api")
+        .withSubject("user-identity").withClaim("email", "user@example.com").withClaim("preferred_username", "User")
+        .withExpiresAt(Instant.now().plusSeconds(60)).sign(algorithm)
+      zio.Unsafe.unsafe { implicit unsafe =>
+        zio.Runtime.default.unsafe.run(
+          (cached.validateAuthentikToken(signed) *> cached.validateAuthentikToken(signed))
+            .provideEnvironment(zio.ZEnvironment(context.ApiContext(null, context.ApplicationContext(None))))
+        ).getOrThrowFiberFailure()
+      }
+      requests.get() shouldBe 1
+    } finally server.stop(0)
+  }
+
 }

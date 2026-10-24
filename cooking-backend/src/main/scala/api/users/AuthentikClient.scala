@@ -6,6 +6,7 @@ import io.circe.syntax.*
 import play.api.Configuration
 import sttp.client3.*
 import sttp.model.{MediaType, Uri}
+import scala.concurrent.duration.*
 import zio.{Task, ZIO}
 
 class AuthentikClient @Inject() (config: Configuration) {
@@ -22,7 +23,7 @@ class AuthentikClient @Inject() (config: Configuration) {
     if (email.isEmpty && newUsername.isEmpty) {
       ZIO.unit
     } else {
-      ZIO.attempt {
+      ZIO.attemptBlocking {
         if (apiToken.isEmpty) {
           throw new RuntimeException(
             "Authentik API token is missing. Please set AUTH_API_TOKEN environment variable."
@@ -38,7 +39,8 @@ class AuthentikClient @Inject() (config: Configuration) {
           .header("Authorization", s"Bearer $apiToken")
           .contentType(MediaType.ApplicationJson)
 
-        val searchResponse = searchRequest.send(backend)
+        val searchResponse = searchRequest.readTimeout(10.seconds)
+          .send(backend)
 
         if (!searchResponse.code.isSuccess) {
           throw new RuntimeException(
@@ -84,7 +86,8 @@ class AuthentikClient @Inject() (config: Configuration) {
             .contentType(MediaType.ApplicationJson)
             .body(bodyMap.toMap.asJson.noSpaces)
 
-          val response = request.send(backend)
+          val response = request.readTimeout(10.seconds)
+          .send(backend)
 
           if (!response.code.isSuccess) {
             throw new RuntimeException(

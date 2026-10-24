@@ -1,6 +1,6 @@
 package api.users
 
-import com.auth0.jwk.UrlJwkProvider
+import com.auth0.jwk.JwkProviderBuilder
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.google.inject.Inject
@@ -11,11 +11,13 @@ import persistence.users.Users
 import play.api.Configuration
 import zio.ZIO
 
-import java.net.URL
+import java.net.URI
+import java.util.concurrent.TimeUnit
 import java.security.interfaces.RSAPublicKey
 import java.time.Instant
 import java.util.UUID
 
+@com.google.inject.Singleton
 class AuthenticationInteractor @Inject() (
     config: Configuration,
     userPersistence: Users
@@ -23,13 +25,17 @@ class AuthenticationInteractor @Inject() (
   private val issuer = config.get[String]("auth.issuer")
   private val audience = config.get[String]("auth.audience")
   private val jwksUrl = config.get[String]("auth.jwksUrl")
-  private lazy val jwkProvider = new UrlJwkProvider(new URL(jwksUrl))
+  private lazy val jwkProvider = new JwkProviderBuilder(URI.create(jwksUrl).toURL)
+    .cached(10, 24, TimeUnit.HOURS)
+    .rateLimited(10, 1, TimeUnit.MINUTES)
+    .timeouts(3000, 3000)
+    .build()
 
   def validateAuthentikToken(
       token: String
   ): ZIO[ApiContext, Throwable, User] = {
     ZIO
-      .attempt {
+      .attemptBlocking {
         val decodedToken = JWT.decode(token)
         val jwk = jwkProvider.get(decodedToken.getKeyId)
         verifyToken(token, jwk.getPublicKey.asInstanceOf[RSAPublicKey])
