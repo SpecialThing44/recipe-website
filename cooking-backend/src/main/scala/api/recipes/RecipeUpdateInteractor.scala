@@ -57,7 +57,7 @@ class RecipeUpdateInteractor @Inject() (
       }
 
       _ <-
-        if (recipeInput.wikiLink.isDefined)
+        if (recipeInput.wikiLink.exists(_.trim.nonEmpty))
           wikipediaCheck.validateWikiLink(recipeInput.wikiLink.get)
         else ZIO.unit
 

@@ -36,6 +36,7 @@ case class UserUpdateInput(
     email: Option[String] = None,
     countryOfOrigin: Option[String] = None,
     avatar: Option[AvatarUrls] = None,
+    removeAvatar: Boolean = false,
 )
 
 case class LoginInput(email: String, password: String)

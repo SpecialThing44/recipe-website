@@ -79,7 +79,7 @@ class UserAvatarInteractor @Inject() (
       case None => ZIO.unit
     }
 
-    updateInput = UserUpdateInput(avatar = None)
+    updateInput = UserUpdateInput(removeAvatar = true)
     updatedUser <- updateInteractor.update(updateInput, user)
   } yield updatedUser
 }
