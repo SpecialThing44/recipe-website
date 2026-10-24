@@ -88,4 +88,27 @@ class RecipeSavedIntegrationTest extends IntegrationTestFramework {
     val saved = saveRecipe(privateRecipe.id)
     saved.id shouldBe privateRecipe.id
   }
+
+  it should "combine saved recipes with ids, names, tags, and pagination" in {
+    val first = createTestRecipe(buildRecipeInput(Seq(tomato), name = "A Soup"))
+    val second = createTestRecipe(buildRecipeInput(Seq(onion), name = "B Soup"))
+    createTestRecipe(buildRecipeInput(Seq(tomato, onion), name = "Unsaved Soup"))
+    saver = createTestUser(UserInput(name = "Saver", email = "combined@example.com"))
+    login(saver.id)
+    saveRecipe(first.id)
+    saveRecipe(second.id)
+
+    val filters = Filters.empty().copy(
+      savedByUser = Some(saver.id),
+      ids = Some(List(first.id, second.id)),
+      name = Some(domain.filters.StringFilter.empty().copy(contains = Some("Soup"))),
+      tags = Some(Seq("quick")),
+      orderBy = Some(domain.filters.OrderBy(Some(true))),
+      limit = Some(1)
+    )
+
+    listRecipes(filters).map(_.id) shouldBe Seq(first.id)
+    listRecipes(filters.copy(page = Some(1))).map(_.id) shouldBe Seq(second.id)
+    listRecipes(filters.copy(page = Some(2))) shouldBe empty
+  }
 }

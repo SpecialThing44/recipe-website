@@ -131,6 +131,9 @@ class RecipePersistence @Inject() (
       s"""
          |${MatchStatement.apply}
          |${filterCypher.cypher}
+         |${CypherFragment.getWithScoreLine(query, s"WITH DISTINCT ${graph.nodeVar}", graph.nodeVar)}
+         |$orderLine
+         |${pagingCypher.cypher}
          |${MatchRelationship.outgoing("CREATED_BY", "user", "User")}
          |OPTIONAL MATCH (${graph.nodeVar})-[ri:HAS_INGREDIENT]->(ingredient:Ingredient)
          |OPTIONAL MATCH (${graph.nodeVar})-[rri:HAS_RECIPE]->(componentRecipe:Recipe)
@@ -141,7 +144,6 @@ class RecipePersistence @Inject() (
         )}
          |${CypherFragment.getWithScoreLine(query, withLine, graph.nodeVar)}
          |$orderLine
-         |${pagingCypher.cypher}
          |${ReturnStatement.apply}, user as createdBy, tags, ingredientQuantities, recipeQuantities
          |""".stripMargin,
       filterCypher.params ++ pagingCypher.params,
