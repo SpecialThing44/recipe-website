@@ -6,6 +6,8 @@ import io.circe.{Decoder, Encoder}
 case class NotFoundError(message: String) extends Throwable(message)
 case class InputError(message: String) extends Throwable(message)
 case class AuthenticationError(message: String) extends Throwable(message)
+case class AuthorizationError(message: String) extends Throwable(message)
+case class ServiceBusyError(message: String) extends Throwable(message)
 case class NoSuchEntityError(message: String) extends Throwable(message)
 case class SystemError(message: String) extends Throwable(message)
 
