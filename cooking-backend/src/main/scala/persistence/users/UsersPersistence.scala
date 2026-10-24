@@ -3,7 +3,7 @@ package persistence.users
 import com.google.inject.Inject
 import context.ApiContext
 import domain.filters.Filters
-import domain.types.NoSuchEntityError
+import domain.types.{AuthenticationError, NoSuchEntityError}
 import domain.users.User
 import org.neo4j.driver.Result
 import persistence.cypher.{MatchStatement, ReturnStatement}
@@ -113,6 +113,7 @@ class UsersPersistence @Inject() (database: Database) extends Users {
            |WITH DISTINCT user
            |SET user.email = ""
            |SET user.name = "Deleted User"
+           |SET user.admin = false
            |SET user.updatedOn = $$updatedOn
            |SET user:DeletedUser
            |""".stripMargin,
@@ -187,7 +188,10 @@ class UsersPersistence @Inject() (database: Database) extends Users {
       Map("identity" -> identity),
       (result: Result) => {
         if (result.hasNext) {
-          Some(recordToUser(result.next()))
+          val record = result.next()
+          if (record.get(graph.nodeVar).asNode().hasLabel("DeletedUser"))
+            throw AuthenticationError("Cannot authenticate a deleted account")
+          Some(recordToUser(record))
         } else {
           None
         }
