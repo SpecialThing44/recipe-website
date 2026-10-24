@@ -43,7 +43,7 @@ class UsersPersistence @Inject() (database: Database) extends Users {
          |${MatchStatement.apply} WHERE NOT (user:DeletedUser)
          |${MatchStatement.apply}
          |${filterCypher.cypher}
-         |${CypherFragment.getWithScoreLine(filters, withLine)}
+         |${CypherFragment.getWithScoreLine(filters, withLine, graph.nodeVar)}
          |$orderLine
          |${pagingCypher.cypher}
          |${ReturnStatement.apply}

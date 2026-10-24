@@ -226,6 +226,18 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
     result.cypher should include("$recipe_id\nWITH recipe")
   }
 
+  it should "ignore similarity for unsupported entity and target combinations" in {
+    val filters = Filters.empty().copy(
+      analyzedRecipe = Some(UUID.randomUUID()),
+      ingredientSimilarity = Some(domain.filters.SimilarityFilter(0.0, 1.0, 0.0, 0.0))
+    )
+
+    Seq("user", "ingredient", "tag").foreach { nodeVar =>
+      FiltersConverter.toCypher(filters, nodeVar) shouldBe CypherFragment.empty
+      CypherFragment.getOrderLine(filters, nodeVar) shouldBe ""
+    }
+  }
+
   it should "return empty string when no orderBy is specified" in {
     val filters = Filters.empty()
 
