@@ -17,20 +17,17 @@ import scala.jdk.CollectionConverters.{IteratorHasAsScala, MapHasAsJava}
 
 class UsersPersistence @Inject() (database: Database) extends Users {
   private implicit val graph: UserGraph = UserGraph()
-  private val deletePrivateRecipesForUser =
-    s"""
-       |OPTIONAL MATCH (privateRecipe:Recipe)-[CREATED_BY]->(user) WHERE privateRecipe.private = true
-       |DETACH DELETE privateRecipe""".stripMargin
   private val deleteUnusedRecipesCreatedByUser =
     s"""
-       |OPTIONAL MATCH (unusedRecipe:Recipe)-[CREATED_BY]->(user)
-       |WHERE NOT (unusedRecipe)<-[:SAVED_BY]-(:User)
+       |OPTIONAL MATCH (unusedRecipe:Recipe)-[:CREATED_BY]->(user)
+       |WHERE NOT (unusedRecipe)-[:SAVED_BY]->(:User)
+       |  AND NOT (:Recipe)-[:HAS_RECIPE]->(unusedRecipe)
        |DETACH DELETE unusedRecipe
        """.stripMargin
   private val deleteUnusedIngredientsCreatedByUser =
     s"""
        |OPTIONAL MATCH (user)<-[:CREATED_BY]-(ingredient:Ingredient)
-       |WHERE NOT (ingredient)<-[:USES]-(:Recipe)
+       |WHERE NOT (ingredient)<-[:HAS_INGREDIENT]-(:Recipe)
        |DETACH DELETE ingredient""".stripMargin
 
   override def list(filters: Filters): ZIO[ApiContext, Throwable, Seq[User]] = {
@@ -110,8 +107,6 @@ class UsersPersistence @Inject() (database: Database) extends Users {
       dbResult <- database.writeTransaction(
         s"""
            |MATCH (${graph.nodeVar}:${graph.nodeLabel} {id: $$userId})
-           |$deletePrivateRecipesForUser
-           |WITH DISTINCT user
            |$deleteUnusedRecipesCreatedByUser
            |WITH DISTINCT user
            |$deleteUnusedIngredientsCreatedByUser
