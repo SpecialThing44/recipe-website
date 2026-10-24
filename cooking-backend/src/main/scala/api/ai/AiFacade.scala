@@ -1,7 +1,7 @@
 package api.ai
 
 import api.users.AuthenticationInteractor
-import domain.types.{InputError, SystemError}
+import domain.types.{InputError, ServiceBusyError}
 import api.ingredients.IngredientsApi
 import api.tags.TagsApi
 import com.google.inject.Inject
@@ -31,7 +31,7 @@ class AiFacade @Inject() (
         .when(text.trim.isEmpty || text.length > 20000)
       result <- ZIO.acquireReleaseWith(
         ZIO.attempt(parseSlots.tryAcquire()).flatMap(acquired =>
-          if (acquired) ZIO.unit else ZIO.fail(SystemError("AI parsing is busy; try again shortly"))
+          if (acquired) ZIO.unit else ZIO.fail(ServiceBusyError("AI parsing is busy; try again shortly"))
         )
       )(_ => ZIO.succeed(parseSlots.release())) { _ =>
         for {

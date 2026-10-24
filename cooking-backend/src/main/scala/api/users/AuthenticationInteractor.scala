@@ -5,7 +5,7 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.google.inject.Inject
 import context.ApiContext
-import domain.types.AuthenticationError
+import domain.types.{AuthenticationError, AuthorizationError}
 import domain.users.User
 import persistence.users.Users
 import play.api.Configuration
@@ -100,7 +100,7 @@ object AuthenticationInteractor {
   def ensureAuthenticatedAndMatchingUser(
       maybeUser: Option[User],
       originalUserId: UUID
-  ): ZIO[Any, AuthenticationError, Unit] = for {
+  ): ZIO[Any, AuthenticationError | AuthorizationError, Unit] = for {
     user <- ensureIsLoggedIn(maybeUser)
     _ <- ensureUUIDMatch(originalUserId, user.id)
   } yield ()
@@ -108,13 +108,13 @@ object AuthenticationInteractor {
   private def ensureUUIDMatch(
       originalUserId: UUID,
       loggedInUserId: UUID
-  ): ZIO[Any, AuthenticationError, Unit] = if (
+  ): ZIO[Any, AuthorizationError, Unit] = if (
     originalUserId == loggedInUserId
   ) {
     ZIO.unit
   } else {
     ZIO.fail(
-      AuthenticationError(
+      AuthorizationError(
         "Cannot update other users or recipes belonging to them"
       )
     )
@@ -130,12 +130,12 @@ object AuthenticationInteractor {
 
   def ensureIsAdmin(
       user: User
-  ): ZIO[Any, AuthenticationError, Unit] = {
+  ): ZIO[Any, AuthorizationError, Unit] = {
     if (user.admin) {
       ZIO.unit
     } else {
       ZIO.fail(
-        AuthenticationError("Admin privileges required for this operation")
+        AuthorizationError("Admin privileges required for this operation")
       )
     }
   }
