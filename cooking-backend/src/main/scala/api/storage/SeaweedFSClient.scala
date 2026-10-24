@@ -94,28 +94,38 @@ class SeaweedFSClient @Inject() (config: Configuration) {
       userId: UUID
   ): Task[StorageAvatarUrls] = {
     val extension = processedImage.extension
+    val version = UUID.randomUUID()
 
     for {
       thumbnailUrl <- uploadFile(
         processedImage.thumbnail,
         s"image/$extension",
         userId,
-        s"avatar-thumbnail.$extension"
+        s"$version/avatar-thumbnail.$extension"
       )
       mediumUrl <- uploadFile(
         processedImage.medium,
         s"image/$extension",
         userId,
-        s"avatar-medium.$extension"
+        s"$version/avatar-medium.$extension"
       )
       largeUrl <- uploadFile(
         processedImage.large,
         s"image/$extension",
         userId,
-        s"avatar.$extension"
+        s"$version/avatar.$extension"
       )
     } yield StorageAvatarUrls(thumbnailUrl, mediumUrl, largeUrl)
   }
+
+  def deleteImageUrls(urls: domain.users.AvatarUrls, directory: String): Task[Unit] =
+    ZIO.foreachDiscard(Seq(urls.thumbnail, urls.medium, urls.large)) { url =>
+      val ownedPath = scala.util.Try(pathFromUrl(url)).toOption.exists(path =>
+        path.startsWith(s"$directory/") && !path.contains("..") && !path.exists(character => "%?#".contains(character))
+      )
+      if (ownedPath) deleteFile(url).catchAll(error => ZIO.logWarning(s"Could not remove image $url: ${error.getMessage}"))
+      else ZIO.unit
+    }
 
   def deleteAllAvatarSizes(
       userId: UUID,
@@ -140,22 +150,23 @@ class SeaweedFSClient @Inject() (config: Configuration) {
       recipeId: UUID
   ): Task[StorageAvatarUrls] = {
     val extension = processedImage.extension
+    val version = UUID.randomUUID()
 
     for {
       thumbnailUrl <- uploadFileToPath(
         processedImage.thumbnail,
         s"image/$extension",
-        s"/recipes/$recipeId/recipe-thumbnail.$extension"
+        s"/recipes/$recipeId/$version/recipe-thumbnail.$extension"
       )
       mediumUrl <- uploadFileToPath(
         processedImage.medium,
         s"image/$extension",
-        s"/recipes/$recipeId/recipe-medium.$extension"
+        s"/recipes/$recipeId/$version/recipe-medium.$extension"
       )
       largeUrl <- uploadFileToPath(
         processedImage.large,
         s"image/$extension",
-        s"/recipes/$recipeId/recipe.$extension"
+        s"/recipes/$recipeId/$version/recipe.$extension"
       )
     } yield StorageAvatarUrls(thumbnailUrl, mediumUrl, largeUrl)
   }

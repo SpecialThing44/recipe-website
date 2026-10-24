@@ -33,15 +33,6 @@ class RecipeImageInteractor @Inject() (
       recipe.createdBy.id
     )
 
-    _ <- recipe.image match {
-      case Some(image) =>
-        val extension = image.large.split("\\.").lastOption.getOrElse("jpg")
-        seaweedFSClient
-          .deleteAllImageSizes(recipeId, extension)
-          .catchAll(_ => ZIO.unit)
-      case None => ZIO.unit
-    }
-
     processedImage <- ImageProcessor.processImage(fileBytes, contentType)
     seaweedUrls <- seaweedFSClient.uploadRecipeImage(processedImage, recipeId)
 
@@ -53,6 +44,8 @@ class RecipeImageInteractor @Inject() (
 
     updateInput = RecipeUpdateInput(image = Some(imageUrls))
     updatedRecipe <- updateInteractor.update(updateInput, recipe)
+      .onError(_ => seaweedFSClient.deleteImageUrls(imageUrls, s"/recipes/$recipeId").ignore)
+    _ <- ZIO.foreachDiscard(recipe.image)(urls => seaweedFSClient.deleteImageUrls(urls, s"/recipes/$recipeId"))
   } yield updatedRecipe
 
   def deleteImage(recipeId: UUID): ZIO[ApiContext, Throwable, Recipe] = for {
@@ -67,14 +60,8 @@ class RecipeImageInteractor @Inject() (
       recipe.createdBy.id
     )
 
-    _ <- recipe.image match {
-      case Some(image) =>
-        val extension = image.large.split("\\.").lastOption.getOrElse("jpg")
-        seaweedFSClient.deleteAllImageSizes(recipeId, extension)
-      case None => ZIO.unit
-    }
-
     updateInput = RecipeUpdateInput(removeImage = true)
     updatedRecipe <- updateInteractor.update(updateInput, recipe)
+    _ <- ZIO.foreachDiscard(recipe.image)(urls => seaweedFSClient.deleteImageUrls(urls, s"/recipes/$recipeId"))
   } yield updatedRecipe
 }
