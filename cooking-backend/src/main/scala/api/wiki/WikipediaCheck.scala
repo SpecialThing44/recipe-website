@@ -11,6 +11,8 @@ import sttp.client3.{
 }
 import sttp.model.StatusCode
 import zio.ZIO
+import java.net.URI
+import scala.util.Try
 
 @ImplementedBy(classOf[DefaultWikipediaCheck])
 trait WikipediaCheck {
@@ -44,7 +46,13 @@ class DefaultWikipediaCheck extends WikipediaCheck {
   private def processWikiLink(link: String): String = link.trim
 
   override def wikiLinkIsWellFormed(link: String): Boolean =
-    link.contains("en.wikipedia.org/wiki/")
+    Try(new URI(link.trim)).toOption.exists(uri =>
+      uri.getScheme == "https" &&
+        uri.getHost == "en.wikipedia.org" &&
+        uri.getUserInfo == null &&
+        (uri.getPort == -1 || uri.getPort == 443) &&
+        Option(uri.getPath).exists(path => path.startsWith("/wiki/") && path.length > 6)
+    )
 
   private def wikiLinkIsReal(link: String): Boolean = {
     val response = basicRequest
@@ -53,7 +61,7 @@ class DefaultWikipediaCheck extends WikipediaCheck {
         "User-Agent",
         "RecipeWebsite/1.0 (wiki validation for new ingredients)"
       )
-      .followRedirects(true)
+      .followRedirects(false)
       .send(backend)
     response.code match {
       case StatusCode.Ok => true
