@@ -5,6 +5,9 @@ import com.google.inject.Inject
 import io.circe.*
 import io.circe.parser.*
 import zio.{Task, ZIO}
+import domain.types.InputError
+import java.net.URI
+import scala.util.Try
 
 class RichTextSanitizer @Inject() (moderationClient: OpenAIModerationClient) {
 
@@ -26,25 +29,16 @@ class RichTextSanitizer @Inject() (moderationClient: OpenAIModerationClient) {
   )
 
   def validateAndSanitize(instructionsJson: String): Task[String] = for {
-    plainText <- ZIO.succeed(toPlainText(instructionsJson))
-    moderationResult <- moderationClient.moderateText(plainText)
-    _ <- moderationResult match {
-      case Some(violation) =>
-        ZIO.fail(new IllegalArgumentException(violation.message))
-      case None =>
-        ZIO.unit
-    }
-
     sanitized <- ZIO.attempt {
       if (instructionsJson.length > MAX_INSTRUCTIONS_LENGTH) {
-        throw new IllegalArgumentException(
+        throw InputError(
           s"Instructions exceed maximum length of $MAX_INSTRUCTIONS_LENGTH characters"
         )
       }
 
       parse(instructionsJson) match {
         case Left(error) =>
-          throw new IllegalArgumentException(
+          throw InputError(
             s"Invalid JSON format: ${error.message}"
           )
 
@@ -53,7 +47,7 @@ class RichTextSanitizer @Inject() (moderationClient: OpenAIModerationClient) {
 
           cursor.downField("ops").as[List[Json]] match {
             case Left(_) =>
-              throw new IllegalArgumentException(
+              throw InputError(
                 "Invalid Quill Delta format: missing 'ops' array"
               )
 
@@ -65,25 +59,37 @@ class RichTextSanitizer @Inject() (moderationClient: OpenAIModerationClient) {
           }
       }
     }
+    plainText <- ZIO.succeed(toPlainText(sanitized))
+    moderationResult <- moderationClient.moderateText(plainText)
+    _ <- moderationResult match {
+      case Some(violation) =>
+        ZIO.fail(InputError(violation.message))
+      case None =>
+        ZIO.unit
+    }
+
   } yield sanitized
 
   private def validateOperation(op: Json): Unit = {
     val cursor = op.hcursor
 
-    cursor.get[String]("insert").orElse(cursor.get[Json]("insert")) match {
-      case Left(_) =>
-        throw new IllegalArgumentException("Operation missing 'insert' field")
-      case Right(_) =>
+    cursor.get[Json]("insert").toOption match {
+      case Some(insert) if insert.isString => ()
+      case Some(insert) if insert.asObject.exists(_.keys.toSet == Set("image")) =>
+        val imageUrl = insert.hcursor.get[String]("image").fold(
+          _ => throw InputError("Image embed must contain a URL string"), identity
+        )
+        validateImageUrl(imageUrl)
+      case _ => throw InputError("Operation must insert text or an image URL")
     }
 
     cursor.downField("attributes").as[JsonObject] match {
       case Right(attrs) =>
         attrs.keys.foreach { key =>
           if (
-            !ALLOWED_FORMATS.contains(key) && !key.startsWith("align") && !key
-              .startsWith("indent")
+            !ALLOWED_FORMATS.contains(key) && !Set("align", "indent").contains(key)
           ) {
-            throw new IllegalArgumentException(
+            throw InputError(
               s"Unsupported format attribute: $key"
             )
           }
@@ -97,38 +103,26 @@ class RichTextSanitizer @Inject() (moderationClient: OpenAIModerationClient) {
           validateImageUrl(url)
         }
 
-      case Left(_) =>
+      case Left(_) if cursor.downField("attributes").succeeded =>
+        throw InputError("Operation attributes must be an object")
+      case Left(_) => ()
     }
   }
 
   private def validateUrl(url: String): Unit = {
-    if (url.trim.isEmpty) {
-      throw new IllegalArgumentException("Empty URL not allowed")
-    }
-
-    val lowercaseUrl = url.toLowerCase.trim
-    if (
-      lowercaseUrl.startsWith("javascript:") ||
-      lowercaseUrl.startsWith("data:") ||
-      lowercaseUrl.startsWith("vbscript:")
-    ) {
-      throw new IllegalArgumentException(s"Unsafe URL scheme detected: $url")
-    }
+    val valid = Try(new URI(url)).toOption.exists(uri =>
+      Set("https", "http", "mailto").contains(Option(uri.getScheme).getOrElse("")) ||
+        (uri.getScheme == null && !url.startsWith("//") && (url.startsWith("/") || url.startsWith("#")))
+    )
+    if (!valid) throw InputError("Invalid link URL")
   }
 
   private def validateImageUrl(url: String): Unit = {
-    if (url.trim.isEmpty) {
-      throw new IllegalArgumentException("Empty image URL not allowed")
-    }
-
-    val lowercaseUrl = url.toLowerCase.trim
-    if (
-      !lowercaseUrl.startsWith("http://") &&
-      !lowercaseUrl.startsWith("https://") &&
-      !lowercaseUrl.startsWith("/")
-    ) {
-      throw new IllegalArgumentException(s"Invalid image URL scheme: $url")
-    }
+    val valid = Try(new URI(url)).toOption.exists(uri =>
+      (Set("https", "http").contains(Option(uri.getScheme).getOrElse("")) && uri.getHost != null && uri.getUserInfo == null) ||
+        (uri.getScheme == null && url.startsWith("/") && !url.startsWith("//"))
+    )
+    if (!valid) throw InputError("Invalid image URL")
   }
 
   def extractImageUrls(instructionsJson: String): Task[Seq[String]] =
