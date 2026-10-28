@@ -15,16 +15,31 @@ class QueryCombinationsIntegrationTest extends IntegrationTestFramework {
     val name = StringFilter.empty().copy(contains = Some("soup"))
     val baseFilters = Seq(
       Filters.empty(),
-      Filters.empty().copy(savedByUser = Some(userId), ids = Some(List(recipeId))),
+      Filters
+        .empty()
+        .copy(savedByUser = Some(userId), ids = Some(List(recipeId))),
       Filters.empty().copy(belongsToUser = Some(userId), name = Some(name)),
-      Filters.empty().copy(tags = Some(Seq("quick")), ids = Some(List(recipeId))),
-      Filters.empty().copy(ingredients = Some(Seq("tomato")), name = Some(name)),
-      Filters.empty().copy(notIngredients = Some(Seq("onion")), cookTime = Some(NumberFilter(Some(1), Some(30))))
+      Filters
+        .empty()
+        .copy(tags = Some(Seq("quick")), ids = Some(List(recipeId))),
+      Filters
+        .empty()
+        .copy(ingredients = Some(Seq("tomato")), name = Some(name)),
+      Filters
+        .empty()
+        .copy(
+          notIngredients = Some(Seq("onion")),
+          cookTime = Some(NumberFilter(Some(1), Some(30)))
+        )
     )
     val similarity = SimilarityFilter(1.0, 1.0, 1.0, 0.0)
 
     for {
-      (nodeVar, label) <- Seq("recipe" -> "Recipe", "user" -> "User", "ingredient" -> "Ingredient")
+      (nodeVar, label) <- Seq(
+        "recipe" -> "Recipe",
+        "user" -> "User",
+        "ingredient" -> "Ingredient"
+      )
       base <- baseFilters
       target <- 0 to 2
       metrics <- 0 to 7
@@ -45,11 +60,15 @@ class QueryCombinationsIntegrationTest extends IntegrationTestFramework {
         |RETURN $nodeVar
         |""".stripMargin
 
-      withClue(s"entity=$nodeVar target=$target metrics=$metrics filters=$base\n$cypher") {
+      withClue(
+        s"entity=$nodeVar target=$target metrics=$metrics filters=$base\n$cypher"
+      ) {
         Unsafe.unsafe { implicit unsafe =>
-          Runtime.default.unsafe.run(
-            database.readTransaction(cypher, fragment.params, _.consume())
-          ).getOrThrow()
+          Runtime.default.unsafe
+            .run(
+              database.readTransaction(cypher, fragment.params, _.consume())
+            )
+            .getOrThrow()
         }
       }
     }

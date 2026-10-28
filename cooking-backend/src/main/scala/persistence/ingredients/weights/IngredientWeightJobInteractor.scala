@@ -11,18 +11,20 @@ import java.util.UUID
 import scala.jdk.CollectionConverters.*
 
 @Singleton
-class IngredientWeightJobInteractor @Inject()(
+class IngredientWeightJobInteractor @Inject() (
     database: Database,
     config: Configuration,
-  jobsInteractor: JobsInteractor,
-  processPendingEventsJob: ProcessPendingEventsJob,
-  rebuildAllIngredientsJob: RebuildAllIngredientsJob
+    jobsInteractor: JobsInteractor,
+    processPendingEventsJob: ProcessPendingEventsJob,
+    rebuildAllIngredientsJob: RebuildAllIngredientsJob
 ) {
 
   private val processPendingEventsJobName = "process_pending_events"
   private val rebuildAllIngredientsJobName = "rebuild_all"
 
-  private val defaultMeanRawWeightFactor = config.getOptional[Double]("ingredientWeights.meanRawPenaltyFactor").getOrElse(3.0)
+  private val defaultMeanRawWeightFactor = config
+    .getOptional[Double]("ingredientWeights.meanRawPenaltyFactor")
+    .getOrElse(3.0)
 
   if (defaultMeanRawWeightFactor < 0.0) {
     throw new IllegalArgumentException(
@@ -33,7 +35,11 @@ class IngredientWeightJobInteractor @Inject()(
   def triggerProcessPendingEvents(requestedBy: UUID): Task[String] = {
     val jobId = UUID.randomUUID().toString
     val createJob =
-      jobsInteractor.createQueuedJob(jobId, processPendingEventsJobName, requestedBy)
+      jobsInteractor.createQueuedJob(
+        jobId,
+        processPendingEventsJobName,
+        requestedBy
+      )
 
     createJob.map { _ =>
       val _ = ZIORuntime.unsafeFork(
@@ -50,7 +56,11 @@ class IngredientWeightJobInteractor @Inject()(
   def triggerRebuildAllIngredients(requestedBy: UUID): Task[String] = {
     val jobId = UUID.randomUUID().toString
     val createJob =
-      jobsInteractor.createQueuedJob(jobId, rebuildAllIngredientsJobName, requestedBy)
+      jobsInteractor.createQueuedJob(
+        jobId,
+        rebuildAllIngredientsJobName,
+        requestedBy
+      )
 
     createJob.map { _ =>
       val _ = ZIORuntime.unsafeFork(

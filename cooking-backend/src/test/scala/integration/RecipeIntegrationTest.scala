@@ -1,8 +1,19 @@
 package integration
 
 import domain.filters.{Filters, StringFilter}
-import domain.ingredients.{Ingredient, IngredientInput, Quantity, Unit as IngUnit}
-import domain.recipes.{Recipe, RecipeComponentInput, RecipeIngredientInput, RecipeInput, RecipeUpdateInput}
+import domain.ingredients.{
+  Ingredient,
+  IngredientInput,
+  Quantity,
+  Unit as IngUnit
+}
+import domain.recipes.{
+  Recipe,
+  RecipeComponentInput,
+  RecipeIngredientInput,
+  RecipeInput,
+  RecipeUpdateInput
+}
 import domain.users.{User, UserInput}
 import org.neo4j.driver.{AuthTokens, GraphDatabase}
 
@@ -425,7 +436,8 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
   }
 
   it should "recommend recipes based on user preference" in {
-    val targetUser = createTestAdminUser(UserInput("Target User", "target@example.com"))
+    val targetUser =
+      createTestAdminUser(UserInput("Target User", "target@example.com"))
 
     val beef = createTestIngredient(
       IngredientInput("Beef", Seq(), "wiki-beef", Seq("meat"))
@@ -497,67 +509,89 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
   }
 
   it should "exclude analyzed recipe from recommendations" in {
-     val user = createTestAdminUser(UserInput("Self Exclusion User", "selfExcluded@example.com"))
-     login(user.id)
-     
-     val ingredient = createTestIngredient(IngredientInput("SelfExcludedIngredient", Seq(), "link", Seq()))
-     val recipe = createTestRecipe(standardRecipeInput(Seq(ingredient)).copy(name = "Analyzed Recipe"))
-     val otherRecipe = createTestRecipe(standardRecipeInput(Seq(ingredient)).copy(name = "Other Recipe"))
-     
-     val filters = Filters.empty().copy(
-       analyzedRecipe = Some(recipe.id),
-       ingredientSimilarity = Some(
+    val user = createTestAdminUser(
+      UserInput("Self Exclusion User", "selfExcluded@example.com")
+    )
+    login(user.id)
+
+    val ingredient = createTestIngredient(
+      IngredientInput("SelfExcludedIngredient", Seq(), "link", Seq())
+    )
+    val recipe = createTestRecipe(
+      standardRecipeInput(Seq(ingredient)).copy(name = "Analyzed Recipe")
+    )
+    val otherRecipe = createTestRecipe(
+      standardRecipeInput(Seq(ingredient)).copy(name = "Other Recipe")
+    )
+
+    val filters = Filters
+      .empty()
+      .copy(
+        analyzedRecipe = Some(recipe.id),
+        ingredientSimilarity = Some(
           domain.filters.SimilarityFilter(
             alpha = 0.0,
             beta = 1.0,
             gamma = 0.0,
             minScore = 0.0
           )
-       )
-     )
-     
-     val results = listRecipes(filters)
-     println(s"Results: $results")
+        )
+      )
 
-     results.map(_.id) should contain(otherRecipe.id)
-     results.map(_.id) should not contain(recipe.id)
+    val results = listRecipes(filters)
+    println(s"Results: $results")
+
+    results.map(_.id) should contain(otherRecipe.id)
+    results.map(_.id) should not contain (recipe.id)
   }
 
   it should "exclude recipes owned or saved by the analyzed user from recommendations" in {
-    val targetUser = createTestAdminUser(UserInput("Exclusion Target", "exclusions@example.com"))
-    val otherUser = createTestAdminUser(UserInput("Other Author", "otherAuthor@example.com"))
-    
-    val commonIngredient = createTestIngredient(IngredientInput("CommonIng", Seq(), "link", Seq()))
+    val targetUser = createTestAdminUser(
+      UserInput("Exclusion Target", "exclusions@example.com")
+    )
+    val otherUser =
+      createTestAdminUser(UserInput("Other Author", "otherAuthor@example.com"))
+
+    val commonIngredient =
+      createTestIngredient(IngredientInput("CommonIng", Seq(), "link", Seq()))
 
     login(targetUser.id)
-    val ownedRecipe = createTestRecipe(standardRecipeInput(Seq(commonIngredient)).copy(name = "Owned Recipe"))
-    
+    val ownedRecipe = createTestRecipe(
+      standardRecipeInput(Seq(commonIngredient)).copy(name = "Owned Recipe")
+    )
+
     login(otherUser.id)
-    val savedRecipe = createTestRecipe(standardRecipeInput(Seq(commonIngredient)).copy(name = "Saved Recipe"))
-    val recommendedRecipe = createTestRecipe(standardRecipeInput(Seq(commonIngredient)).copy(name = "Recommended Recipe"))
-    
+    val savedRecipe = createTestRecipe(
+      standardRecipeInput(Seq(commonIngredient)).copy(name = "Saved Recipe")
+    )
+    val recommendedRecipe = createTestRecipe(
+      standardRecipeInput(Seq(commonIngredient))
+        .copy(name = "Recommended Recipe")
+    )
+
     login(targetUser.id)
     saveRecipe(savedRecipe.id)
-    
-    val filters = Filters.empty().copy(
-       analyzedUser = Some(targetUser.id),
-       ingredientSimilarity = Some(
+
+    val filters = Filters
+      .empty()
+      .copy(
+        analyzedUser = Some(targetUser.id),
+        ingredientSimilarity = Some(
           domain.filters.SimilarityFilter(
             alpha = 0.0,
             beta = 1.0,
             gamma = 0.0,
             minScore = 0.0
           )
-       )
-    )
-    
-    val results = listRecipes(filters)
-    
-    results.map(_.id) should contain(recommendedRecipe.id)
-    results.map(_.id) should not contain(ownedRecipe.id)
-    results.map(_.id) should not contain(savedRecipe.id)
-  }
+        )
+      )
 
+    val results = listRecipes(filters)
+
+    results.map(_.id) should contain(recommendedRecipe.id)
+    results.map(_.id) should not contain (ownedRecipe.id)
+    results.map(_.id) should not contain (savedRecipe.id)
+  }
 
   object IngredientsIntegrationTestData {
     val tomato: IngredientInput = IngredientInput(
@@ -593,7 +627,9 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
     )
   }
 
-  private def countHasIngredientRelationships(recipeId: java.util.UUID): Long = {
+  private def countHasIngredientRelationships(
+      recipeId: java.util.UUID
+  ): Long = {
     val neo4jUri =
       TestAppHolder.application.configuration.get[String]("neo4j.uri")
     val neo4jUsername =
@@ -605,7 +641,10 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
         .getOptional[String]("neo4j.password")
         .getOrElse("Password!1")
     val driver =
-      GraphDatabase.driver(neo4jUri, AuthTokens.basic(neo4jUsername, neo4jPassword))
+      GraphDatabase.driver(
+        neo4jUri,
+        AuthTokens.basic(neo4jUsername, neo4jPassword)
+      )
     val session = driver.session()
     try {
       session.executeRead[Long](tx =>
@@ -637,7 +676,10 @@ class RecipeIntegrationTest extends IntegrationTestFramework {
         .getOptional[String]("neo4j.password")
         .getOrElse("Password!1")
     val driver =
-      GraphDatabase.driver(neo4jUri, AuthTokens.basic(neo4jUsername, neo4jPassword))
+      GraphDatabase.driver(
+        neo4jUri,
+        AuthTokens.basic(neo4jUsername, neo4jPassword)
+      )
     val session = driver.session()
     try {
       session.executeRead[Map[java.util.UUID, Double]](tx =>

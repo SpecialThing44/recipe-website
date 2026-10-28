@@ -13,12 +13,12 @@ import persistence.recipes.Recipes
 import zio.ZIO
 
 class RecipeCreateInteractor @Inject() (
-                                         persistence: Recipes,
-                                         tagValidationInteractor: TagValidationInteractor,
-                                         wikipediaCheck: WikipediaCheck,
-                                         ingredientPersistence: Ingredients,
-                                         richTextSanitizer: RichTextSanitizer,
-                                         ingredientWeightEventInteractor: IngredientWeightEventInteractor
+    persistence: Recipes,
+    tagValidationInteractor: TagValidationInteractor,
+    wikipediaCheck: WikipediaCheck,
+    ingredientPersistence: Ingredients,
+    richTextSanitizer: RichTextSanitizer,
+    ingredientWeightEventInteractor: IngredientWeightEventInteractor
 ) {
   def create(input: RecipeInput): ZIO[ApiContext, Throwable, Recipe] = {
     for {
@@ -71,7 +71,12 @@ class RecipeCreateInteractor @Inject() (
         else ZIO.unit
       }
       recipeWithSanitized = input.copy(instructions = sanitizedInstructions)
-      recipe = RecipeAdapter.adapt(recipeWithSanitized, ingredients, recipeIngredients, user)
+      recipe = RecipeAdapter.adapt(
+        recipeWithSanitized,
+        ingredients,
+        recipeIngredients,
+        user
+      )
       recipeWithImages = recipe.copy(instructionImages = extractedImageUrls)
       result <- persistence.create(recipeWithImages)
       _ <- ingredientWeightEventInteractor

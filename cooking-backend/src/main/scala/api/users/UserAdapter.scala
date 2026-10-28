@@ -27,7 +27,8 @@ object UserAdapter {
       user.name.getOrElse(existingUser.name),
       user.email.getOrElse(existingUser.email),
       existingUser.identity,
-      if (user.countryOfOrigin.isDefined) user.countryOfOrigin.filter(_.trim.nonEmpty)
+      if (user.countryOfOrigin.isDefined)
+        user.countryOfOrigin.filter(_.trim.nonEmpty)
       else existingUser.countryOfOrigin,
       if (user.removeAvatar) None else user.avatar.orElse(existingUser.avatar),
       existingUser.admin, // preserve admin status

@@ -7,7 +7,9 @@ class WikipediaCheckSpec extends AnyFlatSpec with Matchers {
   private val check = new DefaultWikipediaCheck()
 
   it should "accept HTTPS article URLs on the exact Wikipedia host" in {
-    check.wikiLinkIsWellFormed("https://en.wikipedia.org/wiki/Salt") shouldBe true
+    check.wikiLinkIsWellFormed(
+      "https://en.wikipedia.org/wiki/Salt"
+    ) shouldBe true
   }
 
   it should "reject other destinations and malformed article URLs" in {

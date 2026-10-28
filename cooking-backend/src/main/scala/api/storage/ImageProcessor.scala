@@ -72,7 +72,9 @@ object ImageProcessor {
   }
 
   private def validateDimensions(bytes: Array[Byte]): Unit = {
-    val stream = new MemoryCacheImageInputStream(new ByteArrayInputStream(bytes))
+    val stream = new MemoryCacheImageInputStream(
+      new ByteArrayInputStream(bytes)
+    )
     try {
       val readers = ImageIO.getImageReaders(stream)
       val (width, height) = if (readers.hasNext) {
@@ -82,10 +84,14 @@ object ImageProcessor {
           (reader.getWidth(0), reader.getHeight(0))
         } finally reader.dispose()
       } else {
-        val metadata = ImageMetadataReader.readMetadata(new ByteArrayInputStream(bytes))
+        val metadata =
+          ImageMetadataReader.readMetadata(new ByteArrayInputStream(bytes))
         val webp = metadata.getFirstDirectoryOfType(classOf[WebpDirectory])
         if (webp == null) throw InputError("Unsupported image format")
-        (webp.getInt(WebpDirectory.TAG_IMAGE_WIDTH), webp.getInt(WebpDirectory.TAG_IMAGE_HEIGHT))
+        (
+          webp.getInt(WebpDirectory.TAG_IMAGE_WIDTH),
+          webp.getInt(WebpDirectory.TAG_IMAGE_HEIGHT)
+        )
       }
       if (width <= 0 || height <= 0 || width.toLong * height > maximumPixels)
         throw InputError("Image must contain at most 16 million pixels")

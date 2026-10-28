@@ -1,7 +1,12 @@
 package initialization
 
 import context.{ApiContext, ApplicationContext}
-import domain.ingredients.{Ingredient, InstructionIngredient, Quantity, Unit as IngredientUnit}
+import domain.ingredients.{
+  Ingredient,
+  InstructionIngredient,
+  Quantity,
+  Unit as IngredientUnit
+}
 import domain.recipes.Recipe
 import domain.types.ZIORuntime
 import domain.users.User
@@ -19,7 +24,8 @@ import java.util.UUID
 
 object DemoDataSeedRunner {
 
-  private val rootIdentity = "a42d19a694518243b1469ec36e08c1f86758a203f6c14688fdf9531fd9f2cb5a"
+  private val rootIdentity =
+    "a42d19a694518243b1469ec36e08c1f86758a203f6c14688fdf9531fd9f2cb5a"
   private val rootEmail = "root@example.com"
 
   def main(args: Array[String]): Unit = {
@@ -36,7 +42,9 @@ object DemoDataSeedRunner {
     val now = Instant.now()
 
     val rootUser = User(
-      id = UUID.nameUUIDFromBytes("demo-root-user".getBytes(StandardCharsets.UTF_8)),
+      id = UUID.nameUUIDFromBytes(
+        "demo-root-user".getBytes(StandardCharsets.UTF_8)
+      ),
       name = "Root",
       email = rootEmail,
       identity = rootIdentity,
@@ -47,7 +55,9 @@ object DemoDataSeedRunner {
     )
 
     val demoUser = User(
-      id = UUID.nameUUIDFromBytes("demo-secondary-user".getBytes(StandardCharsets.UTF_8)),
+      id = UUID.nameUUIDFromBytes(
+        "demo-secondary-user".getBytes(StandardCharsets.UTF_8)
+      ),
       name = "Demo Cook",
       email = "cook@example.com",
       identity = "demo-secondary-identity",
@@ -58,7 +68,9 @@ object DemoDataSeedRunner {
     )
 
     val tomato = Ingredient(
-      id = UUID.nameUUIDFromBytes("demo-ingredient-tomato".getBytes(StandardCharsets.UTF_8)),
+      id = UUID.nameUUIDFromBytes(
+        "demo-ingredient-tomato".getBytes(StandardCharsets.UTF_8)
+      ),
       name = "Tomato",
       aliases = Seq("Roma Tomato"),
       wikiLink = "https://en.wikipedia.org/wiki/Tomato",
@@ -67,7 +79,9 @@ object DemoDataSeedRunner {
     )
 
     val garlic = Ingredient(
-      id = UUID.nameUUIDFromBytes("demo-ingredient-garlic".getBytes(StandardCharsets.UTF_8)),
+      id = UUID.nameUUIDFromBytes(
+        "demo-ingredient-garlic".getBytes(StandardCharsets.UTF_8)
+      ),
       name = "Garlic",
       aliases = Seq("Garlic Clove"),
       wikiLink = "https://en.wikipedia.org/wiki/Garlic",
@@ -76,7 +90,9 @@ object DemoDataSeedRunner {
     )
 
     val pasta = Ingredient(
-      id = UUID.nameUUIDFromBytes("demo-ingredient-pasta".getBytes(StandardCharsets.UTF_8)),
+      id = UUID.nameUUIDFromBytes(
+        "demo-ingredient-pasta".getBytes(StandardCharsets.UTF_8)
+      ),
       name = "Pasta",
       aliases = Seq("Spaghetti"),
       wikiLink = "https://en.wikipedia.org/wiki/Pasta",
@@ -85,7 +101,9 @@ object DemoDataSeedRunner {
     )
 
     val oliveOil = Ingredient(
-      id = UUID.nameUUIDFromBytes("demo-ingredient-olive-oil".getBytes(StandardCharsets.UTF_8)),
+      id = UUID.nameUUIDFromBytes(
+        "demo-ingredient-olive-oil".getBytes(StandardCharsets.UTF_8)
+      ),
       name = "Olive Oil",
       aliases = Seq("Extra Virgin Olive Oil"),
       wikiLink = "https://en.wikipedia.org/wiki/Olive_oil",
@@ -94,7 +112,9 @@ object DemoDataSeedRunner {
     )
 
     val onion = Ingredient(
-      id = UUID.nameUUIDFromBytes("demo-ingredient-onion".getBytes(StandardCharsets.UTF_8)),
+      id = UUID.nameUUIDFromBytes(
+        "demo-ingredient-onion".getBytes(StandardCharsets.UTF_8)
+      ),
       name = "Onion",
       aliases = Seq("Yellow Onion"),
       wikiLink = "https://en.wikipedia.org/wiki/Onion",
@@ -103,7 +123,9 @@ object DemoDataSeedRunner {
     )
 
     val basil = Ingredient(
-      id = UUID.nameUUIDFromBytes("demo-ingredient-basil".getBytes(StandardCharsets.UTF_8)),
+      id = UUID.nameUUIDFromBytes(
+        "demo-ingredient-basil".getBytes(StandardCharsets.UTF_8)
+      ),
       name = "Basil",
       aliases = Seq("Sweet Basil"),
       wikiLink = "https://en.wikipedia.org/wiki/Basil",
@@ -112,7 +134,9 @@ object DemoDataSeedRunner {
     )
 
     val parmesan = Ingredient(
-      id = UUID.nameUUIDFromBytes("demo-ingredient-parmesan".getBytes(StandardCharsets.UTF_8)),
+      id = UUID.nameUUIDFromBytes(
+        "demo-ingredient-parmesan".getBytes(StandardCharsets.UTF_8)
+      ),
       name = "Parmesan",
       aliases = Seq("Parmigiano Reggiano"),
       wikiLink = "https://en.wikipedia.org/wiki/Parmesan",
@@ -121,7 +145,9 @@ object DemoDataSeedRunner {
     )
 
     val butter = Ingredient(
-      id = UUID.nameUUIDFromBytes("demo-ingredient-butter".getBytes(StandardCharsets.UTF_8)),
+      id = UUID.nameUUIDFromBytes(
+        "demo-ingredient-butter".getBytes(StandardCharsets.UTF_8)
+      ),
       name = "Butter",
       aliases = Seq("Unsalted Butter"),
       wikiLink = "https://en.wikipedia.org/wiki/Butter",
@@ -130,7 +156,9 @@ object DemoDataSeedRunner {
     )
 
     val lemon = Ingredient(
-      id = UUID.nameUUIDFromBytes("demo-ingredient-lemon".getBytes(StandardCharsets.UTF_8)),
+      id = UUID.nameUUIDFromBytes(
+        "demo-ingredient-lemon".getBytes(StandardCharsets.UTF_8)
+      ),
       name = "Lemon",
       aliases = Seq("Lemon Juice"),
       wikiLink = "https://en.wikipedia.org/wiki/Lemon",
@@ -139,7 +167,9 @@ object DemoDataSeedRunner {
     )
 
     val chickenBreast = Ingredient(
-      id = UUID.nameUUIDFromBytes("demo-ingredient-chicken-breast".getBytes(StandardCharsets.UTF_8)),
+      id = UUID.nameUUIDFromBytes(
+        "demo-ingredient-chicken-breast".getBytes(StandardCharsets.UTF_8)
+      ),
       name = "Chicken Breast",
       aliases = Seq("Chicken Fillet"),
       wikiLink = "https://en.wikipedia.org/wiki/Chicken_as_food",
@@ -148,7 +178,9 @@ object DemoDataSeedRunner {
     )
 
     val rice = Ingredient(
-      id = UUID.nameUUIDFromBytes("demo-ingredient-rice".getBytes(StandardCharsets.UTF_8)),
+      id = UUID.nameUUIDFromBytes(
+        "demo-ingredient-rice".getBytes(StandardCharsets.UTF_8)
+      ),
       name = "Rice",
       aliases = Seq("Arborio Rice"),
       wikiLink = "https://en.wikipedia.org/wiki/Rice",
@@ -157,7 +189,9 @@ object DemoDataSeedRunner {
     )
 
     val blackPepper = Ingredient(
-      id = UUID.nameUUIDFromBytes("demo-ingredient-black-pepper".getBytes(StandardCharsets.UTF_8)),
+      id = UUID.nameUUIDFromBytes(
+        "demo-ingredient-black-pepper".getBytes(StandardCharsets.UTF_8)
+      ),
       name = "Black Pepper",
       aliases = Seq("Ground Black Pepper"),
       wikiLink = "https://en.wikipedia.org/wiki/Black_pepper",
@@ -166,7 +200,9 @@ object DemoDataSeedRunner {
     )
 
     val salt = Ingredient(
-      id = UUID.nameUUIDFromBytes("demo-ingredient-salt".getBytes(StandardCharsets.UTF_8)),
+      id = UUID.nameUUIDFromBytes(
+        "demo-ingredient-salt".getBytes(StandardCharsets.UTF_8)
+      ),
       name = "Salt",
       aliases = Seq("Sea Salt"),
       wikiLink = "https://en.wikipedia.org/wiki/Salt",
@@ -175,7 +211,9 @@ object DemoDataSeedRunner {
     )
 
     val mushroom = Ingredient(
-      id = UUID.nameUUIDFromBytes("demo-ingredient-mushroom".getBytes(StandardCharsets.UTF_8)),
+      id = UUID.nameUUIDFromBytes(
+        "demo-ingredient-mushroom".getBytes(StandardCharsets.UTF_8)
+      ),
       name = "Mushroom",
       aliases = Seq("Cremini Mushroom"),
       wikiLink = "https://en.wikipedia.org/wiki/Mushroom",
@@ -184,7 +222,9 @@ object DemoDataSeedRunner {
     )
 
     val pastaRecipe = Recipe(
-      id = UUID.nameUUIDFromBytes("demo-recipe-spaghetti".getBytes(StandardCharsets.UTF_8)),
+      id = UUID.nameUUIDFromBytes(
+        "demo-recipe-spaghetti".getBytes(StandardCharsets.UTF_8)
+      ),
       name = "Spaghetti al Pomodoro",
       createdBy = rootUser,
       tags = Seq("italian", "dinner"),
@@ -216,13 +256,16 @@ object DemoDataSeedRunner {
       countryOfOrigin = Some("IT"),
       public = true,
       wikiLink = None,
-      instructions = "{\"ops\":[{\"insert\":\"Boil pasta. Make sauce with olive oil, garlic, and tomato. Combine and serve.\\n\"}]}",
+      instructions =
+        "{\"ops\":[{\"insert\":\"Boil pasta. Make sauce with olive oil, garlic, and tomato. Combine and serve.\\n\"}]}",
       createdOn = now,
       updatedOn = now
     )
 
     val bruschettaRecipe = Recipe(
-      id = UUID.nameUUIDFromBytes("demo-recipe-bruschetta".getBytes(StandardCharsets.UTF_8)),
+      id = UUID.nameUUIDFromBytes(
+        "demo-recipe-bruschetta".getBytes(StandardCharsets.UTF_8)
+      ),
       name = "Tomato Bruschetta",
       createdBy = demoUser,
       tags = Seq("appetizer", "italian"),
@@ -249,13 +292,16 @@ object DemoDataSeedRunner {
       countryOfOrigin = Some("IT"),
       public = true,
       wikiLink = None,
-      instructions = "{\"ops\":[{\"insert\":\"Toast bread, top with tomato, garlic, and olive oil.\\n\"}]}",
+      instructions =
+        "{\"ops\":[{\"insert\":\"Toast bread, top with tomato, garlic, and olive oil.\\n\"}]}",
       createdOn = now,
       updatedOn = now
     )
 
     val lemonGarlicChickenRecipe = Recipe(
-      id = UUID.nameUUIDFromBytes("demo-recipe-lemon-garlic-chicken".getBytes(StandardCharsets.UTF_8)),
+      id = UUID.nameUUIDFromBytes(
+        "demo-recipe-lemon-garlic-chicken".getBytes(StandardCharsets.UTF_8)
+      ),
       name = "Lemon Garlic Chicken",
       createdBy = rootUser,
       tags = Seq("dinner", "high-protein"),
@@ -297,13 +343,16 @@ object DemoDataSeedRunner {
       countryOfOrigin = Some("US"),
       public = true,
       wikiLink = None,
-      instructions = "{\"ops\":[{\"insert\":\"Season chicken with salt and pepper, sear in olive oil, then finish with garlic and lemon juice.\\n\"}]}",
+      instructions =
+        "{\"ops\":[{\"insert\":\"Season chicken with salt and pepper, sear in olive oil, then finish with garlic and lemon juice.\\n\"}]}",
       createdOn = now,
       updatedOn = now
     )
 
     val mushroomRisottoRecipe = Recipe(
-      id = UUID.nameUUIDFromBytes("demo-recipe-mushroom-risotto".getBytes(StandardCharsets.UTF_8)),
+      id = UUID.nameUUIDFromBytes(
+        "demo-recipe-mushroom-risotto".getBytes(StandardCharsets.UTF_8)
+      ),
       name = "Mushroom Risotto",
       createdBy = demoUser,
       tags = Seq("italian", "comfort-food"),
@@ -340,13 +389,16 @@ object DemoDataSeedRunner {
       countryOfOrigin = Some("IT"),
       public = true,
       wikiLink = None,
-      instructions = "{\"ops\":[{\"insert\":\"Saute onion and mushrooms, stir in rice, and gradually cook while adding liquid. Finish with butter and parmesan.\\n\"}]}",
+      instructions =
+        "{\"ops\":[{\"insert\":\"Saute onion and mushrooms, stir in rice, and gradually cook while adding liquid. Finish with butter and parmesan.\\n\"}]}",
       createdOn = now,
       updatedOn = now
     )
 
     val basilTomatoPastaRecipe = Recipe(
-      id = UUID.nameUUIDFromBytes("demo-recipe-basil-tomato-pasta".getBytes(StandardCharsets.UTF_8)),
+      id = UUID.nameUUIDFromBytes(
+        "demo-recipe-basil-tomato-pasta".getBytes(StandardCharsets.UTF_8)
+      ),
       name = "Basil Tomato Pasta",
       createdBy = demoUser,
       tags = Seq("quick", "vegetarian"),
@@ -383,12 +435,16 @@ object DemoDataSeedRunner {
       countryOfOrigin = Some("IT"),
       public = true,
       wikiLink = None,
-      instructions = "{\"ops\":[{\"insert\":\"Cook pasta, simmer tomato in olive oil, toss with basil, and top with parmesan.\\n\"}]}",
+      instructions =
+        "{\"ops\":[{\"insert\":\"Cook pasta, simmer tomato in olive oil, toss with basil, and top with parmesan.\\n\"}]}",
       createdOn = now,
       updatedOn = now
     )
 
-    def runInContext[A](effect: ZIO[ApiContext, Throwable, A], user: User): A = {
+    def runInContext[A](
+        effect: ZIO[ApiContext, Throwable, A],
+        user: User
+    ): A = {
       val apiContext = ApiContext(
         api = cookingApi,
         applicationContext = ApplicationContext(Some(user))
@@ -400,7 +456,8 @@ object DemoDataSeedRunner {
       val uri = config.get[String]("neo4j.uri")
       val username = config.get[String]("neo4j.username")
       val password = config.get[String]("neo4j.password")
-      val driver = GraphDatabase.driver(uri, AuthTokens.basic(username, password))
+      val driver =
+        GraphDatabase.driver(uri, AuthTokens.basic(username, password))
       try {
         val session = driver.session()
         try {

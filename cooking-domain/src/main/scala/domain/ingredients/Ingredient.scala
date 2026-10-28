@@ -34,7 +34,9 @@ case class IngredientUpdateInput(
 object Ingredient {
   private val completeEncoder: Encoder[Ingredient] = deriveEncoder[Ingredient]
   implicit val encoder: Encoder[Ingredient] = Encoder.instance(entity =>
-    completeEncoder(entity).mapObject(_.add("createdBy", User.publicEncoder(entity.createdBy)))
+    completeEncoder(entity).mapObject(
+      _.add("createdBy", User.publicEncoder(entity.createdBy))
+    )
   )
   implicit val decoder: Decoder[Ingredient] =
     deriveDecoder[Ingredient]

@@ -23,7 +23,9 @@ class TagValidationInteractor @Inject() (
             .empty()
             .copy(name = Some(StringFilter.empty().copy(anyOf = Some(tags))))
         )
-        newTags = tags.filterNot(tag => existingTags.exists(_.equalsIgnoreCase(tag)))
+        newTags = tags.filterNot(tag =>
+          existingTags.exists(_.equalsIgnoreCase(tag))
+        )
         _ <-
           if (newTags.nonEmpty && !isAdmin) {
             ZIO.fail(

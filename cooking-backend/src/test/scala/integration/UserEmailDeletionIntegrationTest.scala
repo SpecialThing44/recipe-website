@@ -18,12 +18,22 @@ class UserEmailDeletionIntegrationTest extends IntegrationTestFramework {
     getUserById(first.id).name shouldBe "Deleted User"
     getUserById(second.id).name shouldBe "Deleted User"
 
-    val replacementFirst = createTestUser(firstInput.copy(email = "FIRST@example.com"))
+    val replacementFirst =
+      createTestUser(firstInput.copy(email = "FIRST@example.com"))
     val replacementSecond = createTestUser(secondInput)
-    val filters = Filters.empty().copy(
-      email = Some(StringFilter.empty().copy(anyOf = Some(Seq(firstInput.email, secondInput.email))))
-    )
+    val filters = Filters
+      .empty()
+      .copy(
+        email = Some(
+          StringFilter
+            .empty()
+            .copy(anyOf = Some(Seq(firstInput.email, secondInput.email)))
+        )
+      )
 
-    listUsers(filters).map(_.id).toSet shouldBe Set(replacementFirst.id, replacementSecond.id)
+    listUsers(filters).map(_.id).toSet shouldBe Set(
+      replacementFirst.id,
+      replacementSecond.id
+    )
   }
 }

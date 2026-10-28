@@ -94,7 +94,10 @@ object RecipeConverter extends Converter[Recipe] {
                 ),
                 Quantity(
                   Unit(unitName, volume = false, wikiLink = ""),
-                  recipeQuantity.get("amount").asInstanceOf[Number].doubleValue()
+                  recipeQuantity
+                    .get("amount")
+                    .asInstanceOf[Number]
+                    .doubleValue()
                 ),
                 Option(recipeQuantity.get("description"))
                   .map(_.toString)

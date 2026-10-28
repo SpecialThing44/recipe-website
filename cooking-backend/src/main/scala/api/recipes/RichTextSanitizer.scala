@@ -75,10 +75,14 @@ class RichTextSanitizer @Inject() (moderationClient: OpenAIModerationClient) {
 
     cursor.get[Json]("insert").toOption match {
       case Some(insert) if insert.isString => ()
-      case Some(insert) if insert.asObject.exists(_.keys.toSet == Set("image")) =>
-        val imageUrl = insert.hcursor.get[String]("image").fold(
-          _ => throw InputError("Image embed must contain a URL string"), identity
-        )
+      case Some(insert)
+          if insert.asObject.exists(_.keys.toSet == Set("image")) =>
+        val imageUrl = insert.hcursor
+          .get[String]("image")
+          .fold(
+            _ => throw InputError("Image embed must contain a URL string"),
+            identity
+          )
         validateImageUrl(imageUrl)
       case _ => throw InputError("Operation must insert text or an image URL")
     }
@@ -87,7 +91,8 @@ class RichTextSanitizer @Inject() (moderationClient: OpenAIModerationClient) {
       case Right(attrs) =>
         attrs.keys.foreach { key =>
           if (
-            !ALLOWED_FORMATS.contains(key) && !Set("align", "indent").contains(key)
+            !ALLOWED_FORMATS
+              .contains(key) && !Set("align", "indent").contains(key)
           ) {
             throw InputError(
               s"Unsupported format attribute: $key"
@@ -111,15 +116,20 @@ class RichTextSanitizer @Inject() (moderationClient: OpenAIModerationClient) {
 
   private def validateUrl(url: String): Unit = {
     val valid = Try(new URI(url)).toOption.exists(uri =>
-      Set("https", "http", "mailto").contains(Option(uri.getScheme).getOrElse("")) ||
-        (uri.getScheme == null && !url.startsWith("//") && (url.startsWith("/") || url.startsWith("#")))
+      Set("https", "http", "mailto").contains(
+        Option(uri.getScheme).getOrElse("")
+      ) ||
+        (uri.getScheme == null && !url
+          .startsWith("//") && (url.startsWith("/") || url.startsWith("#")))
     )
     if (!valid) throw InputError("Invalid link URL")
   }
 
   private def validateImageUrl(url: String): Unit = {
     val valid = Try(new URI(url)).toOption.exists(uri =>
-      (Set("https", "http").contains(Option(uri.getScheme).getOrElse("")) && uri.getHost != null && uri.getUserInfo == null) ||
+      (Set("https", "http").contains(
+        Option(uri.getScheme).getOrElse("")
+      ) && uri.getHost != null && uri.getUserInfo == null) ||
         (uri.getScheme == null && url.startsWith("/") && !url.startsWith("//"))
     )
     if (!valid) throw InputError("Invalid image URL")
@@ -128,11 +138,11 @@ class RichTextSanitizer @Inject() (moderationClient: OpenAIModerationClient) {
   def extractImageUrls(instructionsJson: String): Task[Seq[String]] =
     ZIO.attempt {
       parse(instructionsJson) match {
-        case Left(_) => Seq.empty
+        case Left(_)     => Seq.empty
         case Right(json) =>
           val cursor = json.hcursor
           cursor.downField("ops").as[List[Json]] match {
-            case Left(_) => Seq.empty
+            case Left(_)    => Seq.empty
             case Right(ops) =>
               ops.flatMap { op =>
                 val opCursor = op.hcursor
@@ -155,11 +165,11 @@ class RichTextSanitizer @Inject() (moderationClient: OpenAIModerationClient) {
 
   private def toPlainText(instructionsJson: String): String = {
     parse(instructionsJson) match {
-      case Left(_) => ""
+      case Left(_)     => ""
       case Right(json) =>
         val cursor = json.hcursor
         cursor.downField("ops").as[List[Json]] match {
-          case Left(_) => ""
+          case Left(_)    => ""
           case Right(ops) =>
             ops
               .flatMap { op =>

@@ -1,7 +1,12 @@
 package integration
 
 import domain.filters.Filters
-import domain.ingredients.{Ingredient, IngredientInput, Quantity, Unit as IngUnit}
+import domain.ingredients.{
+  Ingredient,
+  IngredientInput,
+  Quantity,
+  Unit as IngUnit
+}
 import domain.recipes.{Recipe, RecipeIngredientInput, RecipeInput}
 import domain.users.{User, UserInput}
 
@@ -92,20 +97,27 @@ class RecipeSavedIntegrationTest extends IntegrationTestFramework {
   it should "combine saved recipes with ids, names, tags, and pagination" in {
     val first = createTestRecipe(buildRecipeInput(Seq(tomato), name = "A Soup"))
     val second = createTestRecipe(buildRecipeInput(Seq(onion), name = "B Soup"))
-    createTestRecipe(buildRecipeInput(Seq(tomato, onion), name = "Unsaved Soup"))
-    saver = createTestUser(UserInput(name = "Saver", email = "combined@example.com"))
+    createTestRecipe(
+      buildRecipeInput(Seq(tomato, onion), name = "Unsaved Soup")
+    )
+    saver =
+      createTestUser(UserInput(name = "Saver", email = "combined@example.com"))
     login(saver.id)
     saveRecipe(first.id)
     saveRecipe(second.id)
 
-    val filters = Filters.empty().copy(
-      savedByUser = Some(saver.id),
-      ids = Some(List(first.id, second.id)),
-      name = Some(domain.filters.StringFilter.empty().copy(contains = Some("Soup"))),
-      tags = Some(Seq("quick")),
-      orderBy = Some(domain.filters.OrderBy(Some(true))),
-      limit = Some(1)
-    )
+    val filters = Filters
+      .empty()
+      .copy(
+        savedByUser = Some(saver.id),
+        ids = Some(List(first.id, second.id)),
+        name = Some(
+          domain.filters.StringFilter.empty().copy(contains = Some("Soup"))
+        ),
+        tags = Some(Seq("quick")),
+        orderBy = Some(domain.filters.OrderBy(Some(true))),
+        limit = Some(1)
+      )
 
     listRecipes(filters).map(_.id) shouldBe Seq(first.id)
     listRecipes(filters.copy(page = Some(1))).map(_.id) shouldBe Seq(second.id)
@@ -113,17 +125,22 @@ class RecipeSavedIntegrationTest extends IntegrationTestFramework {
   }
   it should "unsave only the current user's relationship and allow repeated removal" in {
     val recipe = createTestRecipe(buildRecipeInput(Seq(tomato)))
-    val firstSaver = createTestUser(UserInput("First saver", "first-saver@example.com"))
-    val secondSaver = createTestUser(UserInput("Second saver", "second-saver@example.com"))
+    val firstSaver =
+      createTestUser(UserInput("First saver", "first-saver@example.com"))
+    val secondSaver =
+      createTestUser(UserInput("Second saver", "second-saver@example.com"))
     login(firstSaver.id)
     saveRecipe(recipe.id)
     login(secondSaver.id)
     saveRecipe(recipe.id)
     login(firstSaver.id)
     zio.Unsafe.unsafe { implicit unsafe =>
-      zio.Runtime.default.unsafe.run(
-        (recipeFacade.unsave(recipe.id) *> recipeFacade.unsave(recipe.id)).provideLayer(createApiContext())
-      ).getOrThrowFiberFailure()
+      zio.Runtime.default.unsafe
+        .run(
+          (recipeFacade.unsave(recipe.id) *> recipeFacade.unsave(recipe.id))
+            .provideLayer(createApiContext())
+        )
+        .getOrThrowFiberFailure()
     }
     listSavedRecipes(firstSaver.id) shouldBe empty
     listSavedRecipes(secondSaver.id).map(_.id) shouldBe Seq(recipe.id)

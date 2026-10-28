@@ -23,7 +23,8 @@ object AiResponseValidator {
     }
 
     matches.sortBy(-_._2).headOption.flatMap { case (_, longestMatchLength) =>
-      val longestMatches = matches.filter(_._2 == longestMatchLength).map(_._1).distinct
+      val longestMatches =
+        matches.filter(_._2 == longestMatchLength).map(_._1).distinct
       if longestMatches.size == 1 then longestMatches.headOption else None
     }
   }
@@ -42,7 +43,9 @@ object AiResponseValidator {
     if ingredient.rawText.trim.isEmpty then {
       Left("Ingredient rawText must be non-empty")
     } else if ingredient.quantity.amount <= 0 then {
-      Left(s"Ingredient '${ingredient.rawText}' has non-positive quantity amount")
+      Left(
+        s"Ingredient '${ingredient.rawText}' has non-positive quantity amount"
+      )
     } else {
       val canonicalUnit = normalizeUnitName(ingredient.quantity.unit)
       val sanitizedQuantity = ingredient.quantity.copy(unit = canonicalUnit)
@@ -70,7 +73,10 @@ object AiResponseValidator {
               s"Ingredient '${ingredient.rawText}' must not set ingredientName when ingredientId is null"
             )
           } else {
-            resolveKnownIngredientFromRawText(ingredient.rawText, knownIngredients) match {
+            resolveKnownIngredientFromRawText(
+              ingredient.rawText,
+              knownIngredients
+            ) match {
               case Some(knownIngredient) =>
                 Right(
                   ingredient.copy(
@@ -101,13 +107,19 @@ object AiResponseValidator {
     } else if parsed.instructions.trim.isEmpty then {
       Left("Parsed recipe instructions must be non-empty")
     } else {
-      val validatedIngredientsResult = parsed.ingredients.foldLeft(Right(Seq.empty): Either[String, Seq[AiParsedIngredient]]) {
-        case (Left(err), _) => Left(err)
+      val validatedIngredientsResult = parsed.ingredients.foldLeft(
+        Right(Seq.empty): Either[String, Seq[AiParsedIngredient]]
+      ) {
+        case (Left(err), _)           => Left(err)
         case (Right(acc), ingredient) =>
-          sanitizeAndValidateIngredient(ingredient, knownIngredients).map(acc :+ _)
+          sanitizeAndValidateIngredient(ingredient, knownIngredients).map(
+            acc :+ _
+          )
       }
 
-      validatedIngredientsResult.map(validated => parsed.copy(ingredients = validated))
+      validatedIngredientsResult.map(validated =>
+        parsed.copy(ingredients = validated)
+      )
     }
   }
 }

@@ -1,8 +1,5 @@
 package persistence.filters.scoring
-import CypherScoringSupport.{
-  appendMinWhere,
-  jaccardScoreTail
-}
+import CypherScoringSupport.{appendMinWhere, jaccardScoreTail}
 
 object TagScoringParts {
   import CypherScoringSupport.{appendMinWhere, jaccardScoreTail}

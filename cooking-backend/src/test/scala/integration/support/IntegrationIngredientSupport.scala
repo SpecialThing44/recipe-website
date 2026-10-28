@@ -80,7 +80,9 @@ trait IntegrationIngredientSupport {
     }
   }
 
-  protected def listIngredientSubstitutes(ingredientId: UUID): Seq[Ingredient] = {
+  protected def listIngredientSubstitutes(
+      ingredientId: UUID
+  ): Seq[Ingredient] = {
     Unsafe.unsafe { implicit unsafe =>
       Runtime.default.unsafe
         .run(

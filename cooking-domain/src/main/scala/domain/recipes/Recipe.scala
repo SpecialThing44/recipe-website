@@ -67,7 +67,9 @@ case class RecipeUpdateInput(
 object Recipe {
   private val completeEncoder: Encoder[Recipe] = deriveEncoder[Recipe]
   implicit val encoder: Encoder[Recipe] = Encoder.instance(entity =>
-    completeEncoder(entity).mapObject(_.add("createdBy", User.publicEncoder(entity.createdBy)))
+    completeEncoder(entity).mapObject(
+      _.add("createdBy", User.publicEncoder(entity.createdBy))
+    )
   )
   implicit val decoder: Decoder[Recipe] = deriveDecoder[Recipe]
 }
@@ -81,8 +83,12 @@ object RecipeUpdateInput {
   implicit val encoder: Encoder[RecipeUpdateInput] =
     deriveEncoder[RecipeUpdateInput]
   implicit val decoder: Decoder[RecipeUpdateInput] =
-    deriveDecoder[RecipeUpdateInput].prepare(_.withFocus(_.mapObject(json =>
-      if (json("removeImage").isDefined) json
-      else json.add("removeImage", Json.fromBoolean(false))
-    )))
+    deriveDecoder[RecipeUpdateInput].prepare(
+      _.withFocus(
+        _.mapObject(json =>
+          if (json("removeImage").isDefined) json
+          else json.add("removeImage", Json.fromBoolean(false))
+        )
+      )
+    )
 }

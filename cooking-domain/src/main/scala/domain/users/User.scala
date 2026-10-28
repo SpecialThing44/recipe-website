@@ -49,7 +49,9 @@ object AvatarUrls {
 object User {
   implicit val encoder: Encoder[User] = deriveEncoder[User]
   val publicEncoder: Encoder[User] = Encoder.instance(user =>
-    encoder(user).mapObject(_.add("email", Json.fromString("")).add("identity", Json.fromString("")))
+    encoder(user).mapObject(
+      _.add("email", Json.fromString("")).add("identity", Json.fromString(""))
+    )
   )
   implicit val decoder: Decoder[User] = deriveDecoder[User]
 
@@ -68,10 +70,14 @@ object UserUpdateInput {
   implicit val encoder: Encoder[UserUpdateInput] =
     deriveEncoder[UserUpdateInput]
   implicit val decoder: Decoder[UserUpdateInput] =
-    deriveDecoder[UserUpdateInput].prepare(_.withFocus(_.mapObject(json =>
-      if (json("removeAvatar").isDefined) json
-      else json.add("removeAvatar", Json.fromBoolean(false))
-    )))
+    deriveDecoder[UserUpdateInput].prepare(
+      _.withFocus(
+        _.mapObject(json =>
+          if (json("removeAvatar").isDefined) json
+          else json.add("removeAvatar", Json.fromBoolean(false))
+        )
+      )
+    )
 }
 
 object LoginInput {

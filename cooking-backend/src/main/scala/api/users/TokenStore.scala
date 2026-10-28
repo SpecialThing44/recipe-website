@@ -13,7 +13,7 @@ object TokenStore {
   def isTokenBlacklisted(token: String): Boolean = {
     blacklistedTokens.get(token) match {
       case Some(expiration) if expiration.isAfter(Instant.now) => true
-      case _ =>
+      case _                                                   =>
         blacklistedTokens.remove(token)
         false
     }

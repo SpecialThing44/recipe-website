@@ -41,7 +41,9 @@ class IngredientWeightAsyncIntegrationTest extends IntegrationTestFramework {
     login(user.id)
 
     val tomato =
-      createTestIngredient(IngredientInput("Tomato", Seq(), "wiki-tomato", Seq()))
+      createTestIngredient(
+        IngredientInput("Tomato", Seq(), "wiki-tomato", Seq())
+      )
     val onion =
       createTestIngredient(IngredientInput("Onion", Seq(), "wiki-onion", Seq()))
 
@@ -51,7 +53,10 @@ class IngredientWeightAsyncIntegrationTest extends IntegrationTestFramework {
       RecipeUpdateInput(
         ingredients = Some(
           Seq(
-            RecipeIngredientInput(onion.id, Quantity(IngUnit("gram", false, ""), 200.0))
+            RecipeIngredientInput(
+              onion.id,
+              Quantity(IngUnit("gram", false, ""), 200.0)
+            )
           )
         )
       )
@@ -93,7 +98,9 @@ class IngredientWeightAsyncIntegrationTest extends IntegrationTestFramework {
     login(user.id)
 
     val tomato =
-      createTestIngredient(IngredientInput("Tomato", Seq(), "wiki-tomato", Seq()))
+      createTestIngredient(
+        IngredientInput("Tomato", Seq(), "wiki-tomato", Seq())
+      )
     val onion =
       createTestIngredient(IngredientInput("Onion", Seq(), "wiki-onion", Seq()))
 

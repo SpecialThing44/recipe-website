@@ -12,7 +12,7 @@ import zio.Task
 import java.util.UUID
 
 @Singleton
-class IngredientWeightEventInteractor @Inject()(
+class IngredientWeightEventInteractor @Inject() (
     database: Database
 ) {
   private case class IngredientVectorItem(
@@ -110,10 +110,12 @@ class IngredientWeightEventInteractor @Inject()(
     val ingredientWeights = recipe.ingredients.map(instructionIngredient =>
       (
         instructionIngredient.ingredient.id.toString,
-        IngredientUnit.toStandardizedAmount(
-          instructionIngredient.quantity.unit,
-          instructionIngredient.quantity.amount
-        ).toDouble
+        IngredientUnit
+          .toStandardizedAmount(
+            instructionIngredient.quantity.unit,
+            instructionIngredient.quantity.amount
+          )
+          .toDouble
       )
     )
     val totalStandardized = ingredientWeights.map(_._2).sum

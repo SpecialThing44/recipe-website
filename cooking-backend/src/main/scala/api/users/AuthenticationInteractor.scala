@@ -25,11 +25,12 @@ class AuthenticationInteractor @Inject() (
   private val issuer = config.get[String]("auth.issuer")
   private val audience = config.get[String]("auth.audience")
   private val jwksUrl = config.get[String]("auth.jwksUrl")
-  private lazy val jwkProvider = new JwkProviderBuilder(URI.create(jwksUrl).toURL)
-    .cached(10, 24, TimeUnit.HOURS)
-    .rateLimited(10, 1, TimeUnit.MINUTES)
-    .timeouts(3000, 3000)
-    .build()
+  private lazy val jwkProvider =
+    new JwkProviderBuilder(URI.create(jwksUrl).toURL)
+      .cached(10, 24, TimeUnit.HOURS)
+      .rateLimited(10, 1, TimeUnit.MINUTES)
+      .timeouts(3000, 3000)
+      .build()
 
   def validateAuthentikToken(
       token: String
@@ -48,14 +49,22 @@ class AuthenticationInteractor @Inject() (
       }
   }
 
-  private[users] def verifyToken(token: String, publicKey: RSAPublicKey): com.auth0.jwt.interfaces.DecodedJWT = {
-    val verified = JWT.require(Algorithm.RSA256(publicKey, null))
+  private[users] def verifyToken(
+      token: String,
+      publicKey: RSAPublicKey
+  ): com.auth0.jwt.interfaces.DecodedJWT = {
+    val verified = JWT
+      .require(Algorithm.RSA256(publicKey, null))
       .withIssuer(issuer)
       .withAudience(audience)
       .withClaimPresence("exp")
       .build()
       .verify(token)
-    val requiredClaims = Seq(verified.getSubject, verified.getClaim("email").asString(), verified.getClaim("preferred_username").asString())
+    val requiredClaims = Seq(
+      verified.getSubject,
+      verified.getClaim("email").asString(),
+      verified.getClaim("preferred_username").asString()
+    )
     if (requiredClaims.exists(value => value == null || value.trim.isEmpty))
       throw AuthenticationError("Token is missing required identity claims")
     verified
@@ -70,7 +79,7 @@ class AuthenticationInteractor @Inject() (
       maybeUser <- userPersistence.getByIdentity(identity)
       user <- maybeUser match {
         case Some(u) => ZIO.succeed(u)
-        case None =>
+        case None    =>
           val newUser = User(
             name = name,
             email = email,
@@ -130,7 +139,7 @@ object AuthenticationInteractor {
       maybeUser: Option[User],
   ): ZIO[Any, AuthenticationError, User] = maybeUser match {
     case Some(user) => ZIO.succeed(user)
-    case None =>
+    case None       =>
       ZIO.fail(AuthenticationError("Cannot update if not logged in"))
   }
 

@@ -16,10 +16,10 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class AdminController @Inject() (
-                                  cc: ControllerComponents,
-                                  cookingApi: CookingApi,
-                                  ingredientWeightJobInteractor: IngredientWeightJobInteractor,
-                                  config: Configuration
+    cc: ControllerComponents,
+    cookingApi: CookingApi,
+    ingredientWeightJobInteractor: IngredientWeightJobInteractor,
+    config: Configuration
 ) extends AbstractController(cc) {
   private implicit val ec: ExecutionContext = cc.executionContext
 
@@ -33,7 +33,7 @@ class AdminController @Inject() (
           .either
           .flatMap {
             case Right(_) => onAuthorized(user)
-            case Left(_) =>
+            case Left(_)  =>
               ZIO.succeed(
                 Forbidden(Json.obj("error" -> "Admin privileges required"))
               )
@@ -49,7 +49,15 @@ class AdminController @Inject() (
 
   def ingredientWeightSettings(): Action[AnyContent] = Action.async { request =>
     withAdminUser(request) { _ =>
-      ZIO.succeed(Ok(Json.obj("meanRawPenaltyFactor" -> config.get[Double]("ingredientWeights.meanRawPenaltyFactor"))))
+      ZIO.succeed(
+        Ok(
+          Json.obj(
+            "meanRawPenaltyFactor" -> config.get[Double](
+              "ingredientWeights.meanRawPenaltyFactor"
+            )
+          )
+        )
+      )
     }
   }
 

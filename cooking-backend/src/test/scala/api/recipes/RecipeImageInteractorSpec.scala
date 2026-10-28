@@ -18,15 +18,25 @@ class RecipeImageInteractorSpec extends AnyFlatSpec with Matchers {
     val recipeId = UUID.randomUUID()
     val recipe = mock(classOf[Recipe])
     when(recipe.createdBy).thenReturn(owner)
-    when(recipe.image).thenReturn(Some(AvatarUrls("old-small", "old-medium", "old-large")))
+    when(recipe.image).thenReturn(
+      Some(AvatarUrls("old-small", "old-medium", "old-large"))
+    )
     val recipes = mock(classOf[Recipes])
     when(recipes.getById(recipeId)).thenReturn(ZIO.succeed(recipe))
     val storage = mock(classOf[SeaweedFSClient])
     val updater = mock(classOf[RecipeUpdateInteractor])
     val interactor = new RecipeImageInteractor(recipes, storage, updater)
     val result = Unsafe.unsafe { implicit unsafe =>
-      Runtime.default.unsafe.run(interactor.uploadImage(recipeId, ByteString("not an image"), "image/png")
-        .provideEnvironment(ZEnvironment(ApiContext(null, ApplicationContext(Some(owner))))).either).getOrThrowFiberFailure()
+      Runtime.default.unsafe
+        .run(
+          interactor
+            .uploadImage(recipeId, ByteString("not an image"), "image/png")
+            .provideEnvironment(
+              ZEnvironment(ApiContext(null, ApplicationContext(Some(owner))))
+            )
+            .either
+        )
+        .getOrThrowFiberFailure()
     }
     result.isLeft shouldBe true
     verifyNoInteractions(storage, updater)

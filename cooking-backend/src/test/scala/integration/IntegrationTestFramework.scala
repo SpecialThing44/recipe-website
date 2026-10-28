@@ -29,7 +29,8 @@ class IntegrationTestFramework
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with IntegrationUserSupport
-    with IntegrationIngredientSupport with IntegrationRecipeSupport {
+    with IntegrationIngredientSupport
+    with IntegrationRecipeSupport {
 
   given CanEqual[UUID, UUID] = CanEqual.derived
   given CanEqual[Int, Int] = CanEqual.derived
@@ -39,12 +40,12 @@ class IntegrationTestFramework
   given [A]: CanEqual[Option[A], Some[A]] = CanEqual.derived
   given [A, B]: CanEqual[Seq[A], Seq[B]] = CanEqual.derived
 
-
   // Use a shared test application to ensure a single database across all integration tests
   private val application = TestAppHolder.application
   private val recipeApp: RecipeApp = TestAppHolder.recipeApp
   override protected val userFacade: UserFacade = TestAppHolder.userFacade
-  override protected val ingredientsFacade: IngredientsFacade = TestAppHolder.ingredientsFacade
+  override protected val ingredientsFacade: IngredientsFacade =
+    TestAppHolder.ingredientsFacade
   protected val recipeFacade: RecipeFacade = TestAppHolder.recipeFacade
 
   override def beforeAll(): Unit = {
@@ -94,7 +95,7 @@ class IntegrationTestFramework
           .fold(_ => (), _ => ())
       }
     }
-    
+
     Unsafe.unsafe { implicit unsafe =>
       Runtime.default.unsafe
         .run(
