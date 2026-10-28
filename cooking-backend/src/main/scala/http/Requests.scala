@@ -105,9 +105,10 @@ object Requests {
       id: java.util.UUID,
       request: Request[JsValue],
       cookingApi: CookingApi,
-      entityApi: Persisting[Entity, EntityInput, EntityUpdateInput] & Querying[
-        Entity
-      ]
+      entityApi: Persisting[Entity, EntityInput, EntityUpdateInput] &
+        Querying[
+          Entity
+        ]
   )(implicit encoder: Encoder[Entity], ec: ExecutionContext): Future[Result] = {
     val response =
       for {

@@ -13,7 +13,11 @@ import zio.{Runtime, Unsafe}
 class ImageProcessorSpec extends AnyFlatSpec with Matchers {
   private def png: Array[Byte] = {
     val output = new ByteArrayOutputStream()
-    ImageIO.write(new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB), "png", output)
+    ImageIO.write(
+      new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB),
+      "png",
+      output
+    )
     output.toByteArray
   }
 
@@ -24,21 +28,27 @@ class ImageProcessorSpec extends AnyFlatSpec with Matchers {
     checksum.update(bytes, 12, 17)
     ByteBuffer.wrap(bytes).putInt(29, checksum.getValue.toInt)
     val result = Unsafe.unsafe { implicit unsafe =>
-      Runtime.default.unsafe.run(ImageProcessor.processImage(ByteString(bytes), "image/png").either).getOrThrowFiberFailure()
+      Runtime.default.unsafe
+        .run(ImageProcessor.processImage(ByteString(bytes), "image/png").either)
+        .getOrThrowFiberFailure()
     }
     result.left.toOption.get.getMessage should include("16 million pixels")
   }
 
   it should "process ordinary images into WebP sizes" in {
     val image = Unsafe.unsafe { implicit unsafe =>
-      Runtime.default.unsafe.run(ImageProcessor.processImage(ByteString(png), "image/png")).getOrThrowFiberFailure()
+      Runtime.default.unsafe
+        .run(ImageProcessor.processImage(ByteString(png), "image/png"))
+        .getOrThrowFiberFailure()
     }
     image.extension shouldBe "webp"
     image.thumbnail.nonEmpty shouldBe true
     image.medium.nonEmpty shouldBe true
     image.large.nonEmpty shouldBe true
     val reprocessed = Unsafe.unsafe { implicit unsafe =>
-      Runtime.default.unsafe.run(ImageProcessor.processImage(image.large, "image/webp")).getOrThrowFiberFailure()
+      Runtime.default.unsafe
+        .run(ImageProcessor.processImage(image.large, "image/webp"))
+        .getOrThrowFiberFailure()
     }
     reprocessed.large.nonEmpty shouldBe true
   }

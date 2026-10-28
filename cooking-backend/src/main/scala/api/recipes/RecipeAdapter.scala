@@ -37,7 +37,9 @@ object RecipeAdapter {
   def adaptUpdate(
       input: RecipeUpdateInput,
       original: Recipe,
-      resolvedIngredients: Option[Seq[domain.ingredients.InstructionIngredient]],
+      resolvedIngredients: Option[
+        Seq[domain.ingredients.InstructionIngredient]
+      ],
       resolvedRecipeIngredients: Option[Seq[domain.recipes.InstructionRecipe]]
   ): Recipe = {
     val now = Instant.now
@@ -46,19 +48,24 @@ object RecipeAdapter {
       createdBy = original.createdBy,
       tags = input.tags.getOrElse(original.tags),
       ingredients = resolvedIngredients.getOrElse(original.ingredients),
-      recipeIngredients = resolvedRecipeIngredients.getOrElse(original.recipeIngredients),
+      recipeIngredients =
+        resolvedRecipeIngredients.getOrElse(original.recipeIngredients),
       prepTime = input.prepTime.getOrElse(original.prepTime),
       cookTime = input.cookTime.getOrElse(original.cookTime),
       servings = input.servings.getOrElse(original.servings),
       countryOfOrigin =
-        if (input.countryOfOrigin.isDefined) input.countryOfOrigin.filter(_.trim.nonEmpty)
+        if (input.countryOfOrigin.isDefined)
+          input.countryOfOrigin.filter(_.trim.nonEmpty)
         else original.countryOfOrigin,
       public = true,
-      wikiLink = if (input.wikiLink.isDefined) input.wikiLink.filter(_.trim.nonEmpty) else original.wikiLink,
+      wikiLink =
+        if (input.wikiLink.isDefined) input.wikiLink.filter(_.trim.nonEmpty)
+        else original.wikiLink,
       instructions = input.instructions.getOrElse(original.instructions),
       instructionImages =
         input.instructionImages.getOrElse(original.instructionImages),
-      image = if (input.removeImage) None else input.image.orElse(original.image),
+      image =
+        if (input.removeImage) None else input.image.orElse(original.image),
       createdOn = original.createdOn,
       updatedOn = now,
       id = original.id

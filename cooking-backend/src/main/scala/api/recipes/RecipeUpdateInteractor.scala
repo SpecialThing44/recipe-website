@@ -13,12 +13,12 @@ import persistence.recipes.Recipes
 import zio.ZIO
 
 class RecipeUpdateInteractor @Inject() (
-                                         persistence: Recipes,
-                                         tagValidationInteractor: TagValidationInteractor,
-                                         wikipediaCheck: WikipediaCheck,
-                                         ingredientPersistence: Ingredients,
-                                         richTextSanitizer: RichTextSanitizer,
-                                         ingredientWeightEventInteractor: IngredientWeightEventInteractor
+    persistence: Recipes,
+    tagValidationInteractor: TagValidationInteractor,
+    wikipediaCheck: WikipediaCheck,
+    ingredientPersistence: Ingredients,
+    richTextSanitizer: RichTextSanitizer,
+    ingredientWeightEventInteractor: IngredientWeightEventInteractor
 ) {
   def update(
       recipeInput: RecipeUpdateInput,
@@ -98,15 +98,17 @@ class RecipeUpdateInteractor @Inject() (
       }
       resolvedRecipeInstructions <- recipeInput.recipeIngredients match {
         case Some(list) =>
-          ZIO.foreach(list) { component =>
-            persistence.getById(component.recipeId).map { recipe =>
-              domain.recipes.InstructionRecipe(
-                domain.recipes.RecipeReference(recipe.id, recipe.name),
-                component.quantity,
-                component.description
-              )
+          ZIO
+            .foreach(list) { component =>
+              persistence.getById(component.recipeId).map { recipe =>
+                domain.recipes.InstructionRecipe(
+                  domain.recipes.RecipeReference(recipe.id, recipe.name),
+                  component.quantity,
+                  component.description
+                )
+              }
             }
-          }.map(Some(_))
+            .map(Some(_))
         case None => ZIO.succeed(None)
       }
       _ <- {

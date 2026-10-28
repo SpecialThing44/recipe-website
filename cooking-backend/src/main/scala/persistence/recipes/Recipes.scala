@@ -14,7 +14,10 @@ trait Recipes extends DbPersisting[Recipe] with Querying[Recipe] {
       recipeId: java.util.UUID,
       userId: java.util.UUID
   ): zio.ZIO[context.ApiContext, Throwable, Recipe]
-  def unsave(recipeId: UUID, userId: UUID): ZIO[context.ApiContext, Throwable, Unit]
+  def unsave(
+      recipeId: UUID,
+      userId: UUID
+  ): ZIO[context.ApiContext, Throwable, Unit]
   def deleteAll(): zio.ZIO[context.ApiContext, Throwable, Unit]
   def wouldCreateCycle(
       recipeId: UUID,

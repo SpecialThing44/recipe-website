@@ -19,17 +19,21 @@ class AiResponseValidatorSpec extends AnyFlatSpec with Matchers {
     aliases = Seq("roma tomato"),
     wikiLink = "",
     tags = Seq("vegetable"),
-    createdBy = User.empty().copy(
-      name = "Test User",
-      email = "test@example.com",
-      identity = "test-user",
-      createdOn = Instant.now,
-      updatedOn = Instant.now
-    ),
+    createdBy = User
+      .empty()
+      .copy(
+        name = "Test User",
+        email = "test@example.com",
+        identity = "test-user",
+        createdOn = Instant.now,
+        updatedOn = Instant.now
+      ),
     id = knownIngredientId
   )
 
-  private def baseResponseWithIngredient(ingredient: AiParsedIngredient): AiRecipeParseResponse =
+  private def baseResponseWithIngredient(
+      ingredient: AiParsedIngredient
+  ): AiRecipeParseResponse =
     AiRecipeParseResponse(
       name = "Tomato Soup",
       instructions = "Mix and cook.",
@@ -51,7 +55,8 @@ class AiResponseValidatorSpec extends AnyFlatSpec with Matchers {
 
     val parsed = baseResponseWithIngredient(parsedIngredient)
 
-    val result = AiResponseValidator.validateParsedRecipe(parsed, Seq(knownIngredient))
+    val result =
+      AiResponseValidator.validateParsedRecipe(parsed, Seq(knownIngredient))
 
     result match {
       case Right(validated) =>
@@ -72,7 +77,8 @@ class AiResponseValidatorSpec extends AnyFlatSpec with Matchers {
 
     val parsed = baseResponseWithIngredient(malformedIngredient)
 
-    val result = AiResponseValidator.validateParsedRecipe(parsed, Seq(knownIngredient))
+    val result =
+      AiResponseValidator.validateParsedRecipe(parsed, Seq(knownIngredient))
 
     result match {
       case Left(err) =>
@@ -93,7 +99,8 @@ class AiResponseValidatorSpec extends AnyFlatSpec with Matchers {
 
     val parsed = baseResponseWithIngredient(inconsistentIngredient)
 
-    val result = AiResponseValidator.validateParsedRecipe(parsed, Seq(knownIngredient))
+    val result =
+      AiResponseValidator.validateParsedRecipe(parsed, Seq(knownIngredient))
 
     result match {
       case Right(validated) =>

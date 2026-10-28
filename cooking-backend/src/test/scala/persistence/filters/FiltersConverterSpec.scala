@@ -30,7 +30,9 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
       include(s"MATCH (n) WHERE") and
         include("n.id IN $n_ids")
     )
-    result.params shouldBe Map("n_ids" -> List(id1.toString, id2.toString).asJava)
+    result.params shouldBe Map(
+      "n_ids" -> List(id1.toString, id2.toString).asJava
+    )
   }
 
   it should "convert a filter with name" in {
@@ -101,7 +103,9 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
     val result = FiltersConverter.toCypher(filters, "n")
 
     result.cypher should (
-      include("MATCH (n)-[:HAS_TAG]->(tagFilter0:Tag {lowername: $n_tag_0})") and
+      include(
+        "MATCH (n)-[:HAS_TAG]->(tagFilter0:Tag {lowername: $n_tag_0})"
+      ) and
         include("MATCH (n)-[:HAS_TAG]->(tagFilter1:Tag {lowername: $n_tag_1})")
     )
     result.params shouldBe Map("n_tag_0" -> "italian", "n_tag_1" -> "pasta")
@@ -114,14 +118,27 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
     val result = FiltersConverter.toCypher(filters, "n")
 
     result.cypher should (
-      include("MATCH (targetIngredient0:Ingredient {lowername: $n_ingredient_0})") and
-        include("MATCH (targetIngredient1:Ingredient {lowername: $n_ingredient_1})") and
-        include("OPTIONAL MATCH (targetIngredient0)-[:SUBSTITUTE]-(substituteIngredient0:Ingredient)") and
-        include("OPTIONAL MATCH (targetIngredient1)-[:SUBSTITUTE]-(substituteIngredient1:Ingredient)") and
-        include("MATCH (n)-[:HAS_INGREDIENT]->(recipeIngredient0:Ingredient)") and
+      include(
+        "MATCH (targetIngredient0:Ingredient {lowername: $n_ingredient_0})"
+      ) and
+        include(
+          "MATCH (targetIngredient1:Ingredient {lowername: $n_ingredient_1})"
+        ) and
+        include(
+          "OPTIONAL MATCH (targetIngredient0)-[:SUBSTITUTE]-(substituteIngredient0:Ingredient)"
+        ) and
+        include(
+          "OPTIONAL MATCH (targetIngredient1)-[:SUBSTITUTE]-(substituteIngredient1:Ingredient)"
+        ) and
+        include(
+          "MATCH (n)-[:HAS_INGREDIENT]->(recipeIngredient0:Ingredient)"
+        ) and
         include("MATCH (n)-[:HAS_INGREDIENT]->(recipeIngredient1:Ingredient)")
     )
-    result.params shouldBe Map("n_ingredient_0" -> "tomato", "n_ingredient_1" -> "cheese")
+    result.params shouldBe Map(
+      "n_ingredient_0" -> "tomato",
+      "n_ingredient_1" -> "cheese"
+    )
   }
 
   it should "convert a filter with notIngredients" in {
@@ -187,7 +204,9 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
 
     result.cypher should (
       include("n.lowername = $n_name_equals") and
-        include("n.prepTime >= $n_prepTime_greaterOrEqual AND n.prepTime <= $n_prepTime_lessOrEqual")
+        include(
+          "n.prepTime >= $n_prepTime_greaterOrEqual AND n.prepTime <= $n_prepTime_lessOrEqual"
+        )
     )
     result.params shouldBe Map(
       "n_name_equals" -> "test",
@@ -199,10 +218,12 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
   it should "separate relationship filters from property filters" in {
     val userId = UUID.randomUUID()
     val recipeId = UUID.randomUUID()
-    val filters = Filters.empty().copy(
-      savedByUser = Some(userId),
-      ids = Some(List(recipeId))
-    )
+    val filters = Filters
+      .empty()
+      .copy(
+        savedByUser = Some(userId),
+        ids = Some(List(recipeId))
+      )
 
     val result = FiltersConverter.toCypher(filters, "recipe")
 
@@ -215,11 +236,14 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "separate property filters from similarity clauses" in {
-    val filters = Filters.empty().copy(
-      id = Some(UUID.randomUUID()),
-      analyzedRecipe = Some(UUID.randomUUID()),
-      tagSimilarity = Some(domain.filters.SimilarityFilter(0.0, 0.0, 1.0, 0.0))
-    )
+    val filters = Filters
+      .empty()
+      .copy(
+        id = Some(UUID.randomUUID()),
+        analyzedRecipe = Some(UUID.randomUUID()),
+        tagSimilarity =
+          Some(domain.filters.SimilarityFilter(0.0, 0.0, 1.0, 0.0))
+      )
 
     val result = FiltersConverter.toCypher(filters, "recipe")
 
@@ -227,10 +251,13 @@ class FiltersConverterSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "ignore similarity for unsupported entity and target combinations" in {
-    val filters = Filters.empty().copy(
-      analyzedRecipe = Some(UUID.randomUUID()),
-      ingredientSimilarity = Some(domain.filters.SimilarityFilter(0.0, 1.0, 0.0, 0.0))
-    )
+    val filters = Filters
+      .empty()
+      .copy(
+        analyzedRecipe = Some(UUID.randomUUID()),
+        ingredientSimilarity =
+          Some(domain.filters.SimilarityFilter(0.0, 1.0, 0.0, 0.0))
+      )
 
     Seq("user", "ingredient", "tag").foreach { nodeVar =>
       FiltersConverter.toCypher(filters, nodeVar) shouldBe CypherFragment.empty

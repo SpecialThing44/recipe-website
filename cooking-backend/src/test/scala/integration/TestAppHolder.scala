@@ -20,7 +20,9 @@ object TestAppHolder {
       "auth.jwksUrl" -> "https://authentik.example.com/application/o/cooking/jwks/"
     )
     .overrides(bind[WikipediaCheck].to[integration.stubs.FakeWikipediaCheck])
-    .overrides(bind[api.users.AuthentikClient].to[integration.stubs.FakeAuthentikClient])
+    .overrides(
+      bind[api.users.AuthentikClient].to[integration.stubs.FakeAuthentikClient]
+    )
     .build()
 
   lazy val recipeApp: RecipeApp = application.injector.instanceOf[RecipeApp]

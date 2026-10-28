@@ -34,7 +34,9 @@ class RebuildAllIngredientsJob @Inject() (
         |RETURN ingredient.id AS ingredientId
         |""".stripMargin,
       (result: org.neo4j.driver.Result) =>
-        result.asScala.map(record => record.get("ingredientId").asString()).toSeq
+        result.asScala
+          .map(record => record.get("ingredientId").asString())
+          .toSeq
     )
 
   private def recomputeIngredientStats(

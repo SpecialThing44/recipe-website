@@ -132,7 +132,11 @@ class RecipePersistence @Inject() (
       s"""
          |${MatchStatement.apply}
          |${filterCypher.cypher}
-         |${CypherFragment.getWithScoreLine(query, s"WITH DISTINCT ${graph.nodeVar}", graph.nodeVar)}
+         |${CypherFragment.getWithScoreLine(
+          query,
+          s"WITH DISTINCT ${graph.nodeVar}",
+          graph.nodeVar
+        )}
          |$orderLine
          |${pagingCypher.cypher}
          |${MatchRelationship.outgoing("CREATED_BY", "user", "User")}
@@ -171,8 +175,9 @@ class RecipePersistence @Inject() (
         "createdById" -> entity.createdBy.id.toString
       ) ++ createTagStatements.params ++ createIngredientStatements.params ++ createRecipeIngredientStatements.params
 
-    database.writeTransaction(
-      s"""
+    database
+      .writeTransaction(
+        s"""
          |CREATE (${graph.nodeVar}:${graph.nodeLabel})
          |SET ${graph.nodeVar} = $$recipeProperties
          |${WithStatement.apply}
@@ -185,26 +190,27 @@ class RecipePersistence @Inject() (
          |OPTIONAL MATCH (${graph.nodeVar})-[ri:HAS_INGREDIENT]->(ingredient:Ingredient)
          |OPTIONAL MATCH (${graph.nodeVar})-[rri:HAS_RECIPE]->(componentRecipe:Recipe)
          |OPTIONAL ${MatchRelationship.outgoing(
-          graph.tagRelation,
-          "tag",
-          graph.tagLabel
-        )}
+            graph.tagRelation,
+            "tag",
+            graph.tagLabel
+          )}
          |WITH ${graph.nodeVar}, user, collect(DISTINCT ${graph.tagVar}.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit, weight: ri.weight, rawNormalizedWeight: coalesce(ri.rawNormalizedWeight, ri.normalizedWeight, 0.0), normalizedWeight: coalesce(ri.normalizedWeight, ri.rawNormalizedWeight, 0.0), description: ri.description}) as ingredientQuantities, collect(DISTINCT {recipe: {id: componentRecipe.id, name: componentRecipe.name}, amount: rri.amount, unit: rri.unit, description: rri.description}) as recipeQuantities
          |${ReturnStatement.apply}, user as createdBy, tags, ingredientQuantities, recipeQuantities
          |""".stripMargin,
-      params,
-      (result: org.neo4j.driver.Result) => {
-        if (result.hasNext) {
-          attachAllToRecord(result.next())
-        } else {
-          throw domain.types.NoSuchEntityError(
-            s"Create for ${graph.nodeLabel} has failed for some reason"
-          )
+        params,
+        (result: org.neo4j.driver.Result) => {
+          if (result.hasNext) {
+            attachAllToRecord(result.next())
+          } else {
+            throw domain.types.NoSuchEntityError(
+              s"Create for ${graph.nodeLabel} has failed for some reason"
+            )
+          }
         }
-      }
-    ).tap(recipe =>
-      effectiveIngredientsPersistence.refreshAffectedBy(Seq(recipe.id))
-    )
+      )
+      .tap(recipe =>
+        effectiveIngredientsPersistence.refreshAffectedBy(Seq(recipe.id))
+      )
   }
 
   override def update(
@@ -226,8 +232,9 @@ class RecipePersistence @Inject() (
         "recipeProperties" -> recipeProperties
       ) ++ createTagStatements.params ++ createIngredientStatements.params ++ createRecipeIngredientStatements.params
 
-    database.writeTransaction(
-      s"""
+    database
+      .writeTransaction(
+        s"""
          |MATCH (${graph.nodeVar}:${graph.nodeLabel} {id: $$recipeId})
          |SET ${graph.nodeVar} = $$recipeProperties
          |${WithStatement.apply}
@@ -249,26 +256,27 @@ class RecipePersistence @Inject() (
          |OPTIONAL MATCH (${graph.nodeVar})-[ri:HAS_INGREDIENT]->(ingredient:Ingredient)
          |OPTIONAL MATCH (${graph.nodeVar})-[rri:HAS_RECIPE]->(componentRecipe:Recipe)
          |OPTIONAL ${MatchRelationship.outgoing(
-          graph.tagRelation,
-          graph.tagVar,
-          graph.tagLabel
-        )}
+            graph.tagRelation,
+            graph.tagVar,
+            graph.tagLabel
+          )}
          |WITH ${graph.nodeVar}, user, collect(DISTINCT ${graph.tagVar}.name) as tags, collect(DISTINCT {ingredient: properties(ingredient), amount: ri.amount, unit: ri.unit, weight: ri.weight, rawNormalizedWeight: coalesce(ri.rawNormalizedWeight, ri.normalizedWeight, 0.0), normalizedWeight: coalesce(ri.normalizedWeight, ri.rawNormalizedWeight, 0.0), description: ri.description}) as ingredientQuantities, collect(DISTINCT {recipe: {id: componentRecipe.id, name: componentRecipe.name}, amount: rri.amount, unit: rri.unit, description: rri.description}) as recipeQuantities
          |${ReturnStatement.apply}, user as createdBy, tags, ingredientQuantities, recipeQuantities
          |""".stripMargin,
-      params,
-      (result: org.neo4j.driver.Result) => {
-        if (result.hasNext) {
-          attachAllToRecord(result.next())
-        } else {
-          throw domain.types.NoSuchEntityError(
-            s"Update for ${graph.nodeLabel} with id ${entity.id} has failed for some reason"
-          )
+        params,
+        (result: org.neo4j.driver.Result) => {
+          if (result.hasNext) {
+            attachAllToRecord(result.next())
+          } else {
+            throw domain.types.NoSuchEntityError(
+              s"Update for ${graph.nodeLabel} with id ${entity.id} has failed for some reason"
+            )
+          }
         }
-      }
-    ).tap(recipe =>
-      effectiveIngredientsPersistence.refreshAffectedBy(Seq(recipe.id))
-    )
+      )
+      .tap(recipe =>
+        effectiveIngredientsPersistence.refreshAffectedBy(Seq(recipe.id))
+      )
   }
 
   override def delete(id: UUID): ZIO[ApiContext, Throwable, Recipe] =
@@ -345,7 +353,10 @@ class RecipePersistence @Inject() (
       }
     )
 
-  override def unsave(recipeId: UUID, userId: UUID): ZIO[ApiContext, Throwable, scala.Unit] =
+  override def unsave(
+      recipeId: UUID,
+      userId: UUID
+  ): ZIO[ApiContext, Throwable, scala.Unit] =
     database.writeTransaction(
       "MATCH (recipe:Recipe {id: $recipeId})-[saved:SAVED_BY]->(:User {id: $userId}) DELETE saved",
       Map("recipeId" -> recipeId.toString, "userId" -> userId.toString),
@@ -372,7 +383,9 @@ class RecipePersistence @Inject() (
       })
       .filter(entry =>
         Option(entry.get("ingredient"))
-          .collect { case ingredient: java.util.Map[String, AnyRef] => ingredient }
+          .collect { case ingredient: java.util.Map[String, AnyRef] =>
+            ingredient
+          }
           .flatMap(ingredient => Option(ingredient.get("id")))
           .exists(_.toString.nonEmpty)
       )

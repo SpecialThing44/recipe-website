@@ -12,13 +12,12 @@ import scala.reflect.ClassTag
 def className[A](classType: Class[A]): String =
   classType.getSimpleName.replace("$", "")
 
-
 trait Graph[Domain: ClassTag] extends TagPathing {
-  lazy val nodeLabel: String = implicitly[ClassTag[Domain]].runtimeClass.getSimpleName
+  lazy val nodeLabel: String =
+    implicitly[ClassTag[Domain]].runtimeClass.getSimpleName
   lazy val nodeVar: String = nodeLabel.toLowerCase
 
 }
-
 
 object Graph {
   private val tagLabel = "Tag"

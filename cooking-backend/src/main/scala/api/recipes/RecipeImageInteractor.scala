@@ -43,9 +43,14 @@ class RecipeImageInteractor @Inject() (
     )
 
     updateInput = RecipeUpdateInput(image = Some(imageUrls))
-    updatedRecipe <- updateInteractor.update(updateInput, recipe)
-      .onError(_ => seaweedFSClient.deleteImageUrls(imageUrls, s"/recipes/$recipeId").ignore)
-    _ <- ZIO.foreachDiscard(recipe.image)(urls => seaweedFSClient.deleteImageUrls(urls, s"/recipes/$recipeId"))
+    updatedRecipe <- updateInteractor
+      .update(updateInput, recipe)
+      .onError(_ =>
+        seaweedFSClient.deleteImageUrls(imageUrls, s"/recipes/$recipeId").ignore
+      )
+    _ <- ZIO.foreachDiscard(recipe.image)(urls =>
+      seaweedFSClient.deleteImageUrls(urls, s"/recipes/$recipeId")
+    )
   } yield updatedRecipe
 
   def deleteImage(recipeId: UUID): ZIO[ApiContext, Throwable, Recipe] = for {
@@ -62,6 +67,8 @@ class RecipeImageInteractor @Inject() (
 
     updateInput = RecipeUpdateInput(removeImage = true)
     updatedRecipe <- updateInteractor.update(updateInput, recipe)
-    _ <- ZIO.foreachDiscard(recipe.image)(urls => seaweedFSClient.deleteImageUrls(urls, s"/recipes/$recipeId"))
+    _ <- ZIO.foreachDiscard(recipe.image)(urls =>
+      seaweedFSClient.deleteImageUrls(urls, s"/recipes/$recipeId")
+    )
   } yield updatedRecipe
 }

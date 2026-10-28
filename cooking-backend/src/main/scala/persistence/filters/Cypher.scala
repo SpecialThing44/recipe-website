@@ -20,8 +20,13 @@ object CypherFragment {
     }
   }
 
-  def getWithScoreLine(filters: Filters, withStatement: String, nodeVar: String): String =
-    if (SimilarityQueryBuilder.isActive(filters, nodeVar)) withStatement + ", score"
+  def getWithScoreLine(
+      filters: Filters,
+      withStatement: String,
+      nodeVar: String
+  ): String =
+    if (SimilarityQueryBuilder.isActive(filters, nodeVar))
+      withStatement + ", score"
     else withStatement
 
   def limitAndSkipStatement(filters: Filters): CypherFragment =

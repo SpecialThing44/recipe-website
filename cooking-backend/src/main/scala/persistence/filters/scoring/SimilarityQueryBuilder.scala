@@ -140,7 +140,7 @@ object SimilarityQueryBuilder {
   ): String =
     mode match {
       case RecipeRecipeMode => ""
-      case UserRecipeMode =>
+      case UserRecipeMode   =>
         val anyMinApplied = hasAppliedMinThreshold(
           flags.ingredientActive -> flags.ingredientMin,
           flags.tagActive -> flags.tagMin
@@ -180,7 +180,11 @@ object SimilarityQueryBuilder {
       flags.ingredientMin
     )
     val withCoSave =
-      addOptionalDoubleParam(withIngredient, flags.coSaveMinParam, flags.coSaveMin)
+      addOptionalDoubleParam(
+        withIngredient,
+        flags.coSaveMinParam,
+        flags.coSaveMin
+      )
 
     addOptionalDoubleParam(withCoSave, flags.tagMinParam, flags.tagMin)
   }
@@ -211,7 +215,11 @@ object SimilarityQueryBuilder {
     val coSavePart =
       if (!effectiveCoSaveActive) ""
       else
-        builders.coSavePartBuilder.get(nodeVar, coSaveCarry, flags.coSaveMinParam)
+        builders.coSavePartBuilder.get(
+          nodeVar,
+          coSaveCarry,
+          flags.coSaveMinParam
+        )
 
     val tagCarryBase = carryFields(
       nodeVar,
@@ -238,14 +246,25 @@ object SimilarityQueryBuilder {
     )
 
     CypherFragment(
-      Seq(base.cypher, start, ingredientPart, coSavePart, tagPart, finalWhere, finalWith)
+      Seq(
+        base.cypher,
+        start,
+        ingredientPart,
+        coSavePart,
+        tagPart,
+        finalWhere,
+        finalWith
+      )
         .filter(_.nonEmpty)
         .mkString("\n"),
       base.params
     )
   }
 
-  private def similarityFlags(filters: Filters, nodeVar: String): SimilarityFlags = {
+  private def similarityFlags(
+      filters: Filters,
+      nodeVar: String
+  ): SimilarityFlags = {
     val ingredientMin = filters.ingredientSimilarity.map(_.minScore)
     val coSaveMin = filters.coSaveSimilarity.map(_.minScore)
     val tagMin = filters.tagSimilarity.map(_.minScore)
@@ -257,13 +276,18 @@ object SimilarityQueryBuilder {
       ingredientActive = filters.ingredientSimilarity.isDefined,
       coSaveActive = filters.coSaveSimilarity.isDefined,
       tagActive = filters.tagSimilarity.isDefined,
-      ingredientMinParam = ingredientMin.map(_ => s"${nodeVar}_ingredient_similarity_min"),
+      ingredientMinParam =
+        ingredientMin.map(_ => s"${nodeVar}_ingredient_similarity_min"),
       coSaveMinParam = coSaveMin.map(_ => s"${nodeVar}_co_save_similarity_min"),
       tagMinParam = tagMin.map(_ => s"${nodeVar}_tag_similarity_min")
     )
   }
 
-  def apply(base: CypherFragment, filters: Filters, nodeVar: String): CypherFragment = {
+  def apply(
+      base: CypherFragment,
+      filters: Filters,
+      nodeVar: String
+  ): CypherFragment = {
     if (!isActive(filters, nodeVar)) base
     else {
       val flags = similarityFlags(filters, nodeVar)
@@ -271,7 +295,8 @@ object SimilarityQueryBuilder {
       resolveSimilarityMode(filters, nodeVar)
         .map { case (mode, analyzedId) =>
           val analyzedIdParam = s"${nodeVar}_analyzed_id"
-          val similarityParams = buildSimilarityParams(analyzedIdParam, analyzedId, flags)
+          val similarityParams =
+            buildSimilarityParams(analyzedIdParam, analyzedId, flags)
 
           buildSimilarityCypher(
             base = CypherFragment(base.cypher, base.params ++ similarityParams),

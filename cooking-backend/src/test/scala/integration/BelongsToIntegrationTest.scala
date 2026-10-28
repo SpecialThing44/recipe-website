@@ -1,7 +1,12 @@
 package integration
 
 import domain.filters.Filters
-import domain.ingredients.{Ingredient, IngredientInput, Quantity, Unit as IngUnit}
+import domain.ingredients.{
+  Ingredient,
+  IngredientInput,
+  Quantity,
+  Unit as IngUnit
+}
 import domain.recipes.{RecipeIngredientInput, RecipeInput}
 import domain.users.User
 

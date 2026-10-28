@@ -11,8 +11,8 @@ import zio.ZIO
 import java.util.UUID
 
 class RecipeDeleteInteractor @Inject() (
-                                         persistence: Recipes,
-                                         ingredientWeightEventInteractor: IngredientWeightEventInteractor
+    persistence: Recipes,
+    ingredientWeightEventInteractor: IngredientWeightEventInteractor
 ) {
   def delete(id: UUID): ZIO[ApiContext, Throwable, Recipe] = {
     for {

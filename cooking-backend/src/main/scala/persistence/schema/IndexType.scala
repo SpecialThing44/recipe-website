@@ -5,8 +5,8 @@ enum IndexType:
 
 object IndexType {
   def toIndexType(str: String): IndexType = str match {
-    case "TEXT" => Text
-    case "RANGE" => Range
+    case "TEXT"   => Text
+    case "RANGE"  => Range
     case "LOOKUP" => Lookup
   }
 }

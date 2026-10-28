@@ -39,9 +39,14 @@ class UserAvatarInteractor @Inject() (
     )
 
     updateInput = UserUpdateInput(avatar = Some(avatarUrls))
-    updatedUser <- updateInteractor.update(updateInput, user)
-      .onError(_ => seaweedFSClient.deleteImageUrls(avatarUrls, s"/avatars/$userId").ignore)
-    _ <- ZIO.foreachDiscard(user.avatar)(urls => seaweedFSClient.deleteImageUrls(urls, s"/avatars/$userId"))
+    updatedUser <- updateInteractor
+      .update(updateInput, user)
+      .onError(_ =>
+        seaweedFSClient.deleteImageUrls(avatarUrls, s"/avatars/$userId").ignore
+      )
+    _ <- ZIO.foreachDiscard(user.avatar)(urls =>
+      seaweedFSClient.deleteImageUrls(urls, s"/avatars/$userId")
+    )
   } yield updatedUser
 
   def deleteAvatar(userId: UUID): ZIO[ApiContext, Throwable, User] = for {
@@ -55,6 +60,8 @@ class UserAvatarInteractor @Inject() (
 
     updateInput = UserUpdateInput(removeAvatar = true)
     updatedUser <- updateInteractor.update(updateInput, user)
-    _ <- ZIO.foreachDiscard(user.avatar)(urls => seaweedFSClient.deleteImageUrls(urls, s"/avatars/$userId"))
+    _ <- ZIO.foreachDiscard(user.avatar)(urls =>
+      seaweedFSClient.deleteImageUrls(urls, s"/avatars/$userId")
+    )
   } yield updatedUser
 }

@@ -47,9 +47,11 @@ class JobsInteractor @Inject() (
             } yield ()
       } yield ()
 
-    run.catchAll(error =>
-      markJobFailed(jobName, jobId, error.getMessage).orDie *> ZIO.fail(error)
-    ).ensuring(releaseLock(jobName, jobId).ignore)
+    run
+      .catchAll(error =>
+        markJobFailed(jobName, jobId, error.getMessage).orDie *> ZIO.fail(error)
+      )
+      .ensuring(releaseLock(jobName, jobId).ignore)
   }
 
   def createQueuedJob(
