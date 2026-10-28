@@ -2,7 +2,7 @@ package initialization.embedded
 
 import com.google.inject.Inject
 import domain.logging.Logging
-import org.testcontainers.containers.Neo4jContainer
+import org.testcontainers.neo4j.Neo4jContainer
 import org.testcontainers.utility.DockerImageName
 import play.api.Configuration
 
@@ -16,7 +16,7 @@ class EmbeddedDatabase @Inject() (
     if (database.isEmpty && config.get[Boolean]("neo4j.isEmbedded")) {
       val container =
         new DatabaseContainer(config.get[String]("neo4j.image"))
-          .withoutAuthentication()
+      container.withoutAuthentication()
 
       val ports = Seq(7687, 7474, 2004)
       val portsAsString = ports.map(port => s"$port:$port").asJava
@@ -42,7 +42,7 @@ class EmbeddedDatabase @Inject() (
 }
 
 class DatabaseContainer(image: String)
-    extends Neo4jContainer[DatabaseContainer](
+    extends Neo4jContainer(
       DockerImageName
         .parse(image)
         .asCompatibleSubstituteFor("neo4j")

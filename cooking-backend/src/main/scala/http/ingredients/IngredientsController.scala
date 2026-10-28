@@ -45,8 +45,6 @@ class IngredientsController @Inject() (
         cookingApi,
         cookingApi.ingredients,
         authenticate = false
-      )(
-        Ingredient.encoder
       )
   }
 
@@ -62,9 +60,7 @@ class IngredientsController @Inject() (
 
   def delete(id: java.util.UUID): Action[AnyContent] = Action.async { request =>
     Requests
-      .delete[Ingredient](id, request, cookingApi, cookingApi.ingredients)(
-        Ingredient.encoder
-      )
+      .delete[Ingredient](id, request, cookingApi, cookingApi.ingredients)
   }
 
   def substitutes(id: UUID): Action[AnyContent] = Action.async { request =>

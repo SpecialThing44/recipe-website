@@ -13,7 +13,8 @@ disablePlugins(PlayLayoutPlugin)
 
 // Running
 val runBackend = taskKey[Unit]("Run the backend.")
-val resetDbWithDemoData = taskKey[Unit]("Wipe the connected DB and seed demo data.")
+val resetDbWithDemoData =
+  taskKey[Unit]("Wipe the connected DB and seed demo data.")
 
 def runBackend(params: String) =
   Def.taskDyn {
@@ -46,8 +47,8 @@ coverageMinimumStmtTotal := 70
 coverageFailOnMinimum := false
 
 libraryDependencies ++= Seq(
-  "com.auth0" % "java-jwt" % "4.4.0",
-  "com.auth0" % "jwks-rsa" % "0.22.1"
+  "com.auth0" % "java-jwt" % "4.6.2",
+  "com.auth0" % "jwks-rsa" % "0.24.1"
 )
 
 topLevelDirectory := Some(name.value)
