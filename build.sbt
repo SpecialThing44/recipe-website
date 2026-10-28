@@ -44,6 +44,7 @@ lazy val backend =
         PekkoStream,
         PekkoSlf4j,
         PekkoSerializationJackson,
+        jacksonScala,
         play,
         playJson,
         playStreams,

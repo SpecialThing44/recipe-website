@@ -7,19 +7,24 @@ import domain.types.SystemError
 import io.circe.Json
 import io.circe.parser.*
 import play.api.Configuration
-import sttp.client3.*
+import sttp.client4.*
+import sttp.client4.httpclient.HttpClientSyncBackend
 import zio.ZIO
 
 import scala.concurrent.duration.*
 import scala.util.control.NonFatal
 
 @Singleton
-class AiInteractor @Inject()(config: Configuration) {
+class AiInteractor @Inject() (config: Configuration) {
   private val backend = HttpClientSyncBackend()
-  private val ollamaUrl = config.getOptional[String]("ollama.url").getOrElse("http://localhost:11434")
-  private val model = config.getOptional[String]("ollama.model").getOrElse("qwen2.5:14b")
-  private val chatTimeoutSeconds = config.getOptional[Int]("ollama.chatTimeoutSeconds").getOrElse(180)
-  private val recipePromptTemplate = config.get[String]("ollama.recipePromptTemplate")
+  private val ollamaUrl =
+    config.getOptional[String]("ollama.url").getOrElse("http://localhost:11434")
+  private val model =
+    config.getOptional[String]("ollama.model").getOrElse("qwen2.5:14b")
+  private val chatTimeoutSeconds =
+    config.getOptional[Int]("ollama.chatTimeoutSeconds").getOrElse(180)
+  private val recipePromptTemplate =
+    config.get[String]("ollama.recipePromptTemplate")
   private val chatTimeout = chatTimeoutSeconds.seconds
 
   private final case class PromptIngredientRef(
@@ -27,7 +32,10 @@ class AiInteractor @Inject()(config: Configuration) {
       ingredient: Ingredient
   )
 
-  private def ollamaConnectionError(action: String, cause: String): SystemError = {
+  private def ollamaConnectionError(
+      action: String,
+      cause: String
+  ): SystemError = {
     SystemError(
       s"Ollama $action failed for URL '$ollamaUrl': $cause. " +
         "For local testing with sbt runBackend, set OLLAMA_URL to your Ollama host, " +
@@ -38,19 +46,22 @@ class AiInteractor @Inject()(config: Configuration) {
   private def parseUrl(path: String, action: String): sttp.model.Uri = {
     sttp.model.Uri.parse(s"$ollamaUrl$path") match {
       case Right(u) => u
-      case Left(e) => throw ollamaConnectionError(action, s"invalid URL: $e")
+      case Left(e)  => throw ollamaConnectionError(action, s"invalid URL: $e")
     }
   }
 
   private def sendOrThrow(
-      request: Request[Either[String, String], Any],
+      request: Request[Either[String, String]],
       action: String
   ): Response[Either[String, String]] = {
     try {
       request.send(backend)
     } catch {
       case NonFatal(e) =>
-        throw ollamaConnectionError(action, s"transport error: ${e.getClass.getSimpleName}: ${e.getMessage}")
+        throw ollamaConnectionError(
+          action,
+          s"transport error: ${e.getClass.getSimpleName}: ${e.getMessage}"
+        )
     }
   }
 
@@ -58,7 +69,10 @@ class AiInteractor @Inject()(config: Configuration) {
       knownIngredients: Seq[Ingredient]
   ): Seq[PromptIngredientRef] =
     knownIngredients.zipWithIndex.map { case (ingredient, index) =>
-      PromptIngredientRef(promptId = (index + 1).toString, ingredient = ingredient)
+      PromptIngredientRef(
+        promptId = (index + 1).toString,
+        ingredient = ingredient
+      )
     }
 
   private def promptIngredientIdMap(
@@ -94,22 +108,24 @@ class AiInteractor @Inject()(config: Configuration) {
         val remappedIngredients = rootObj("ingredients")
           .flatMap(_.asArray)
           .map(ingredients =>
-            Json.fromValues(ingredients.map(ingredientJson =>
-              ingredientJson.asObject match {
-                case Some(ingredientObj) =>
-                  ingredientObj("ingredientId") match {
-                    case Some(idJson) =>
-                      Json.fromJsonObject(
-                        ingredientObj.add(
-                          "ingredientId",
-                          remapIngredientIdValue(idJson, idMap)
+            Json.fromValues(
+              ingredients.map(ingredientJson =>
+                ingredientJson.asObject match {
+                  case Some(ingredientObj) =>
+                    ingredientObj("ingredientId") match {
+                      case Some(idJson) =>
+                        Json.fromJsonObject(
+                          ingredientObj.add(
+                            "ingredientId",
+                            remapIngredientIdValue(idJson, idMap)
+                          )
                         )
-                      )
-                    case None => ingredientJson
-                  }
-                case None => ingredientJson
-              }
-            ))
+                      case None => ingredientJson
+                    }
+                  case None => ingredientJson
+                }
+              )
+            )
           )
 
         val updatedRootObj = remappedIngredients
@@ -124,8 +140,8 @@ class AiInteractor @Inject()(config: Configuration) {
     val trimmed = content.trim
     val firstLineEnd = trimmed.indexOf('\n')
 
-    if trimmed.startsWith("```") && firstLineEnd >= 0 && trimmed.endsWith("```") then
-      trimmed.substring(firstLineEnd + 1, trimmed.length - 3).trim
+    if trimmed.startsWith("```") && firstLineEnd >= 0 && trimmed.endsWith("```")
+    then trimmed.substring(firstLineEnd + 1, trimmed.length - 3).trim
     else trimmed
   }
 
@@ -144,10 +160,22 @@ class AiInteractor @Inject()(config: Configuration) {
       "properties" -> Json.obj(
         "name" -> Json.obj("type" -> Json.fromString("string")),
         "instructions" -> Json.obj("type" -> Json.fromString("string")),
-        "prepTime" -> Json.obj("type" -> Json.arr(Json.fromString("integer"), Json.fromString("null"))),
-        "cookTime" -> Json.obj("type" -> Json.arr(Json.fromString("integer"), Json.fromString("null"))),
-        "servings" -> Json.obj("type" -> Json.arr(Json.fromString("integer"), Json.fromString("null"))),
-        "tags" -> Json.obj("type" -> Json.fromString("array"), "items" -> Json.obj("type" -> Json.fromString("string"))),
+        "prepTime" -> Json.obj(
+          "type" -> Json
+            .arr(Json.fromString("integer"), Json.fromString("null"))
+        ),
+        "cookTime" -> Json.obj(
+          "type" -> Json
+            .arr(Json.fromString("integer"), Json.fromString("null"))
+        ),
+        "servings" -> Json.obj(
+          "type" -> Json
+            .arr(Json.fromString("integer"), Json.fromString("null"))
+        ),
+        "tags" -> Json.obj(
+          "type" -> Json.fromString("array"),
+          "items" -> Json.obj("type" -> Json.fromString("string"))
+        ),
         "ingredients" -> Json.obj(
           "type" -> Json.fromString("array"),
           "items" -> Json.obj(
@@ -161,17 +189,29 @@ class AiInteractor @Inject()(config: Configuration) {
             ),
             "properties" -> Json.obj(
               "rawText" -> Json.obj("type" -> Json.fromString("string")),
-              "ingredientId" -> Json.obj("type" -> Json.arr(Json.fromString("string"), Json.fromString("null"))),
-              "ingredientName" -> Json.obj("type" -> Json.arr(Json.fromString("string"), Json.fromString("null"))),
+              "ingredientId" -> Json.obj(
+                "type" -> Json
+                  .arr(Json.fromString("string"), Json.fromString("null"))
+              ),
+              "ingredientName" -> Json.obj(
+                "type" -> Json
+                  .arr(Json.fromString("string"), Json.fromString("null"))
+              ),
               "quantity" -> Json.obj(
                 "type" -> Json.fromString("object"),
-                "required" -> Json.arr(Json.fromString("amount"), Json.fromString("unit")),
+                "required" -> Json
+                  .arr(Json.fromString("amount"), Json.fromString("unit")),
                 "properties" -> Json.obj(
                   "amount" -> Json.obj("type" -> Json.fromString("number")),
                   "unit" -> Json.obj("type" -> Json.fromString("string"))
                 )
               ),
-              "description" -> Json.obj("type" -> Json.arr(Json.fromString("string"), Json.fromString("null")))
+              "description" -> Json.obj(
+                "type" -> Json.arr(
+                  Json.fromString("string"),
+                  Json.fromString("null")
+                )
+              )
             )
           )
         )
@@ -183,8 +223,8 @@ class AiInteractor @Inject()(config: Configuration) {
 
     val response = sendOrThrow(
       basicRequest
-      .get(parsedUrl)
-      .readTimeout(10.seconds),
+        .get(parsedUrl)
+        .readTimeout(10.seconds),
       "health check"
     )
 
@@ -195,7 +235,10 @@ class AiInteractor @Inject()(config: Configuration) {
           .toOption
           .exists(models =>
             models.exists(modelJson =>
-              modelJson.hcursor.get[String]("name").toOption.exists(_.startsWith(model))
+              modelJson.hcursor
+                .get[String]("name")
+                .toOption
+                .exists(_.startsWith(model))
             )
           )
 
@@ -209,7 +252,11 @@ class AiInteractor @Inject()(config: Configuration) {
     }
   }
 
-  def parseRecipe(text: String, knownIngredients: Seq[Ingredient], knownTags: Seq[String]): ZIO[Any, Throwable, AiRecipeParseResponse] = ZIO.attemptBlocking {
+  def parseRecipe(
+      text: String,
+      knownIngredients: Seq[Ingredient],
+      knownTags: Seq[String]
+  ): ZIO[Any, Throwable, AiRecipeParseResponse] = ZIO.attemptBlocking {
     val promptIngredientRefs = buildPromptIngredientRefs(knownIngredients)
     val promptIngredientMap = promptIngredientIdMap(promptIngredientRefs)
 
@@ -255,19 +302,33 @@ class AiInteractor @Inject()(config: Configuration) {
       case Right(body) =>
         val parseResult = for {
           parsedBody <- parse(body)
-          content <- parsedBody.hcursor.downField("message").downField("content").as[String]
+          content <- parsedBody.hcursor
+            .downField("message")
+            .downField("content")
+            .as[String]
           parsedContent <- parse(removeMarkdownCodeFence(content))
-          parsedResponse <- remapPromptIngredientIds(parsedContent, promptIngredientMap).as[AiRecipeParseResponse]
+          parsedResponse <- remapPromptIngredientIds(
+            parsedContent,
+            promptIngredientMap
+          ).as[AiRecipeParseResponse]
         } yield parsedResponse
 
         parseResult match {
           case Right(res) =>
-            AiResponseValidator.validateParsedRecipe(res, knownIngredients) match {
+            AiResponseValidator.validateParsedRecipe(
+              res,
+              knownIngredients
+            ) match {
               case Right(validated) => validated
-              case Left(error) => throw new RuntimeException(s"Malformed AI parse response: $error")
+              case Left(error)      =>
+                throw new RuntimeException(
+                  s"Malformed AI parse response: $error"
+                )
             }
           case Left(err) =>
-            throw new RuntimeException(s"Failed to parse LLM response: $err. Body: $body")
+            throw new RuntimeException(
+              s"Failed to parse LLM response: $err. Body: $body"
+            )
         }
       case Left(err) =>
         throw ollamaConnectionError("chat request", err)

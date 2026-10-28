@@ -144,7 +144,7 @@ class UsersPersistence @Inject() (database: Database) extends Users {
   override def deleteAll(): ZIO[ApiContext, Throwable, Unit] = for {
     _ <- database.writeTransaction(
       s"""
-       |${MatchStatement.apply()}
+       |${MatchStatement.apply}
        |DETACH DELETE user
        |""".stripMargin,
       (_: Result) => ()

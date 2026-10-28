@@ -19,4 +19,4 @@ jobs:
         with:
           author-email: 95900100+SpecialThing44@users.noreply.github.com
           author-name: SpecialThing44
-          scala-steward-version: 0.30.2
+          scala-steward-version: 0.39.4

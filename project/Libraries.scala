@@ -2,24 +2,25 @@ import sbt.*
 
 object Libraries {
   object Versions {
-    val PekkoVersion = "1.1.5"
-    val PekkoHttpVersion = "1.2.0"
-    val PlayVersion = "3.0.8"
+    val PekkoVersion = "1.7.1"
+    val PekkoHttpVersion = "1.4.2"
+    val PlayVersion = "3.0.12"
+    val jacksonVersion = "2.22.4"
     val guiceVersion = "6.0.0"
-    val GoogleHttpClientVersion = "1.47.1"
-    val ZioVersion = "2.1.20"
-    val circeVersion = "0.14.14"
-    val neo4jDriverVersion = "5.28.9"
-    val jwtVersion = "11.0.2"
+    val GoogleHttpClientVersion = "2.2.0"
+    val ZioVersion = "2.1.27"
+    val circeVersion = "0.14.17"
+    val neo4jDriverVersion = "6.3.0"
+    val jwtVersion = "12.0.0"
     val pbkdf2Version = "0.7.2"
-    val slf4jVersion = "2.0.17"
-    val logbackVersion = "1.5.18"
-    val sttpVersion = "3.11.0"
-    val scrimageVersion = "4.4.1"
+    val slf4jVersion = "2.0.20"
+    val logbackVersion = "1.6.6"
+    val sttpVersion = "4.1.0"
+    val scrimageVersion = "4.6.10"
 
-    val scalaTestVersion = "3.2.19"
-    val mockitoVersion = "5.18.0"
-    val testContainersVersion = "1.21.4"
+    val scalaTestVersion = "3.2.20"
+    val mockitoVersion = "5.24.0"
+    val testContainersVersion = "2.0.5"
 
   }
   import Versions.*
@@ -35,8 +36,11 @@ object Libraries {
   // Pekko HTTP
   val PekkoHttp = "org.apache.pekko" %% "pekko-http" % PekkoHttpVersion
   val play = "org.playframework" %% "play" % PlayVersion
-  val playJson = "org.playframework" %% "play-json" % "3.0.5"
+  val playJson = "org.playframework" %% "play-json" % "3.0.6"
   val playStreams = "org.playframework" %% "play-streams" % PlayVersion
+
+  val jacksonScala =
+    "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion
 
   val guiceGoogle = "com.google.inject" % "guice" % guiceVersion
   val GoogleHttpClient =
@@ -58,7 +62,7 @@ object Libraries {
   val slf4j = "org.slf4j" % "slf4j-api" % slf4jVersion
   val logback = "ch.qos.logback" % "logback-classic" % logbackVersion
 
-  val sttp = "com.softwaremill.sttp.client3" %% "core" % sttpVersion
+  val sttp = "com.softwaremill.sttp.client4" %% "core" % sttpVersion
 
   val scrimageCore = "com.sksamuel.scrimage" % "scrimage-core" % scrimageVersion
   val scrimageWebp = "com.sksamuel.scrimage" % "scrimage-webp" % scrimageVersion
@@ -69,5 +73,5 @@ object Libraries {
   val testContainers =
     "org.testcontainers" % "testcontainers" % testContainersVersion
   val testContainersNeo4j =
-    "org.testcontainers" % "neo4j" % testContainersVersion
+    "org.testcontainers" % "testcontainers-neo4j" % testContainersVersion
 }

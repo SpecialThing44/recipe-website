@@ -6,7 +6,8 @@ import io.circe.generic.semiauto.*
 import io.circe.parser.*
 import io.circe.syntax.*
 import play.api.Configuration
-import sttp.client3.*
+import sttp.client4.*
+import sttp.client4.httpclient.HttpClientSyncBackend
 import scala.concurrent.duration.*
 import zio.{Task, ZIO}
 

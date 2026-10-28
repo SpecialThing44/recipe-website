@@ -37,7 +37,7 @@ class UsersController @Inject() (
   }
 
   def get(id: java.util.UUID): Action[AnyContent] = Action.async { request =>
-    Requests.get[User](id, request, cookingApi, cookingApi.users)(User.encoder)
+    Requests.get[User](id, request, cookingApi, cookingApi.users)
   }
   def list(): Action[JsValue] = Action.async(parse.json) { request =>
     Requests.list[User](request, cookingApi, cookingApi.users)
@@ -52,38 +52,41 @@ class UsersController @Inject() (
       )
   }
   def delete(id: java.util.UUID): Action[AnyContent] = Action.async { request =>
-    Requests.delete[User](id, request, cookingApi, cookingApi.users)(
-      User.encoder
-    )
+    Requests.delete[User](id, request, cookingApi, cookingApi.users)
   }
 
-  def uploadAvatar(id: java.util.UUID): Action[AnyContent] = Action.async(parse.anyContent(maxLength = Some(5L * 1024 * 1024))) {
-    request =>
-      extractUser(request, cookingApi).flatMap { maybeUser =>
-        request.body.asRaw match {
-          case Some(raw) =>
-            val fileBytes = raw.asBytes().getOrElse(ByteString.empty)
-            val contentType = request.contentType.getOrElse("image/jpeg")
+  def uploadAvatar(id: java.util.UUID): Action[AnyContent] =
+    Action.async(parse.anyContent(maxLength = Some(5L * 1024 * 1024))) {
+      request =>
+        extractUser(request, cookingApi).flatMap { maybeUser =>
+          request.body.asRaw match {
+            case Some(raw) =>
+              val fileBytes = raw.asBytes().getOrElse(ByteString.empty)
+              val contentType = request.contentType.getOrElse("image/jpeg")
 
-            if (fileBytes.isEmpty) {
-              Future.successful(
-                BadRequest(Json.obj("error" -> "No file data provided"))
-              )
-            } else {
-              val response = cookingApi.users
-                .uploadAvatar(id, fileBytes, contentType)
-                .fold(
-                  error => ErrorMapping.mapCustomErrorsToHttp(error),
-                  user =>
-                    Ok(s"{ \"Body\": ${Json.parse(user.asJson.noSpaces)} }")
+              if (fileBytes.isEmpty) {
+                Future.successful(
+                  BadRequest(Json.obj("error" -> "No file data provided"))
                 )
-              ApiRunner.runResponseAsyncSafely(response, cookingApi, maybeUser)
-            }
-          case None =>
-            Future.successful(
-              BadRequest(Json.obj("error" -> "No file uploaded"))
-            )
+              } else {
+                val response = cookingApi.users
+                  .uploadAvatar(id, fileBytes, contentType)
+                  .fold(
+                    error => ErrorMapping.mapCustomErrorsToHttp(error),
+                    user =>
+                      Ok(s"{ \"Body\": ${Json.parse(user.asJson.noSpaces)} }")
+                  )
+                ApiRunner.runResponseAsyncSafely(
+                  response,
+                  cookingApi,
+                  maybeUser
+                )
+              }
+            case None =>
+              Future.successful(
+                BadRequest(Json.obj("error" -> "No file uploaded"))
+              )
+          }
         }
-      }
-  }
+    }
 }

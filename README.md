@@ -1,5 +1,13 @@
 ## sbt project compiled with Scala 3
 
+### Toolchain
+
+Use JDK 21, sbt 1.13.0, and Scala 3.10.0. The Play 3.0.12 sbt plugin is published for sbt 1.x, so this build stays on that series. Play also requires Guice 6 and its `javax.inject` support; Guice 7 removes that support.
+
+The Neo4j 6 driver remains compatible with the existing Neo4j 5 server. Testcontainers 2 uses the renamed Neo4j module. The Jackson Scala module is declared explicitly to keep it aligned with the Jackson runtime pulled in by the upgraded dependencies.
+
+Run `sbt test "backend / Universal / stage"` to verify tests and production packaging. Integration tests start an isolated Neo4j container and require ports 7474, 7687, and 2004 to be free.
+
 ### Usage
 
 Run with `sbt runBackend`

@@ -3,7 +3,8 @@ package api.storage
 import com.google.inject.{Inject, Singleton}
 import org.apache.pekko.util.ByteString
 import play.api.Configuration
-import sttp.client3.*
+import sttp.client4.*
+import sttp.client4.httpclient.HttpClientSyncBackend
 import scala.concurrent.duration.*
 import zio.{Task, ZIO}
 import java.util.UUID
@@ -48,7 +49,8 @@ class SeaweedFSClient @Inject() (config: Configuration) {
       contentType: String,
       userId: UUID,
       fileName: String
-  ): Task[String] = uploadFileToPath(fileBytes, contentType, s"/avatars/$userId/$fileName")
+  ): Task[String] =
+    uploadFileToPath(fileBytes, contentType, s"/avatars/$userId/$fileName")
 
   def deleteFile(fileUrl: String): Task[Unit] = ZIO.attemptBlocking {
     val fullUrl = internalUrlFor(pathFromUrl(fileUrl))
@@ -57,7 +59,7 @@ class SeaweedFSClient @Inject() (config: Configuration) {
       .delete(uri"$fullUrl")
       .response(asString)
       .readTimeout(10.seconds)
-          .send(backend)
+      .send(backend)
 
     deleteResponse.body match {
       case Right(_)    => ()
@@ -65,15 +67,32 @@ class SeaweedFSClient @Inject() (config: Configuration) {
     }
   }
 
-  def uploadAvatar(processedImage: ProcessedImage, userId: UUID): Task[StorageAvatarUrls] =
-    uploadImageSizes(processedImage, s"/avatars/$userId/${UUID.randomUUID()}", "avatar")
+  def uploadAvatar(
+      processedImage: ProcessedImage,
+      userId: UUID
+  ): Task[StorageAvatarUrls] =
+    uploadImageSizes(
+      processedImage,
+      s"/avatars/$userId/${UUID.randomUUID()}",
+      "avatar"
+    )
 
-  def deleteImageUrls(urls: domain.users.AvatarUrls, directory: String): Task[Unit] =
+  def deleteImageUrls(
+      urls: domain.users.AvatarUrls,
+      directory: String
+  ): Task[Unit] =
     ZIO.foreachDiscard(Seq(urls.thumbnail, urls.medium, urls.large)) { url =>
-      val ownedPath = scala.util.Try(pathFromUrl(url)).toOption.exists(path =>
-        path.startsWith(s"$directory/") && !path.contains("..") && !path.exists(character => "%?#".contains(character))
-      )
-      if (ownedPath) deleteFile(url).catchAll(error => ZIO.logWarning(s"Could not remove image $url: ${error.getMessage}"))
+      val ownedPath = scala.util
+        .Try(pathFromUrl(url))
+        .toOption
+        .exists(path =>
+          path.startsWith(s"$directory/") && !path.contains("..") && !path
+            .exists(character => "%?#".contains(character))
+        )
+      if (ownedPath)
+        deleteFile(url).catchAll(error =>
+          ZIO.logWarning(s"Could not remove image $url: ${error.getMessage}")
+        )
       else ZIO.unit
     }
 
@@ -95,8 +114,15 @@ class SeaweedFSClient @Inject() (config: Configuration) {
     } yield ()
   }
 
-  def uploadRecipeImage(processedImage: ProcessedImage, recipeId: UUID): Task[StorageAvatarUrls] =
-    uploadImageSizes(processedImage, s"/recipes/$recipeId/${UUID.randomUUID()}", "recipe")
+  def uploadRecipeImage(
+      processedImage: ProcessedImage,
+      recipeId: UUID
+  ): Task[StorageAvatarUrls] =
+    uploadImageSizes(
+      processedImage,
+      s"/recipes/$recipeId/${UUID.randomUUID()}",
+      "recipe"
+    )
 
   private def uploadImageSizes(
       image: ProcessedImage,
@@ -108,11 +134,17 @@ class SeaweedFSClient @Inject() (config: Configuration) {
       s"$directory/$name-medium.${image.extension}" -> image.medium,
       s"$directory/$name.${image.extension}" -> image.large
     )
-    ZIO.foreachPar(files) { case (path, bytes) =>
-      uploadFileToPath(bytes, s"image/${image.extension}", path)
-    }.withParallelism(3)
+    ZIO
+      .foreachPar(files) { case (path, bytes) =>
+        uploadFileToPath(bytes, s"image/${image.extension}", path)
+      }
+      .withParallelism(3)
       .map(urls => StorageAvatarUrls(urls(0), urls(1), urls(2)))
-      .onError(_ => ZIO.foreachDiscard(files) { case (path, _) => deleteFile(publicUrlFor(path)).ignore })
+      .onError(_ =>
+        ZIO.foreachDiscard(files) { case (path, _) =>
+          deleteFile(publicUrlFor(path)).ignore
+        }
+      )
   }
 
   def uploadFileToPath(
@@ -121,14 +153,15 @@ class SeaweedFSClient @Inject() (config: Configuration) {
       uploadPath: String
   ): Task[String] = ZIO.attemptBlocking {
     val fullUrl = internalUrlFor(uploadPath)
-    val response = basicRequest.put(uri"$fullUrl")
+    val response = basicRequest
+      .put(uri"$fullUrl")
       .body(fileBytes.toArray)
       .contentType(contentType)
       .response(asString)
       .readTimeout(10.seconds)
       .send(backend)
     response.body match {
-      case Right(_) => publicUrlFor(uploadPath)
+      case Right(_)    => publicUrlFor(uploadPath)
       case Left(error) => throw new Exception(s"Failed to upload file: $error")
     }
   }

@@ -2,13 +2,8 @@ package api.wiki
 
 import com.google.inject.{ImplementedBy, Singleton}
 import domain.types.InputError
-import sttp.client3.{
-  HttpURLConnectionBackend,
-  Identity,
-  SttpBackend,
-  UriContext,
-  basicRequest
-}
+import sttp.client4.{SyncBackend, UriContext, basicRequest}
+import sttp.client4.httpurlconnection.HttpURLConnectionBackend
 import sttp.model.StatusCode
 import scala.concurrent.duration.*
 import zio.ZIO
@@ -23,7 +18,7 @@ trait WikipediaCheck {
 
 @Singleton
 class DefaultWikipediaCheck extends WikipediaCheck {
-  private val backend: SttpBackend[Identity, Any] = HttpURLConnectionBackend()
+  private val backend: SyncBackend = HttpURLConnectionBackend()
 
   override def validateWikiLink(link: String): ZIO[Any, Throwable, Unit] = {
     val processedLink = processWikiLink(link)
@@ -37,7 +32,7 @@ class DefaultWikipediaCheck extends WikipediaCheck {
           wikiLinkIsReal(processedLink)
         }
         .flatMap {
-          case true => ZIO.unit
+          case true  => ZIO.unit
           case false =>
             ZIO.fail(InputError("Link does not reach a real wiki page"))
         }
@@ -52,7 +47,9 @@ class DefaultWikipediaCheck extends WikipediaCheck {
         uri.getHost == "en.wikipedia.org" &&
         uri.getUserInfo == null &&
         (uri.getPort == -1 || uri.getPort == 443) &&
-        Option(uri.getPath).exists(path => path.startsWith("/wiki/") && path.length > 6)
+        Option(uri.getPath).exists(path =>
+          path.startsWith("/wiki/") && path.length > 6
+        )
     )
 
   private def wikiLinkIsReal(link: String): Boolean = {
@@ -64,7 +61,7 @@ class DefaultWikipediaCheck extends WikipediaCheck {
       )
       .followRedirects(false)
       .readTimeout(10.seconds)
-          .send(backend)
+      .send(backend)
     response.code match {
       case StatusCode.Ok => true
       case _             => false

@@ -4,7 +4,7 @@ import sbt.Keys.*
 
 object ProjectExtensions {
   val cores: Int = java.lang.Runtime.getRuntime.availableProcessors
-  val defaultScalaVersion = "3.5.0"
+  val defaultScalaVersion = "3.10.0"
 
   val additionalScalacOptions = Seq(
     "-language:postfixOps", // allow postfix ops without `import scala.language.postfixOps`,

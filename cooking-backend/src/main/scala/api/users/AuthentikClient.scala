@@ -4,7 +4,8 @@ import com.google.inject.Inject
 import io.circe.parser.*
 import io.circe.syntax.*
 import play.api.Configuration
-import sttp.client3.*
+import sttp.client4.*
+import sttp.client4.httpclient.HttpClientSyncBackend
 import sttp.model.{MediaType, Uri}
 import scala.concurrent.duration.*
 import zio.{Task, ZIO}
@@ -39,7 +40,8 @@ class AuthentikClient @Inject() (config: Configuration) {
           .header("Authorization", s"Bearer $apiToken")
           .contentType(MediaType.ApplicationJson)
 
-        val searchResponse = searchRequest.readTimeout(10.seconds)
+        val searchResponse = searchRequest
+          .readTimeout(10.seconds)
           .send(backend)
 
         if (!searchResponse.code.isSuccess) {
@@ -64,7 +66,7 @@ class AuthentikClient @Inject() (config: Configuration) {
                   .as[String]
               ) match {
               case Right(id) => id
-              case Left(e) =>
+              case Left(e)   =>
                 throw new RuntimeException(
                   s"User not found or PK invalid for username: $currentUsername. Error: $e"
                 )
@@ -86,8 +88,9 @@ class AuthentikClient @Inject() (config: Configuration) {
             .contentType(MediaType.ApplicationJson)
             .body(bodyMap.toMap.asJson.noSpaces)
 
-          val response = request.readTimeout(10.seconds)
-          .send(backend)
+          val response = request
+            .readTimeout(10.seconds)
+            .send(backend)
 
           if (!response.code.isSuccess) {
             throw new RuntimeException(

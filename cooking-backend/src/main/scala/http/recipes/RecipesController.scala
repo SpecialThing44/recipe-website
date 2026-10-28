@@ -51,8 +51,6 @@ class RecipesController @Inject() (
         cookingApi,
         cookingApi.recipes,
         authenticate = false
-      )(
-        Recipe.encoder
       )
   }
 
@@ -93,46 +91,55 @@ class RecipesController @Inject() (
 
   def unsave(id: java.util.UUID): Action[AnyContent] = Action.async { request =>
     extractUser(request, cookingApi).flatMap { user =>
-      ApiRunner.runResponseAsyncSafely(cookingApi.recipes.unsave(id).as(NoContent), cookingApi, user)
+      ApiRunner.runResponseAsyncSafely(
+        cookingApi.recipes.unsave(id).as(NoContent),
+        cookingApi,
+        user
+      )
     }
   }
 
-  def uploadImage(id: java.util.UUID): Action[AnyContent] = Action.async(parse.anyContent(maxLength = Some(5L * 1024 * 1024))) {
-    request =>
-      extractUser(request, cookingApi).flatMap { maybeUser =>
-        request.body.asRaw match {
-          case Some(raw) =>
-            val fileBytes = raw.asBytes().getOrElse(ByteString.empty)
-            val contentType = request.contentType.getOrElse("image/jpeg")
+  def uploadImage(id: java.util.UUID): Action[AnyContent] =
+    Action.async(parse.anyContent(maxLength = Some(5L * 1024 * 1024))) {
+      request =>
+        extractUser(request, cookingApi).flatMap { maybeUser =>
+          request.body.asRaw match {
+            case Some(raw) =>
+              val fileBytes = raw.asBytes().getOrElse(ByteString.empty)
+              val contentType = request.contentType.getOrElse("image/jpeg")
 
-            if (fileBytes.isEmpty) {
+              if (fileBytes.isEmpty) {
+                Future.successful(
+                  BadRequest(
+                    play.api.libs.json.Json
+                      .obj("error" -> "No file data provided")
+                  )
+                )
+              } else {
+                val response = cookingApi.recipes
+                  .uploadImage(id, fileBytes, contentType)
+                  .fold(
+                    error => ErrorMapping.mapCustomErrorsToHttp(error),
+                    recipe =>
+                      Ok(
+                        s"{ \"Body\": ${play.api.libs.json.Json.parse(recipe.asJson.noSpaces)} }"
+                      )
+                  )
+                ApiRunner.runResponseAsyncSafely(
+                  response,
+                  cookingApi,
+                  maybeUser
+                )
+              }
+            case None =>
               Future.successful(
                 BadRequest(
-                  play.api.libs.json.Json
-                    .obj("error" -> "No file data provided")
+                  play.api.libs.json.Json.obj("error" -> "No file uploaded")
                 )
               )
-            } else {
-              val response = cookingApi.recipes
-                .uploadImage(id, fileBytes, contentType)
-                .fold(
-                  error => ErrorMapping.mapCustomErrorsToHttp(error),
-                  recipe =>
-                    Ok(
-                      s"{ \"Body\": ${play.api.libs.json.Json.parse(recipe.asJson.noSpaces)} }"
-                    )
-                )
-              ApiRunner.runResponseAsyncSafely(response, cookingApi, maybeUser)
-            }
-          case None =>
-            Future.successful(
-              BadRequest(
-                play.api.libs.json.Json.obj("error" -> "No file uploaded")
-              )
-            )
+          }
         }
-      }
-  }
+    }
 
   def deleteImage(id: java.util.UUID): Action[AnyContent] = Action.async {
     request =>
@@ -151,40 +158,46 @@ class RecipesController @Inject() (
   }
 
   def uploadInstructionImage(id: java.util.UUID): Action[AnyContent] =
-    Action.async(parse.anyContent(maxLength = Some(5L * 1024 * 1024))) { request =>
-      extractUser(request, cookingApi).flatMap { maybeUser =>
-        request.body.asRaw match {
-          case Some(raw) =>
-            val fileBytes = raw.asBytes().getOrElse(ByteString.empty)
-            val contentType = request.contentType.getOrElse("image/jpeg")
+    Action.async(parse.anyContent(maxLength = Some(5L * 1024 * 1024))) {
+      request =>
+        extractUser(request, cookingApi).flatMap { maybeUser =>
+          request.body.asRaw match {
+            case Some(raw) =>
+              val fileBytes = raw.asBytes().getOrElse(ByteString.empty)
+              val contentType = request.contentType.getOrElse("image/jpeg")
 
-            if (fileBytes.isEmpty) {
+              if (fileBytes.isEmpty) {
+                Future.successful(
+                  BadRequest(
+                    play.api.libs.json.Json
+                      .obj("error" -> "No file data provided")
+                  )
+                )
+              } else {
+                val response = cookingApi.recipes
+                  .uploadInstructionImage(
+                    id,
+                    fileBytes,
+                    contentType
+                  )
+                  .fold(
+                    error => ErrorMapping.mapCustomErrorsToHttp(error),
+                    imageUrl =>
+                      Ok(play.api.libs.json.Json.obj("url" -> imageUrl))
+                  )
+                ApiRunner.runResponseAsyncSafely(
+                  response,
+                  cookingApi,
+                  maybeUser
+                )
+              }
+            case None =>
               Future.successful(
                 BadRequest(
-                  play.api.libs.json.Json
-                    .obj("error" -> "No file data provided")
+                  play.api.libs.json.Json.obj("error" -> "No file uploaded")
                 )
               )
-            } else {
-              val response = cookingApi.recipes
-                .uploadInstructionImage(
-                  id,
-                  fileBytes,
-                  contentType
-                )
-                .fold(
-                  error => ErrorMapping.mapCustomErrorsToHttp(error),
-                  imageUrl => Ok(play.api.libs.json.Json.obj("url" -> imageUrl))
-                )
-              ApiRunner.runResponseAsyncSafely(response, cookingApi, maybeUser)
-            }
-          case None =>
-            Future.successful(
-              BadRequest(
-                play.api.libs.json.Json.obj("error" -> "No file uploaded")
-              )
-            )
+          }
         }
-      }
     }
 }
