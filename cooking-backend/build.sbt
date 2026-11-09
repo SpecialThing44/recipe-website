@@ -48,7 +48,7 @@ coverageFailOnMinimum := false
 
 libraryDependencies ++= Seq(
   "com.auth0" % "java-jwt" % "4.6.2",
-  "com.auth0" % "jwks-rsa" % "0.24.1"
+  "com.auth0" % "jwks-rsa" % "0.24.2"
 )
 
 topLevelDirectory := Some(name.value)
