@@ -14,7 +14,7 @@ object Libraries {
     val jwtVersion = "12.0.0"
     val pbkdf2Version = "0.7.2"
     val slf4jVersion = "2.0.20"
-    val logbackVersion = "1.6.6"
+    val logbackVersion = "1.6.7"
     val sttpVersion = "4.1.0"
     val scrimageVersion = "4.6.10"
 
